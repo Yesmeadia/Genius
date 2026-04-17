@@ -1,66 +1,65 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import RegistrationForm from "@/components/RegistrationForm";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { useRef } from "react";
 
 export default function Home() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const tl = gsap.timeline({ defaults: { ease: "power2.out", duration: 1 } });
+
+    tl.from(".header-content > *", {
+      opacity: 0,
+      y: 20,
+      stagger: 0.1,
+      delay: 0.3
+    })
+      .from(".form-container", {
+        opacity: 0,
+        y: 20,
+        duration: 1
+      }, "-=0.5");
+  }, { scope: containerRef });
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main ref={containerRef} className="min-h-screen bg-white font-sans">
+      <div className="container mx-auto py-12 md:py-20 px-4">
+
+        <header className="header-content flex flex-col items-center text-center mb-12">
+          <div className="flex flex-col items-center gap-6">
+            <img src="/yeslogo.png" alt="YES INDIA Logo" className="h-6 md:h-8 w-auto object-contain opacity-50" />
+            <img src="/Genius.png" alt="Genius Jam Logo" className="h-16 md:h-24 w-auto object-contain" />
+          </div>
+
+          <div className="text-[10px] md:text-xs font-black tracking-[0.3em] text-gray-300 uppercase mt-8 mb-4">
+            Official Registration Portal
+          </div>
+
+          <p className="max-w-xl text-base md:text-lg text-slate-500 font-medium leading-relaxed">
+            Join the 2026 talent series. Please fill out the details below
+            accurately to secure your participation.
           </p>
+        </header>
+
+        {/* Form Container */}
+        <div className="form-container">
+          <RegistrationForm />
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        {/* Minimal Footer */}
+        <footer className="mt-20 pt-10 border-t border-slate-100 pb-10">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+            <p>© 2026 YES INDIA FOUNDATION</p>
+            <div className="flex gap-8">
+              <span className="cursor-pointer hover:text-slate-600 transition-colors">Event Management</span>
+              <span className="cursor-pointer hover:text-slate-600 transition-colors">Terms of Participation</span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </main>
   );
 }
