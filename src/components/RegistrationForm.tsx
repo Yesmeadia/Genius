@@ -73,9 +73,19 @@ export default function RegistrationForm() {
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
+    
+    // Ensure all string inputs are strictly uppercase in the database
+    const finalData = {
+      ...data,
+      studentName: data.studentName?.toUpperCase() || "",
+      parentage: data.parentage?.toUpperCase() || "",
+      parentName: data.parentName?.toUpperCase() || "",
+      relation: data.relation?.toUpperCase() || "",
+    };
+
     try {
       await addDoc(collection(db, "registrations"), {
-        ...data,
+        ...finalData,
         createdAt: serverTimestamp(),
       });
       router.push("/success");
@@ -156,9 +166,12 @@ export default function RegistrationForm() {
             <div className="space-y-2">
               <Label htmlFor="studentName" className={errors.studentName ? "text-destructive" : ""}>Full Name</Label>
               <Input
-                {...register("studentName", { required: "Name is required" })}
+                {...register("studentName", { 
+                  required: "Name is required",
+                  onChange: (e) => e.target.value = e.target.value.toUpperCase()
+                })}
                 placeholder="Name as per school records"
-                className={errors.studentName ? "border-destructive" : ""}
+                className={`uppercase ${errors.studentName ? "border-destructive" : ""}`}
               />
               {errors.studentName && <p className="text-xs text-destructive mt-1">{errors.studentName.message}</p>}
             </div>
@@ -166,9 +179,12 @@ export default function RegistrationForm() {
             <div className="space-y-2">
               <Label htmlFor="parentage" className={errors.parentage ? "text-destructive" : ""}>Parentage</Label>
               <Input
-                {...register("parentage", { required: "Parentage is required" })}
+                {...register("parentage", { 
+                  required: "Parentage is required",
+                  onChange: (e) => e.target.value = e.target.value.toUpperCase()
+                })}
                 placeholder="Father's / Mother's Name"
-                className={errors.parentage ? "border-destructive" : ""}
+                className={`uppercase ${errors.parentage ? "border-destructive" : ""}`}
               />
               {errors.parentage && <p className="text-xs text-destructive mt-1">{errors.parentage.message}</p>}
             </div>
@@ -241,16 +257,24 @@ export default function RegistrationForm() {
               <div className="space-y-2">
                 <Label htmlFor="parentName">Guardian Name</Label>
                 <Input
-                  {...register("parentName", { required: withParent ? "Required" : false })}
+                  {...register("parentName", { 
+                    required: withParent ? "Required" : false,
+                    onChange: (e) => e.target.value = e.target.value.toUpperCase()
+                  })}
                   placeholder="Accompanying Parent Name"
+                  className="uppercase"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="relation">Relation</Label>
                 <Input
-                  {...register("relation", { required: withParent ? "Required" : false })}
+                  {...register("relation", { 
+                    required: withParent ? "Required" : false,
+                    onChange: (e) => e.target.value = e.target.value.toUpperCase()
+                  })}
                   placeholder="e.g. Father, Mother"
+                  className="uppercase"
                 />
               </div>
 
