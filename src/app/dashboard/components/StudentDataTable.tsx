@@ -36,7 +36,6 @@ interface StudentDataTableProps {
   filteredData: Registration[];
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  onExport: (type: 'current' | 'all' | 'zone' | 'school' | 'class') => void;
   itemsPerPage: number;
   filterZone?: string;
   setFilterZone?: (val: string) => void;
@@ -46,7 +45,7 @@ interface StudentDataTableProps {
 }
 
 export function StudentDataTable({ 
-  filteredData, searchTerm, setSearchTerm, onExport, 
+  filteredData, searchTerm, setSearchTerm, 
   itemsPerPage, filterZone, setFilterZone, filterClass, setFilterClass, filterOptions 
 }: StudentDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,10 +96,6 @@ export function StudentDataTable({
           )}
         </div>
         <div className="flex gap-2 w-full xl:w-auto">
-          <Button variant="outline" onClick={() => onExport('current')} className="w-full xl:w-auto h-10 border-slate-100 text-slate-500 font-normal text-xs uppercase tracking-widest rounded-2xl">
-            <Download className="mr-2 h-4 w-4" />
-            Filtered PDF
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="p-0">

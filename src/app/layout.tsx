@@ -3,7 +3,7 @@ import { Figtree } from "next/font/google"; // New: Importing Figtree
 import "./globals.css";
 import Providers from "@/components/Providers";
 
-const figtree = Figtree({ 
+const figtree = Figtree({
   subsets: ["latin"],
   weight: ["400", "500", "700", "900"], // Supporting common weights
   variable: "--font-figtree",
@@ -11,7 +11,7 @@ const figtree = Figtree({
 
 export const metadata: Metadata = {
   title: "Genius Jam 3 | Event Registration",
-  description: "Register for the ultimate talent hunt and showcase your skills.",
+  description: "Join the 2026 talent series. Please fill out the details.",
 };
 
 export default function RootLayout({

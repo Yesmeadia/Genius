@@ -42,7 +42,7 @@ export default function SuccessPage() {
   }, { scope: containerRef });
 
   return (
-    <main ref={containerRef} className="min-h-screen bg-white font-sans flex flex-col">
+    <main ref={containerRef} className="min-h-screen bg-white font-figtree font-normal flex flex-col">
       <div className="container mx-auto py-12 px-4 flex-grow flex flex-col items-center">
         
         <header className="success-header flex flex-col items-center text-center mb-16">
@@ -50,7 +50,7 @@ export default function SuccessPage() {
             <img src="/yeslogo.png" alt="YES INDIA Logo" className="h-6 md:h-8 w-auto object-contain opacity-50" />
             <img src="/Genius.png" alt="Genius Jam Logo" className="h-16 md:h-24 w-auto object-contain" />
           </div>
-          <div className="text-[10px] md:text-xs font-black tracking-[0.3em] text-gray-300 uppercase mt-4">
+          <div className="text-[10px] md:text-xs font-normal tracking-[0.3em] text-gray-300 uppercase mt-4">
             Official Confirmation
           </div>
         </header>
@@ -65,10 +65,10 @@ export default function SuccessPage() {
           </div>
 
           <div className="success-content text-center max-w-lg">
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tight mb-6">
+            <h1 className="text-4xl md:text-6xl font-normal text-slate-900 tracking-tight mb-6">
               Registration Completed
             </h1>
-            <p className="text-lg md:text-xl text-slate-500 font-medium leading-relaxed mb-12">
+            <p className="text-lg md:text-xl text-slate-500 font-normal leading-relaxed mb-12">
               The student's details have been successfully recorded. 
               We look forward to seeing the talent showcase!
             </p>
@@ -76,7 +76,7 @@ export default function SuccessPage() {
             <div className="action-buttons flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 onClick={() => router.push("/")}
-                className="h-12 px-8 font-bold text-base shadow-lg shadow-primary/10"
+                className="h-12 px-8 font-normal text-base shadow-lg shadow-primary/10"
               >
                 <UserPlus className="mr-2 h-5 w-5" />
                 Register Another Student
@@ -84,7 +84,7 @@ export default function SuccessPage() {
               <Button 
                 variant="outline"
                 onClick={() => router.push("/")}
-                className="h-12 px-8 font-bold text-base border-slate-100 text-slate-400 hover:text-slate-900"
+                className="h-12 px-8 font-normal text-base border-slate-100 text-slate-400 hover:text-slate-900"
               >
                 <Home className="mr-2 h-5 w-5" />
                 Go to Home
@@ -95,7 +95,7 @@ export default function SuccessPage() {
 
         {/* Minimal Footer */}
         <footer className="mt-20 pt-10 border-t border-slate-50 w-full text-center">
-          <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest italic">
+          <p className="text-slate-400 text-[10px] font-normal uppercase tracking-widest italic">
             Official YES India Document • 2026 Series
           </p>
         </footer>

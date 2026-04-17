@@ -9,8 +9,6 @@ import { useRouter } from "next/navigation";
 import {
   Menu, FileText, Download, LogOut, Filter, X, Bell, Moon, User
 } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { locations } from "@/data/locations";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +28,7 @@ import { DashboardSidebar } from "./components/DashboardSidebar";
 import { AnalyticsSummary } from "./components/AnalyticsSummary";
 import { PerformanceCharts } from "./components/PerformanceCharts";
 import { StudentDataTable } from "./components/StudentDataTable";
+import { ExportCenter } from "./components/ExportCenter";
 
 interface Registration {
   id: string;
@@ -174,44 +173,6 @@ export default function Dashboard() {
     router.push("/dashboard/login");
   };
 
-  const exportPDF = (type: 'current' | 'all' | 'zone' | 'school' | 'class') => {
-    const doc = new jsPDF();
-    const dataToExport = type === 'current' ? filteredData : registrations;
-    const title = `Genius Jam 3 - ${type.toUpperCase()} Registration Report`;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("YES INDIA FOUNDATION", 105, 15, { align: "center" });
-    doc.setFontSize(14);
-    doc.text(title, 105, 25, { align: "center" });
-    doc.setFontSize(10);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 32, { align: "center" });
-
-    const tableData = dataToExport.map((reg, index) => {
-      const schoolName = getSchoolName(reg.school);
-      return [
-        index + 1,
-        reg.studentName,
-        reg.parentage,
-        reg.className,
-        schoolName,
-        reg.zone,
-        reg.withParent ? `${reg.parentName} (${reg.relation})` : 'Individual'
-      ];
-    });
-
-    autoTable(doc, {
-      startY: 45,
-      head: [['#', 'Student Name', 'Parentage', 'Class', 'School Name', 'Zone', 'Guardian Details']],
-      body: tableData,
-      theme: 'striped',
-      headStyles: { fillColor: [15, 23, 42] },
-      styles: { font: 'helvetica', fontSize: 8 }
-    });
-
-    doc.save(`genius_jam_report_${type}_${Date.now()}.pdf`);
-  };
-
   if (authLoading || loading || !hasMounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white font-figtree">
@@ -285,14 +246,6 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                  <Button
-                    variant="default"
-                    onClick={() => exportPDF('all')}
-                    className="h-10 px-6 bg-slate-900 text-white hover:bg-slate-800 font-normal text-[11px] uppercase rounded-2xl shadow-lg shadow-slate-200"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Master Export
-                  </Button>
                 </div>
               </div>
 
@@ -311,7 +264,6 @@ export default function Dashboard() {
                 filteredData={filteredData}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
-                onExport={exportPDF}
                 itemsPerPage={activeTab === 'overview' ? 10 : 20}
                 filterZone={filterZone}
                 setFilterZone={setFilterZone}
@@ -323,36 +275,7 @@ export default function Dashboard() {
           )}
 
           {activeTab === 'export' && (
-            <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="mb-8">
-                <h2 className="text-2xl font-normal text-slate-900 tracking-tight">Analytics & Downloads</h2>
-                <p className="text-[11px] font-normal text-slate-500 uppercase tracking-widest mt-2">Generate organized administrative reports</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[
-                  { title: "Zone-wise Reports", desc: "Export all registrations grouped by operational zones.", type: 'zone', color: 'border-l-indigo-500', icon: <FileText size={24} className="text-indigo-500"/> },
-                  { title: "School-wise Reports", desc: "Generate data sheets for specific educational institutions.", type: 'school', color: 'border-l-emerald-500', icon: <FileText size={24} className="text-emerald-500" /> },
-                  { title: "Class-wise Reports", desc: "Export categorical data based on student grade levels.", type: 'class', color: 'border-l-rose-500', icon: <FileText size={24} className="text-rose-500"/> },
-                  { title: "Master System Export", desc: "Comprehensive PDF dump of all system transactions.", type: 'all', color: 'border-l-slate-900', icon: <Download size={24} className="text-slate-900"/> },
-                ].map((item, i) => (
-                  <Card key={i} className={`border-none shadow-sm shadow-slate-200/50 rounded-[32px] overflow-hidden bg-white hover:shadow-md transition-all border-l-4 ${item.color}`}>
-                    <CardContent className="p-8">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-50`}>
-                          {item.icon}
-                        </div>
-                      </div>
-                      <h3 className="text-lg font-normal text-slate-900 mb-2">{item.title}</h3>
-                      <p className="text-xs font-normal text-slate-500 mb-8">{item.desc}</p>
-                      <Button onClick={() => exportPDF(item.type as any)} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
-                        <Download className="mr-2 h-4 w-4" /> Generate Report
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+            <ExportCenter registrations={registrations} />
           )}
           </div>
 
