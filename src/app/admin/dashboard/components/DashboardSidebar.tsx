@@ -13,6 +13,7 @@ export function DashboardSidebar({ sidebarOpen, activeTab, setActiveTab, onSignO
   const menuItems = [
     { id: "overview", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
     { id: "records", label: "Student Data", icon: <Users size={20} /> },
+    { id: "accompaniments", label: "Guardian Data", icon: <ShieldCheck size={20} /> },
     { id: "export", label: "Export Center", icon: <Download size={20} /> },
   ];
 

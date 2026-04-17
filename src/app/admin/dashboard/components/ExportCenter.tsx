@@ -1,8 +1,7 @@
-"use client";
-
 import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { generateRegistrationPDF } from "@/lib/exportUtils";
 import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,22 +43,7 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
     return schoolId;
   };
 
-  const getBase64ImageFromUrl = async (imageUrl: string) => {
-    try {
-      const res = await fetch(imageUrl);
-      const blob = await res.blob();
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      return null;
-    }
-  };
-
-  const generatePDF = async (type: 'zone' | 'school' | 'class' | 'all') => {
+  const handleGeneratePDF = async (type: 'zone' | 'school' | 'class' | 'all') => {
     let dataToExport = registrations;
     let title = "Master Registration Report";
     let filenameSuffix = "all";
@@ -81,74 +65,7 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
       filenameSuffix = `class_${selectedClass}`;
     }
 
-    if (dataToExport.length === 0) {
-      return alert("No records found for this selection.");
-    }
-
-    const doc = new jsPDF();
-    
-    // Load Logos
-    const yesLogoMsg = await getBase64ImageFromUrl('/yeslogo.png');
-    const geniusLogoMsg = await getBase64ImageFromUrl('/Genius.png');
-    
-    if (yesLogoMsg) {
-      doc.addImage(yesLogoMsg, 'PNG', 14, 12, 18, 18);
-    }
-    if (geniusLogoMsg) {
-      doc.addImage(geniusLogoMsg, 'PNG', doc.internal.pageSize.width - 45, 12, 30, 20);
-    }
-    
-    // Header Layout Redesign
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.text("YES INDIA FOUNDATION", 105, 20, { align: "center" });
-    
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(14);
-    doc.setTextColor(100, 100, 100);
-    doc.text(title, 105, 28, { align: "center" });
-
-    const tableData = dataToExport.map((reg, index) => {
-      const schoolName = getSchoolName(reg.school);
-      return [
-        index + 1,
-        reg.studentName,
-        reg.gender,
-        reg.parentage,
-        reg.className,
-        schoolName,
-        reg.zone,
-        reg.withParent ? `${reg.parentName} (${reg.relation})` : 'Individual'
-      ];
-    });
-
-    autoTable(doc, {
-      startY: 40,
-      head: [['#', 'Student Name', 'Gender', 'Parentage', 'Class', 'School Name', 'Zone', 'Guardian Details']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' },
-      bodyStyles: { textColor: [50, 50, 50] },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-      styles: { font: 'helvetica', fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
-      didDrawPage: function (data) {
-        // Footer injection at bottom
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "italic");
-        doc.setTextColor(150, 150, 150);
-        
-        const footerStr = `Generated on: ${new Date().toLocaleString()}`;
-        doc.text(footerStr, data.settings.margin.left, doc.internal.pageSize.height - 10);
-        
-        const pageCount = doc.getNumberOfPages();
-        const pageStr = `Page ${data.pageNumber} of ${pageCount}`;
-        const strWidth = doc.getStringUnitWidth(pageStr) * doc.getFontSize() / doc.internal.scaleFactor;
-        doc.text(pageStr, doc.internal.pageSize.width - data.settings.margin.left - strWidth, doc.internal.pageSize.height - 10);
-      }
-    });
-
-    // Pure, unmodified jsPDF save mechanism to avoid any browser extension interceptions
-    doc.save(`genius_jam_${filenameSuffix}.pdf`);
+    await generateRegistrationPDF(dataToExport, title, `genius_jam_${filenameSuffix}`);
   };
 
   return (
@@ -179,7 +96,7 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
               </SelectContent>
             </Select>
 
-            <Button onClick={() => generatePDF('zone')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
+            <Button onClick={() => handleGeneratePDF('zone')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
               <Download className="mr-2 h-4 w-4" /> Generate
             </Button>
           </CardContent>
@@ -205,7 +122,7 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
               </SelectContent>
             </Select>
 
-            <Button onClick={() => generatePDF('school')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
+            <Button onClick={() => handleGeneratePDF('school')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
               <Download className="mr-2 h-4 w-4" /> Generate
             </Button>
           </CardContent>
@@ -231,7 +148,7 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
               </SelectContent>
             </Select>
 
-            <Button onClick={() => generatePDF('class')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
+            <Button onClick={() => handleGeneratePDF('class')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
               <Download className="mr-2 h-4 w-4" /> Generate
             </Button>
           </CardContent>
@@ -248,7 +165,7 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
             <h3 className="text-lg font-normal text-slate-900 mb-2">Master System Export</h3>
             <p className="text-xs font-normal text-slate-500 mb-6 flex-grow">A complete, unfiltered PDF database dump of all recorded transactions in the entire network.</p>
 
-            <Button onClick={() => generatePDF('all')} className="w-full h-12 mt-auto font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
+            <Button onClick={() => handleGeneratePDF('all')} className="w-full h-12 mt-auto font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
               <Download className="mr-2 h-4 w-4" /> Export All Data
             </Button>
           </CardContent>

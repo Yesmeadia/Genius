@@ -19,7 +19,7 @@ import { locations } from "@/data/locations";
 
 import { Registration, DataTableProps } from "../types";
 
-export function StudentDataTable({ 
+export function AccompanimentDataTable({ 
   filteredData, searchTerm, setSearchTerm, 
   itemsPerPage, filterZone, setFilterZone, filterClass, setFilterClass, filterOptions,
   filterGender, setFilterGender, filterAccompaniment, setFilterAccompaniment,
@@ -98,9 +98,9 @@ export function StudentDataTable({
                 if (filterClass && filterClass !== "all") parts.push(`Class: ${filterClass}`);
                 if (filterGender && filterGender !== "all") parts.push(`Gender: ${filterGender}`);
                 if (filterAccompaniment && filterAccompaniment !== "all") parts.push(`Status: ${filterAccompaniment}`);
-                
-                const pdfTitle = parts.length > 0 ? parts.join(" | ") : "All Students Data";
-                const pdfFilename = isFiltered ? "student_data_filtered" : "all_students_data_master";
+
+                const pdfTitle = parts.length > 0 ? parts.join(" | ") : "All Guardian Data";
+                const pdfFilename = isFiltered ? "guardian_data_filtered" : "all_guardian_data_master";
                 
                 import("@/lib/exportUtils").then(m => {
                   m.generateRegistrationPDF(filteredData, pdfTitle, pdfFilename);
@@ -188,50 +188,46 @@ export function StudentDataTable({
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="border-slate-50">
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest pl-6">Student Details</TableHead>
-                {/* Request: in Institution table show the School name */}
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">School Name</TableHead>
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Zone</TableHead>
-                {/* Request: what do you ment by the status ? -> Guardian Accompaniment */}
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Accompaniment</TableHead>
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-right pr-6">Timestamp</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-emerald-600 uppercase tracking-widest pl-6">Guardian Profile</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Student Linked</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Institution Location</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Timestamp</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {displayData.map((reg) => (
                 <TableRow key={reg.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
                   <TableCell className="py-4 pl-6">
-                    <div className="font-normal text-sm text-slate-900">{reg.studentName}</div>
-                    <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
-                        Class {reg.className} • {reg.gender}
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${reg.withParent ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                        <UserCircle size={16} />
+                      </div>
+                      <div>
+                        {reg.withParent ? (
+                          <>
+                            <div className="font-normal text-sm text-slate-900">{reg.parentName || "Unknown Guardian"}</div>
+                            <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
+                                {reg.relation || "Relative"} • {reg.parentGender || "Unspecified"}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-normal text-sm text-slate-500">Individual Participant</div>
+                            <div className="text-[10px] text-slate-300 font-normal uppercase tracking-wide">No Guardian Data</div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 text-[12px] font-normal text-slate-600 max-w-[200px] leading-tight">
-                    {reg.schoolName || reg.school}
-                  </TableCell>
-                  <TableCell className="py-4 text-[11px] font-normal text-slate-400">
-                    {reg.zone}
+                  <TableCell className="py-4">
+                    <div className="font-normal text-[13px] text-slate-600">{reg.studentName}</div>
+                    <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">Grade {reg.className}</div>
                   </TableCell>
                   <TableCell className="py-4">
-                    {reg.withParent ? (
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5 text-[10px] font-normal text-emerald-600 uppercase">
-                          <UserCircle size={10} />
-                          Accompanied
-                        </div>
-                        {/* Request: show the Accompaniment in the table */}
-                        <div className="text-[10px] font-normal text-slate-400">
-                            {reg.parentName} <span className="text-[9px] opacity-75">({reg.relation})</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 text-[10px] font-normal text-slate-300 uppercase">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                        Individual
-                      </div>
-                    )}
+                    <div className="font-normal text-[12px] text-slate-600 max-w-[200px] leading-tight truncate">{reg.schoolName || reg.school}</div>
+                    <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">{reg.zone}</div>
                   </TableCell>
-                  <TableCell className="py-4 text-right pr-6 text-[10px] text-slate-400 font-normal uppercase tracking-tighter">
+                  <TableCell className="py-4 text-[10px] text-slate-400 font-normal uppercase tracking-tighter">
                     {hasMounted && reg.createdAt?.toDate ? 
                       new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(reg.createdAt.toDate()) : 
                       'Pending'}

@@ -28,6 +28,7 @@ import { DashboardSidebar } from "./components/DashboardSidebar";
 import { AnalyticsSummary } from "./components/AnalyticsSummary";
 import { PerformanceCharts } from "./components/PerformanceCharts";
 import { StudentDataTable } from "./components/StudentDataTable";
+import { AccompanimentDataTable } from "./components/AccompanimentDataTable";
 import { ExportCenter } from "./components/ExportCenter";
 
 interface Registration {
@@ -53,6 +54,8 @@ export default function Dashboard() {
   const [filterZone, setFilterZone] = useState("all");
   const [filterSchool, setFilterSchool] = useState("all");
   const [filterClass, setFilterClass] = useState("all");
+  const [filterGender, setFilterGender] = useState("all");
+  const [filterAccompaniment, setFilterAccompaniment] = useState("all");
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
@@ -164,9 +167,23 @@ export default function Dashboard() {
     const matchesZone = filterZone === "all" || r.zone === filterZone;
     const matchesSchool = filterSchool === "all" || r.school === filterSchool;
     const matchesClass = filterClass === "all" || r.className === filterClass;
+    const matchesGender = filterGender === "all" || (r.gender && r.gender.toUpperCase() === filterGender.toUpperCase());
+    
+    let matchesAccompaniment = true;
+    if (filterAccompaniment === "accompanied") matchesAccompaniment = r.withParent === true;
+    if (filterAccompaniment === "individual") matchesAccompaniment = r.withParent === false;
 
-    return matchesSearch && matchesZone && matchesSchool && matchesClass;
-  }), [registrations, searchTerm, filterZone, filterSchool, filterClass]);
+    return matchesSearch && matchesZone && matchesSchool && matchesClass && matchesGender && matchesAccompaniment;
+  }), [registrations, searchTerm, filterZone, filterSchool, filterClass, filterGender, filterAccompaniment]);
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setFilterZone("all");
+    setFilterSchool("all");
+    setFilterClass("all");
+    setFilterGender("all");
+    setFilterAccompaniment("all");
+  };
 
   const handleSignOut = async () => {
     await signOut(auth);
@@ -269,7 +286,37 @@ export default function Dashboard() {
                 setFilterZone={setFilterZone}
                 filterClass={filterClass}
                 setFilterClass={setFilterClass}
+                filterSchool={filterSchool}
+                setFilterSchool={setFilterSchool}
+                filterGender={filterGender}
+                setFilterGender={setFilterGender}
+                filterAccompaniment={filterAccompaniment}
+                setFilterAccompaniment={setFilterAccompaniment}
                 filterOptions={filterOptions}
+                resetFilters={resetFilters}
+              />
+            </div>
+          )}
+
+          {activeTab === 'accompaniments' && (
+            <div className="mt-4">
+              <AccompanimentDataTable
+                filteredData={filteredData}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                itemsPerPage={20}
+                filterZone={filterZone}
+                setFilterZone={setFilterZone}
+                filterClass={filterClass}
+                setFilterClass={setFilterClass}
+                filterSchool={filterSchool}
+                setFilterSchool={setFilterSchool}
+                filterGender={filterGender}
+                setFilterGender={setFilterGender}
+                filterAccompaniment={filterAccompaniment}
+                setFilterAccompaniment={setFilterAccompaniment}
+                filterOptions={filterOptions}
+                resetFilters={resetFilters}
               />
             </div>
           )}
@@ -280,7 +327,7 @@ export default function Dashboard() {
           </div>
 
           <footer className="mt-12 pt-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400 font-normal uppercase tracking-widest gap-4">
-            <div>&copy; {new Date().getFullYear()} YES INDIA FOUNDATION. ALL RIGHTS RESERVED.</div>
+            <div>&copy; {hasMounted ? new Date().getFullYear() : '2026'} YES INDIA FOUNDATION. ALL RIGHTS RESERVED.</div>
             <div>DESIGNED AND DEVELOPED BY CYBERDUCE</div>
           </footer>
         </main>
