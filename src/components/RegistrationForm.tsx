@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { useState, useEffect, useRef } from "react";
 import { Zone, School } from "@/data/locations";
 import { useLocations } from "@/hooks/useLocations";
@@ -38,13 +38,12 @@ interface FormData {
 
 export default function RegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [schools, setSchools] = useState<School[]>([]);
   const router = useRouter();
   const { zones, getSchoolsForZone } = useLocations();
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
       withParent: false,
       gender: "",
@@ -53,18 +52,14 @@ export default function RegistrationForm() {
     }
   });
 
-  const withParent = watch("withParent");
-  const watchZone = watch("zone");
+  const withParent = useWatch({ control, name: "withParent" });
+  const watchZone = useWatch({ control, name: "zone" });
+  
+  const schools = watchZone ? getSchoolsForZone(watchZone) : [];
 
   useEffect(() => {
-    if (watchZone) {
-      const schoolsForZone = getSchoolsForZone(watchZone);
-      setSchools(schoolsForZone);
-      setValue("school", "");
-    } else {
-      setSchools([]);
-    }
-  }, [watchZone, setValue, getSchoolsForZone]);
+    setValue("school", "");
+  }, [watchZone, setValue]);
 
   useGSAP(() => {
     gsap.from(".form-card", {

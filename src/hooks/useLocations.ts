@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { locations, Zone, School } from "@/data/locations";
+import { locations, School } from "@/data/locations";
 
 export function useLocations() {
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const zones = useMemo(() => locations, []);
 
   const getSchoolsForZone = (zoneId: string): School[] => {
