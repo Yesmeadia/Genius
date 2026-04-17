@@ -131,6 +131,7 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
       bodyStyles: { textColor: [50, 50, 50] },
       alternateRowStyles: { fillColor: [248, 250, 252] },
       styles: { font: 'helvetica', fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+      didDrawPage: function (data) {
         // Footer injection at bottom
         doc.setFontSize(10);
         doc.setFont("helvetica", "italic");

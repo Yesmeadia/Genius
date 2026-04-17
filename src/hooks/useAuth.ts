@@ -16,7 +16,7 @@ export function useAuth(requireAuth: boolean = true) {
       setLoading(false);
       
       if (requireAuth && !user) {
-        router.push("/dashboard/login");
+        router.push("/admin/login");
       }
     });
 

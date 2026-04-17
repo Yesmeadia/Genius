@@ -170,7 +170,7 @@ export default function Dashboard() {
 
   const handleSignOut = async () => {
     await signOut(auth);
-    router.push("/dashboard/login");
+    router.push("/admin/login");
   };
 
   if (authLoading || loading || !hasMounted) {

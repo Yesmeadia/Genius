@@ -37,7 +37,7 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/dashboard");
+      router.push("/admin/dashboard");
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Check your credentials.");
       setIsSubmitting(false);
