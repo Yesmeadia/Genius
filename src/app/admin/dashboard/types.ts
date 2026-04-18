@@ -12,6 +12,7 @@ export interface Registration {
   parentGender?: string;
   relation?: string;
   createdAt: any;
+  photoUrl?: string;
 }
 
 export interface DataTableProps {

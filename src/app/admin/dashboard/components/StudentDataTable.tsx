@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, FileText, UserCircle, RotateCcw, Filter } from "lucide-react";
+import { Search, Download, FileText, UserCircle, RotateCcw, Filter, User, ExternalLink } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -15,7 +15,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { locations } from "@/data/locations";
+import Link from "next/link";
 
 import { Registration, DataTableProps } from "../types";
 
@@ -117,7 +119,7 @@ export function StudentDataTable({
           {filterOptions && setFilterClass && (
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               {filterZone !== undefined && setFilterZone && (
-                <Select value={filterZone} onValueChange={setFilterZone}>
+                <Select value={filterZone || "all"} onValueChange={setFilterZone}>
                   <SelectTrigger className="w-full sm:w-[130px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="All Zones" />
                   </SelectTrigger>
@@ -129,7 +131,7 @@ export function StudentDataTable({
               )}
 
               {filterSchool !== undefined && setFilterSchool && (
-                <Select value={filterSchool} onValueChange={setFilterSchool}>
+                <Select value={filterSchool || "all"} onValueChange={setFilterSchool}>
                   <SelectTrigger className="w-full sm:w-[160px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="All Schools" />
                   </SelectTrigger>
@@ -153,7 +155,7 @@ export function StudentDataTable({
               </Select>
               
               {filterGender !== undefined && setFilterGender && (
-                <Select value={filterGender} onValueChange={setFilterGender}>
+                <Select value={filterGender || "all"} onValueChange={setFilterGender}>
                   <SelectTrigger className="w-full sm:w-[120px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="Gender" />
                   </SelectTrigger>
@@ -166,7 +168,7 @@ export function StudentDataTable({
               )}
               
               {filterAccompaniment !== undefined && setFilterAccompaniment && (
-                <Select value={filterAccompaniment} onValueChange={setFilterAccompaniment}>
+                <Select value={filterAccompaniment || "all"} onValueChange={setFilterAccompaniment}>
                   <SelectTrigger className="w-full sm:w-[140px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
@@ -188,12 +190,10 @@ export function StudentDataTable({
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="border-slate-50">
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest pl-6">Student Details</TableHead>
-                {/* Request: in Institution table show the School name */}
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">School Name</TableHead>
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Zone</TableHead>
-                {/* Request: what do you ment by the status ? -> Guardian Accompaniment */}
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest pl-6">Student</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">School & Zone</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Accompaniment</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-center">Action</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-right pr-6">Timestamp</TableHead>
               </TableRow>
             </TableHeader>
@@ -201,16 +201,28 @@ export function StudentDataTable({
               {displayData.map((reg) => (
                 <TableRow key={reg.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
                   <TableCell className="py-4 pl-6">
-                    <div className="font-normal text-sm text-slate-900">{reg.studentName}</div>
-                    <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
-                        Class {reg.className} • {reg.gender}
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+                        {reg.photoUrl && <AvatarImage src={reg.photoUrl} className="object-cover" />}
+                        <AvatarFallback className="bg-slate-50 text-slate-400">
+                          <User size={16} />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-normal text-sm text-slate-900 leading-none mb-1">{reg.studentName}</div>
+                        <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
+                            Class {reg.className} • {reg.gender}
+                        </div>
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4 text-[12px] font-normal text-slate-600 max-w-[200px] leading-tight">
-                    {reg.schoolName || reg.school}
-                  </TableCell>
-                  <TableCell className="py-4 text-[11px] font-normal text-slate-400">
-                    {reg.zone}
+                  <TableCell className="py-4">
+                    <div className="font-normal text-[12px] text-slate-600 leading-tight mb-0.5">
+                      {reg.schoolName || reg.school}
+                    </div>
+                    <div className="text-[10px] text-slate-400 uppercase tracking-tight">
+                      {reg.zone}
+                    </div>
                   </TableCell>
                   <TableCell className="py-4">
                     {reg.withParent ? (
@@ -230,6 +242,13 @@ export function StudentDataTable({
                         Individual
                       </div>
                     )}
+                  </TableCell>
+                  <TableCell className="py-4 text-center">
+                    <Link href={`/admin/dashboard/student/${reg.id}`}>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
+                        <ExternalLink size={16} />
+                      </Button>
+                    </Link>
                   </TableCell>
                   <TableCell className="py-4 text-right pr-6 text-[10px] text-slate-400 font-normal uppercase tracking-tighter">
                     {hasMounted && reg.createdAt?.toDate ? 

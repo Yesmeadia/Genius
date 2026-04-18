@@ -49,13 +49,12 @@ export default function Home() {
           <RegistrationForm />
         </div>
 
-        {/* Minimal Footer */}
-        <footer className="mt-20 pt-10 border-t border-slate-100 pb-10">
+        {/* Compact Footer */}
+        <footer className="mt-12 pt-6 border-t border-slate-100 pb-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-slate-400 text-xs font-semibold uppercase tracking-wider">
-            <p>© 2026 YES INDIA FOUNDATION</p>
+            <p>© 2026 YES INDIA FOUNDATION | All Rights Reserved</p>
             <div className="flex gap-8">
-              <span className="cursor-pointer hover:text-slate-600 transition-colors">Event Management</span>
-              <span className="cursor-pointer hover:text-slate-600 transition-colors">Terms of Participation</span>
+              <span className="cursor-pointer hover:text-slate-600 transition-colors">Designed & Developed by Cyberduce</span>
             </div>
           </div>
         </footer>

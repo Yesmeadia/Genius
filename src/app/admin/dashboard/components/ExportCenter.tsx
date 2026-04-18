@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { generateRegistrationPDF } from "@/lib/exportUtils";
+import { generateRegistrationPDF, generateBatchAccessPasses } from "@/lib/exportUtils";
 import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileText, MapPin, School, Archive } from "lucide-react";
+import { Download, FileText, MapPin, School, Archive, CreditCard } from "lucide-react";
 
 interface Registration {
   id: string;
@@ -24,9 +24,9 @@ interface Registration {
 }
 
 export function ExportCenter({ registrations }: { registrations: Registration[] }) {
-  const [selectedZone, setSelectedZone] = useState("");
-  const [selectedSchool, setSelectedSchool] = useState("");
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedZone, setSelectedZone] = useState("all");
+  const [selectedSchool, setSelectedSchool] = useState("all");
+  const [selectedClass, setSelectedClass] = useState("all");
 
   const filterOptions = useMemo(() => {
     const zones = Array.from(new Set(registrations.map(r => r.zone))).sort();
@@ -49,23 +49,44 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
     let filenameSuffix = "all";
 
     if (type === 'zone') {
-      if (!selectedZone) return alert("Please select a zone before generating a report.");
+      if (!selectedZone || selectedZone === 'all') return alert("Please select a zone before generating a report.");
       dataToExport = registrations.filter(r => r.zone === selectedZone);
       title = `Zone Report: ${selectedZone}`;
       filenameSuffix = `zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
     } else if (type === 'school') {
-      if (!selectedSchool) return alert("Please select a school before generating a report.");
+      if (!selectedSchool || selectedSchool === 'all') return alert("Please select a school before generating a report.");
       dataToExport = registrations.filter(r => r.school === selectedSchool);
       title = `School Report: ${getSchoolName(selectedSchool)}`;
       filenameSuffix = `school_${selectedSchool}`;
     } else if (type === 'class') {
-      if (!selectedClass) return alert("Please select a class before generating a report.");
+      if (!selectedClass || selectedClass === 'all') return alert("Please select a class before generating a report.");
       dataToExport = registrations.filter(r => r.className === selectedClass);
       title = `Class Report: Grade ${selectedClass}`;
       filenameSuffix = `class_${selectedClass}`;
     }
 
     await generateRegistrationPDF(dataToExport, title, `genius_jam_${filenameSuffix}`);
+  };
+
+  const handleGeneratePasses = async (type: 'zone' | 'school' | 'class') => {
+    let dataToExport = registrations;
+    let filenameSuffix = "all";
+
+    if (type === 'zone') {
+      if (!selectedZone || selectedZone === 'all') return alert("Please select a zone.");
+      dataToExport = registrations.filter(r => r.zone === selectedZone);
+      filenameSuffix = `passes_zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+    } else if (type === 'school') {
+      if (!selectedSchool || selectedSchool === 'all') return alert("Please select a school.");
+      dataToExport = registrations.filter(r => r.school === selectedSchool);
+      filenameSuffix = `passes_school_${selectedSchool}`;
+    } else if (type === 'class') {
+      if (!selectedClass || selectedClass === 'all') return alert("Please select a class.");
+      dataToExport = registrations.filter(r => r.className === selectedClass);
+      filenameSuffix = `passes_class_${selectedClass}`;
+    }
+
+    await generateBatchAccessPasses(dataToExport, filenameSuffix);
   };
 
   return (
@@ -92,13 +113,19 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
                 <SelectValue placeholder="Select a zone..." />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-xl">
+                <SelectItem value="all">All Zones</SelectItem>
                 {filterOptions.zones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
               </SelectContent>
             </Select>
 
-            <Button onClick={() => handleGeneratePDF('zone')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
-              <Download className="mr-2 h-4 w-4" /> Generate
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => handleGeneratePDF('zone')} className="flex-1 h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[10px]">
+                <Download className="mr-2 h-4 w-4" /> Report
+              </Button>
+              <Button onClick={() => handleGeneratePasses('zone')} className="flex-1 h-12 font-normal rounded-2xl bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]">
+                <CreditCard className="mr-2 h-4 w-4" /> Passes
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -118,13 +145,19 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
                 <SelectValue placeholder="Select an institution..." />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-xl">
+                <SelectItem value="all">All Institutions</SelectItem>
                 {filterOptions.schools.map(s => <SelectItem key={s} value={s}>{getSchoolName(s)}</SelectItem>)}
               </SelectContent>
             </Select>
 
-            <Button onClick={() => handleGeneratePDF('school')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
-              <Download className="mr-2 h-4 w-4" /> Generate
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => handleGeneratePDF('school')} className="flex-1 h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[10px]">
+                <Download className="mr-2 h-4 w-4" /> Report
+              </Button>
+              <Button onClick={() => handleGeneratePasses('school')} className="flex-1 h-12 font-normal rounded-2xl bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]">
+                <CreditCard className="mr-2 h-4 w-4" /> Passes
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -144,13 +177,19 @@ export function ExportCenter({ registrations }: { registrations: Registration[] 
                 <SelectValue placeholder="Select a class grade..." />
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-xl">
+                <SelectItem value="all">All Classes</SelectItem>
                 {filterOptions.classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
               </SelectContent>
             </Select>
 
-            <Button onClick={() => handleGeneratePDF('class')} className="w-full h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[11px]">
-              <Download className="mr-2 h-4 w-4" /> Generate
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => handleGeneratePDF('class')} className="flex-1 h-12 font-normal rounded-2xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[10px]">
+                <Download className="mr-2 h-4 w-4" /> Report
+              </Button>
+              <Button onClick={() => handleGeneratePasses('class')} className="flex-1 h-12 font-normal rounded-2xl bg-white border border-slate-200 text-slate-900 hover:bg-slate-50 transition-all uppercase tracking-widest text-[10px]">
+                <CreditCard className="mr-2 h-4 w-4" /> Passes
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

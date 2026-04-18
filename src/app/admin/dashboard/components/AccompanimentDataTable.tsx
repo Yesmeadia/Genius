@@ -117,7 +117,7 @@ export function AccompanimentDataTable({
           {filterOptions && setFilterClass && (
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               {filterZone !== undefined && setFilterZone && (
-                <Select value={filterZone} onValueChange={setFilterZone}>
+                <Select value={filterZone || "all"} onValueChange={setFilterZone}>
                   <SelectTrigger className="w-full sm:w-[130px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="All Zones" />
                   </SelectTrigger>
@@ -129,7 +129,7 @@ export function AccompanimentDataTable({
               )}
 
               {filterSchool !== undefined && setFilterSchool && (
-                <Select value={filterSchool} onValueChange={setFilterSchool}>
+                <Select value={filterSchool || "all"} onValueChange={setFilterSchool}>
                   <SelectTrigger className="w-full sm:w-[160px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="All Schools" />
                   </SelectTrigger>
@@ -153,7 +153,7 @@ export function AccompanimentDataTable({
               </Select>
               
               {filterGender !== undefined && setFilterGender && (
-                <Select value={filterGender} onValueChange={setFilterGender}>
+                <Select value={filterGender || "all"} onValueChange={setFilterGender}>
                   <SelectTrigger className="w-full sm:w-[120px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="Gender" />
                   </SelectTrigger>
@@ -166,7 +166,7 @@ export function AccompanimentDataTable({
               )}
               
               {filterAccompaniment !== undefined && setFilterAccompaniment && (
-                <Select value={filterAccompaniment} onValueChange={setFilterAccompaniment}>
+                <Select value={filterAccompaniment || "all"} onValueChange={setFilterAccompaniment}>
                   <SelectTrigger className="w-full sm:w-[140px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>

@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Users, Download, LogOut, ChevronRight, Settings, Bell, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, Download, LogOut, ChevronRight, Settings, Bell, ShieldCheck, CreditCard } from "lucide-react";
 
 interface DashboardSidebarProps {
   sidebarOpen: boolean;
@@ -14,6 +14,7 @@ export function DashboardSidebar({ sidebarOpen, activeTab, setActiveTab, onSignO
     { id: "overview", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
     { id: "records", label: "Student Data", icon: <Users size={20} /> },
     { id: "accompaniments", label: "Guardian Data", icon: <ShieldCheck size={20} /> },
+    { id: "pass", label: "Access Pass", icon: <CreditCard size={20} /> },
     { id: "export", label: "Export Center", icon: <Download size={20} /> },
   ];
 

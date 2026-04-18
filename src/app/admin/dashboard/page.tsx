@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DashboardSidebar } from "./components/DashboardSidebar";
 import { AnalyticsSummary } from "./components/AnalyticsSummary";
 import { PerformanceCharts } from "./components/PerformanceCharts";
+import AccessPassCenter from "./components/AccessPassCenter";
 import { StudentDataTable } from "./components/StudentDataTable";
 import { AccompanimentDataTable } from "./components/AccompanimentDataTable";
 import { ExportCenter } from "./components/ExportCenter";
@@ -92,9 +93,9 @@ export default function Dashboard() {
     const todayCount = registrations.filter(r => {
       if (!r.createdAt) return false;
       const date = r.createdAt.toDate ? r.createdAt.toDate() : new Date(r.createdAt);
-      return date.getDate() === today.getDate() && 
-             date.getMonth() === today.getMonth() && 
-             date.getFullYear() === today.getFullYear();
+      return date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear();
     }).length;
 
     const males = registrations.filter(r => r.gender.toLowerCase() === 'male' || r.gender.toLowerCase() === 'boy').length;
@@ -163,12 +164,12 @@ export default function Dashboard() {
     const matchesSearch = studentNameSafe.includes(searchLow) ||
       schoolNameSafe.includes(searchLow) ||
       zoneSafe.includes(searchLow);
-    
+
     const matchesZone = filterZone === "all" || r.zone === filterZone;
     const matchesSchool = filterSchool === "all" || r.school === filterSchool;
     const matchesClass = filterClass === "all" || r.className === filterClass;
     const matchesGender = filterGender === "all" || (r.gender && r.gender.toUpperCase() === filterGender.toUpperCase());
-    
+
     let matchesAccompaniment = true;
     if (filterAccompaniment === "accompanied") matchesAccompaniment = r.withParent === true;
     if (filterAccompaniment === "individual") matchesAccompaniment = r.withParent === false;
@@ -252,78 +253,82 @@ export default function Dashboard() {
         <main className="p-4 md:p-10 max-w-[1600px] w-full mx-auto flex flex-col min-h-[calc(100vh-80px)]">
           <div className="flex-grow">
             {activeTab === 'overview' && (
-            <>
-              <AnalyticsSummary stats={stats} />
+              <>
+                <AnalyticsSummary stats={stats} />
 
-              {/* Context & Granular Filters Area */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div>
-                  <h2 className="text-xl font-normal text-slate-900 tracking-tight">Analytical Insights</h2>
-                  <p className="text-[10px] font-normal text-slate-500 uppercase mt-1">Cross-filtered database metrics</p>
+                {/* Context & Granular Filters Area */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                  <div>
+                    <h2 className="text-xl font-normal text-slate-900 tracking-tight">Analytical Insights</h2>
+                    <p className="text-[10px] font-normal text-slate-500 uppercase mt-1">Cross-filtered database metrics</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                </div>
+                <PerformanceCharts
+                  genderData={aggregatedData.genderData}
+                  zoneData={aggregatedData.zoneData}
+                  accompanimentData={aggregatedData.accompanimentData}
+                  relationData={aggregatedData.relationData}
+                />
+              </>
+            )}
+
+            {(activeTab === 'overview' || activeTab === 'records') && (
+              <div className="mt-4">
+                <StudentDataTable
+                  filteredData={filteredData}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  itemsPerPage={activeTab === 'overview' ? 10 : 20}
+                  filterZone={filterZone}
+                  setFilterZone={setFilterZone}
+                  filterClass={filterClass}
+                  setFilterClass={setFilterClass}
+                  filterSchool={filterSchool}
+                  setFilterSchool={setFilterSchool}
+                  filterGender={filterGender}
+                  setFilterGender={setFilterGender}
+                  filterAccompaniment={filterAccompaniment}
+                  setFilterAccompaniment={setFilterAccompaniment}
+                  filterOptions={filterOptions}
+                  resetFilters={resetFilters}
+                />
               </div>
+            )}
 
-              <PerformanceCharts
-                genderData={aggregatedData.genderData}
-                zoneData={aggregatedData.zoneData}
-                accompanimentData={aggregatedData.accompanimentData}
-                relationData={aggregatedData.relationData}
-              />
-            </>
-          )}
+            {activeTab === 'accompaniments' && (
+              <div className="mt-4">
+                <AccompanimentDataTable
+                  filteredData={filteredData}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  itemsPerPage={20}
+                  filterZone={filterZone}
+                  setFilterZone={setFilterZone}
+                  filterClass={filterClass}
+                  setFilterClass={setFilterClass}
+                  filterSchool={filterSchool}
+                  setFilterSchool={setFilterSchool}
+                  filterGender={filterGender}
+                  setFilterGender={setFilterGender}
+                  filterAccompaniment={filterAccompaniment}
+                  setFilterAccompaniment={setFilterAccompaniment}
+                  filterOptions={filterOptions}
+                  resetFilters={resetFilters}
+                />
+              </div>
+            )}
 
-          {(activeTab === 'overview' || activeTab === 'records') && (
-            <div className="mt-4">
-              <StudentDataTable
-                filteredData={filteredData}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                itemsPerPage={activeTab === 'overview' ? 10 : 20}
-                filterZone={filterZone}
-                setFilterZone={setFilterZone}
-                filterClass={filterClass}
-                setFilterClass={setFilterClass}
-                filterSchool={filterSchool}
-                setFilterSchool={setFilterSchool}
-                filterGender={filterGender}
-                setFilterGender={setFilterGender}
-                filterAccompaniment={filterAccompaniment}
-                setFilterAccompaniment={setFilterAccompaniment}
-                filterOptions={filterOptions}
-                resetFilters={resetFilters}
-              />
-            </div>
-          )}
+            {activeTab === 'export' && (
+              <ExportCenter registrations={registrations} />
+            )}
 
-          {activeTab === 'accompaniments' && (
-            <div className="mt-4">
-              <AccompanimentDataTable
-                filteredData={filteredData}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                itemsPerPage={20}
-                filterZone={filterZone}
-                setFilterZone={setFilterZone}
-                filterClass={filterClass}
-                setFilterClass={setFilterClass}
-                filterSchool={filterSchool}
-                setFilterSchool={setFilterSchool}
-                filterGender={filterGender}
-                setFilterGender={setFilterGender}
-                filterAccompaniment={filterAccompaniment}
-                setFilterAccompaniment={setFilterAccompaniment}
-                filterOptions={filterOptions}
-                resetFilters={resetFilters}
-              />
-            </div>
-          )}
-
-          {activeTab === 'export' && (
-            <ExportCenter registrations={registrations} />
-          )}
+            {activeTab === 'pass' && (
+              <AccessPassCenter registrations={registrations} />
+            )}
           </div>
 
           <footer className="mt-12 pt-6 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center text-[10px] text-slate-400 font-normal uppercase tracking-widest gap-4">
