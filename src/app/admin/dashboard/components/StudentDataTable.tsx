@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, FileText, UserCircle, RotateCcw, Filter, User, ExternalLink } from "lucide-react";
+import { Search, Download, FileText, UserCircle, RotateCcw, Filter, User, ExternalLink, Phone } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -193,6 +193,7 @@ export function StudentDataTable({
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest pl-6">Student</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">School & Zone</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Accompaniment</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Mobile</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-center">Action</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-right pr-6">Timestamp</TableHead>
               </TableRow>
@@ -243,6 +244,16 @@ export function StudentDataTable({
                       </div>
                     )}
                   </TableCell>
+                  <TableCell className="py-4">
+                    {reg.mobileNumber ? (
+                      <div className="flex items-center gap-1.5">
+                        <Phone size={11} className="text-slate-300 shrink-0" />
+                        <span className="text-[11px] font-normal text-slate-600 tracking-wide">{reg.mobileNumber}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-300">—</span>
+                    )}
+                  </TableCell>
                   <TableCell className="py-4 text-center">
                     <Link href={`/admin/dashboard/student/${reg.id}`}>
                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
@@ -259,7 +270,7 @@ export function StudentDataTable({
               ))}
               {filteredData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
+                  <TableCell colSpan={6} className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
                     No matching records found
                   </TableCell>
                 </TableRow>

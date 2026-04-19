@@ -31,6 +31,7 @@ interface FormData {
   gender: string;
   zone: string;
   school: string;
+  mobileNumber: string;
   withParent: boolean;
   parentName?: string;
   parentGender?: string;
@@ -53,7 +54,8 @@ export default function RegistrationForm() {
       gender: "",
       zone: "",
       school: "",
-      className: ""
+      className: "",
+      mobileNumber: ""
     }
   });
 
@@ -247,6 +249,24 @@ export default function RegistrationForm() {
                   ))}
                 </div>
                 {errors.gender && <p className="text-xs text-destructive mt-1">{errors.gender.message}</p>}
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="mobileNumber" className={errors.mobileNumber ? "text-destructive" : ""}>Mobile Number</Label>
+                <Input
+                  type="tel"
+                  {...register("mobileNumber", {
+                    required: "Mobile number is required",
+                    pattern: {
+                      value: /^[6-9]\d{9}$/,
+                      message: "Enter a valid 10-digit Indian mobile number"
+                    }
+                  })}
+                  placeholder="e.g. 9876543210"
+                  maxLength={10}
+                  className={errors.mobileNumber ? "border-destructive" : ""}
+                />
+                {errors.mobileNumber && <p className="text-xs text-destructive mt-1">{errors.mobileNumber.message}</p>}
               </div>
             </div>
           </CardContent>

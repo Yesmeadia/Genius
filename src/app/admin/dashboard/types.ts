@@ -7,6 +7,7 @@ export interface Registration {
   zone: string;
   school: string;
   schoolName?: string;
+  mobileNumber?: string;
   withParent: boolean;
   parentName?: string;
   parentGender?: string;
