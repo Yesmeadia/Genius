@@ -48,11 +48,40 @@ export interface LocalStaffRegistration {
   photoUrl?: string;
 }
 
+export interface AlumniRegistration {
+  id: string;
+  name: string;
+  gender: string;
+  whatsappNumber: string;
+  zone: string;
+  school: string;
+  category: string;
+  className: string;
+  createdAt: any;
+  photoUrl?: string;
+}
+
+export interface VolunteerRegistration {
+  id: string;
+  volunteerName: string;
+  parentage: string;
+  gender: string;
+  whatsappNumber?: string;
+  mobileNumber?: string;
+  zone: string;
+  school: string;
+  className: string;
+  createdAt: any;
+  photoUrl?: string;
+}
+
 export interface DashboardStats {
   totalStudents: number;
   totalGuests: number;
   totalYesians: number;
   totalLocalStaff: number;
+  totalAlumni: number;
+  totalVolunteers: number;
   todayCount: number;
   totalParticipation: number;
   totalAccompanied: number;

@@ -8,7 +8,9 @@ import {
   Registration, 
   GuestRegistration, 
   YesianRegistration, 
-  LocalStaffRegistration, 
+  LocalStaffRegistration,
+  AlumniRegistration,
+  VolunteerRegistration,
   DashboardStats 
 } from "../types";
 
@@ -17,6 +19,8 @@ interface DashboardDataContextType {
   guestRegistrations: GuestRegistration[];
   yesianRegistrations: YesianRegistration[];
   localStaffRegistrations: LocalStaffRegistration[];
+  alumniRegistrations: AlumniRegistration[];
+  volunteerRegistrations: VolunteerRegistration[];
   stats: DashboardStats;
   loading: boolean;
   lastSync: string;
@@ -44,6 +48,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   const [guestRegistrations, setGuestRegistrations] = useState<GuestRegistration[]>([]);
   const [yesianRegistrations, setYesianRegistrations] = useState<YesianRegistration[]>([]);
   const [localStaffRegistrations, setLocalStaffRegistrations] = useState<LocalStaffRegistration[]>([]);
+  const [alumniRegistrations, setAlumniRegistrations] = useState<AlumniRegistration[]>([]);
+  const [volunteerRegistrations, setVolunteerRegistrations] = useState<VolunteerRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
 
@@ -79,11 +85,23 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       setLocalStaffRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as LocalStaffRegistration[]);
     });
 
+    const qAlumni = query(collection(db, "alumni_registrations"), orderBy("createdAt", "desc"));
+    const unsubAlumni = onSnapshot(qAlumni, (snap) => {
+      setAlumniRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AlumniRegistration[]);
+    });
+
+    const qVolunteers = query(collection(db, "volunteer_registrations"), orderBy("createdAt", "desc"));
+    const unsubVolunteers = onSnapshot(qVolunteers, (snap) => {
+      setVolunteerRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as VolunteerRegistration[]);
+    });
+
     return () => {
       unsubStudents();
       unsubGuests();
       unsubYesians();
       unsubStaff();
+      unsubAlumni();
+      unsubVolunteers();
     };
   }, []);
 
@@ -106,7 +124,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
 
     const studentMales = registrations.filter(r => r.gender?.toLowerCase() === "male").length;
     const studentFemales = registrations.filter(r => r.gender?.toLowerCase() === "female").length;
-    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length;
+    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length + alumniRegistrations.length + volunteerRegistrations.length;
 
     const trendMap = new Map();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -130,6 +148,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalGuests: guestRegistrations.length,
       totalYesians: yesianRegistrations.length,
       totalLocalStaff: localStaffRegistrations.length,
+      totalAlumni: alumniRegistrations.length,
+      totalVolunteers: volunteerRegistrations.length,
       todayCount,
       totalParticipation,
       totalAccompanied: registrations.filter(r => r.withParent).length,
@@ -137,8 +157,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalZones: new Set(registrations.map(r => r.zone)).size,
       availableSchoolsCount: locations.reduce((acc, z) => acc + z.schools.length, 0),
       availableZonesCount: locations.length,
-      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
-      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
+      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
+      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
       lastUpdated: lastSync,
       trendData,
       platformData: [
@@ -146,9 +166,11 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
         { name: 'Guests', value: guestRegistrations.length },
         { name: 'Yesians', value: yesianRegistrations.length },
         { name: 'Local Staff', value: localStaffRegistrations.length },
+        { name: 'Alumni', value: alumniRegistrations.length },
+        { name: 'Volunteers', value: volunteerRegistrations.length },
       ],
     };
-  }, [registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, lastSync]);
+  }, [registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, alumniRegistrations, volunteerRegistrations, lastSync]);
 
   const resetFilters = () => {
     setSearchTerm("");
@@ -164,6 +186,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     guestRegistrations,
     yesianRegistrations,
     localStaffRegistrations,
+    alumniRegistrations,
+    volunteerRegistrations,
     stats,
     loading,
     lastSync,

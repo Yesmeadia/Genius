@@ -74,6 +74,38 @@ const registrationTypes = [
     cardBg: "rgba(255,255,255,0.45)",
     orbColor: "rgba(56,189,248,0.08)",
   },
+  {
+    id: "alumni-achiever",
+    title: "Alumni Achiever",
+    subtitle: "For Past YES INDIA Achievers",
+    description:
+      "Register as an Alumni Achiever, representing the proud legacy of YES INDIA members.",
+    href: "/register/alumni-achiever",
+    accentHex: "#ec4899", // Pink
+    glow: "rgba(236,72,153,0.1)",
+    border: "rgba(236,72,153,0.12)",
+    badge: "Alumni",
+    badgeBg: "rgba(236,72,153,0.06)",
+    badgeText: "#ec4899",
+    cardBg: "rgba(255,255,255,0.45)",
+    orbColor: "rgba(244,114,182,0.08)",
+  },
+  {
+    id: "volunteer",
+    title: "Volunteer",
+    subtitle: "For Dedicated Volunteers",
+    description:
+      "Register to lend a hand and volunteer for YES INDIA events and programs.",
+    href: "/register/volunteer",
+    accentHex: "#d97706", // Amber
+    glow: "rgba(217,119,6,0.1)",
+    border: "rgba(217,119,6,0.12)",
+    badge: "Volunteer",
+    badgeBg: "rgba(217,119,6,0.06)",
+    badgeText: "#d97706",
+    cardBg: "rgba(255,255,255,0.45)",
+    orbColor: "rgba(217,119,6,0.08)",
+  },
 ];
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */

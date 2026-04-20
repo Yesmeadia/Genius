@@ -7,9 +7,9 @@ import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistra
 /** Robust filename sanitization for cross-browser compatibility */
 const sanitizeFilename = (filename: string): string => {
   return filename
-    .replace(/[^a-z0-9\-_]/gi, '_') // Replace non-alphanumeric (except - and _) with _
-    .replace(/_{2,}/g, '_')         // Remove duplicate underscores
-    .substring(0, 255);           // Ensure it's not too long for filesystem
+    .replace(/[^a-z0-9\-_]/gi, '_')
+    .replace(/_{2,}/g, '_')
+    .substring(0, 255);
 };
 
 /** Manual download trigger to bypass Chrome/Firefox restrictions on async save() */
@@ -218,10 +218,7 @@ export async function generateLocalStaffExportPDF(data: LocalStaffRegistration[]
   triggerDownload(doc, filename);
 }
 
-/**
- * Strategic Participation Report PDF
- * Aggregated Gender, Zone, and School-wise distribution for Students and Staff
- */
+
 export async function generateStrategicReportPDF(
   registrations: Registration[],
   localStaff: LocalStaffRegistration[],
@@ -236,8 +233,8 @@ export async function generateStrategicReportPDF(
   // 1. STUDENT GENDER BY ZONE
   const zoneGenderMap = registrations.reduce((acc: any, r) => {
     const zone = r.zone || 'N/A';
-    const gender = r.gender?.toLowerCase() === 'male' ? 'Male' : 
-                   r.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    const gender = r.gender?.toLowerCase() === 'male' ? 'Male' :
+      r.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
     if (!acc[zone]) acc[zone] = { Male: 0, Female: 0, Total: 0 };
     acc[zone][gender]++;
     acc[zone].Total++;
@@ -254,7 +251,7 @@ export async function generateStrategicReportPDF(
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
   doc.text("1. Student Gender Distribution by Zone", 14, currentY);
-  
+
   autoTable(doc, {
     startY: currentY + 5,
     head: [["Zone/Region", "Male Students", "Female Students", "Grand Total"]],
@@ -262,7 +259,7 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [30, 41, 59], fontSize: 9 },
     styles: { fontSize: 8 },
-    foot: [["TOTAL", 
+    foot: [["TOTAL",
       Object.values(zoneGenderMap).reduce((a: number, b: any) => a + b.Male, 0),
       Object.values(zoneGenderMap).reduce((a: number, b: any) => a + b.Female, 0),
       registrations.length
@@ -275,8 +272,8 @@ export async function generateStrategicReportPDF(
   // 2. STAFF GENDER BY SCHOOL
   const staffSchoolMap = localStaff.reduce((acc: any, s) => {
     const schoolName = getSchoolName(s.school);
-    const gender = s.gender?.toLowerCase() === 'male' ? 'Male' : 
-                   s.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    const gender = s.gender?.toLowerCase() === 'male' ? 'Male' :
+      s.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
     if (!acc[schoolName]) acc[schoolName] = { Male: 0, Female: 0, Total: 0 };
     acc[schoolName][gender]++;
     acc[schoolName].Total++;
@@ -302,7 +299,7 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [14, 165, 233], fontSize: 9 },
     styles: { fontSize: 8 },
-    foot: [["TOTAL", 
+    foot: [["TOTAL",
       Object.values(staffSchoolMap).reduce((a: number, b: any) => a + b.Male, 0),
       Object.values(staffSchoolMap).reduce((a: number, b: any) => a + b.Female, 0),
       localStaff.length
@@ -315,8 +312,8 @@ export async function generateStrategicReportPDF(
   // 3. STUDENT GENDER BY SCHOOL
   const schoolGenderMap = registrations.reduce((acc: any, r) => {
     const schoolName = getSchoolName(r.school);
-    const gender = r.gender?.toLowerCase() === 'male' ? 'Male' : 
-                   r.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    const gender = r.gender?.toLowerCase() === 'male' ? 'Male' :
+      r.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
     if (!acc[schoolName]) acc[schoolName] = { Male: 0, Female: 0, Total: 0 };
     acc[schoolName][gender]++;
     acc[schoolName].Total++;
@@ -342,7 +339,7 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [79, 70, 229], fontSize: 9 },
     styles: { fontSize: 8 },
-    foot: [["TOTAL", 
+    foot: [["TOTAL",
       Object.values(schoolGenderMap).reduce((a: number, b: any) => a + b.Male, 0),
       Object.values(schoolGenderMap).reduce((a: number, b: any) => a + b.Female, 0),
       registrations.length
@@ -384,8 +381,8 @@ export async function generateStrategicReportPDF(
   // 5. YESIAN MEMBERS BY ZONE
   const yesianZoneMap = yesians.reduce((acc: any, y) => {
     const zone = y.zone || 'N/A';
-    const gender = y.gender?.toLowerCase() === 'male' ? 'Male' : 
-                   y.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    const gender = y.gender?.toLowerCase() === 'male' ? 'Male' :
+      y.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
     if (!acc[zone]) acc[zone] = { Male: 0, Female: 0, Total: 0 };
     acc[zone][gender]++;
     acc[zone].Total++;
@@ -411,7 +408,7 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [245, 158, 11], fontSize: 9 },
     styles: { fontSize: 8 },
-    foot: [["TOTAL", 
+    foot: [["TOTAL",
       Object.values(yesianZoneMap).reduce((a: number, b: any) => a + b.Male, 0),
       Object.values(yesianZoneMap).reduce((a: number, b: any) => a + b.Female, 0),
       yesians.length
@@ -458,7 +455,7 @@ function addFooter(doc: jsPDF, data: any) {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff',
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer',
   kalashFontLoaded: boolean
 ) {
   const W = doc.internal.pageSize.width;   // 70mm
@@ -466,8 +463,8 @@ async function drawBadgeContent(
 
   // ── 1. FULL-CARD BACKGROUND IMAGE ─────────────────────────────
   const bgPath = type === 'student' ? '/pass/delegates.png'
-               : type === 'guest'   ? '/pass/guest.png'
-                                    : '/pass/officials.png';
+    : type === 'guest' ? '/pass/guest.png'
+      : '/pass/officials.png';
   const bg = await getBase64ImageFromUrl(bgPath);
   if (bg) {
     doc.addImage(bg, 'PNG', 0, 0, W, H);
@@ -478,16 +475,16 @@ async function drawBadgeContent(
   }
 
   // ── 2. PHOTO (right-aligned, with top margin from header) ─────
-  const splitY  = 67;  // taller header gives more space before footer content
-  const stripW  = 16;
-  const photoW  = 34;    // reduced width
-  const photoH  = 46;    // reduced height
+  const splitY = 67;  // taller header gives more space before footer content
+  const stripW = 16;
+  const photoW = 34;    // reduced width
+  const photoH = 46;    // reduced height
   // Center horizontally within the right photo area (stripW to W)
   const photoAreaW = W - stripW - 1;
-  const photoX  = stripW + 1 + (photoAreaW - photoW) / 2;
-  const photoY  = 12;                // push down from top — adds space from header
+  const photoX = stripW + 1 + (photoAreaW - photoW) / 2;
+  const photoY = 12;                // push down from top — adds space from header
 
-  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff') ? data.photoUrl : null;
+  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) doc.addImage(photo, 'JPEG', photoX, photoY, photoW, photoH);
@@ -495,13 +492,13 @@ async function drawBadgeContent(
 
 
   // ── 3. NAME (single line) ──────────────────────────────────────
-  const fullName = (type === 'student' ? data.studentName : data.name || '').trim();
+  const fullName = (type === 'student' ? data.studentName : type === 'volunteer' ? data.volunteerName : data.name || '').trim();
 
   // Auto-scale font size based on name length
   const nameFontSize = fullName.length <= 10 ? 12
-                     : fullName.length <= 15 ? 10
-                     : fullName.length <= 20 ? 8
-                     : 7;
+    : fullName.length <= 15 ? 10
+      : fullName.length <= 20 ? 8
+        : 7;
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(10, 10, 10);
   doc.setFontSize(nameFontSize);
@@ -513,27 +510,37 @@ async function drawBadgeContent(
   if (type === 'student') tc = [234, 88, 12];   // orange (matches delegate card)
   else if (type === 'guest') tc = [5, 150, 105]; // emerald
   else if (type === 'local-staff') tc = [14, 165, 233]; // sky blue
+  else if (type === 'alumni-achiever') tc = [236, 72, 153]; // pink
+  else if (type === 'volunteer') tc = [217, 119, 6]; // amber
 
   doc.setFontSize(6.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(tc[0], tc[1], tc[2]);
   let infoText = '';
-  if (type === 'student')    infoText = `${data.zone} | ${getSchoolName(data.school)}`;
+  if (type === 'student') infoText = `${data.zone} | ${getSchoolName(data.school)}`;
   else if (type === 'guest') infoText = data.address || '';
   else if (type === 'local-staff') {
     const schoolName = getSchoolName(data.school);
     infoText = `${data.role || ''}\n${data.zone} | ${schoolName}`;
   }
-  else                       infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
+  else if (type === 'alumni-achiever') {
+    const schoolName = getSchoolName(data.school);
+    infoText = `${data.className || ''} ${data.category || ''}\n${data.zone} | ${schoolName}`;
+  }
+  else if (type === 'volunteer') {
+    const schoolName = getSchoolName(data.school);
+    infoText = `${data.className || ''}\n${data.zone} | ${schoolName}`;
+  }
+  else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
   const infoY = splitY + 17;
   doc.text(infoText.toUpperCase(), 4, infoY, { maxWidth: W - 16 });
 
   // ── 5. BARCODE + SHORT REF ID (centered) ─────────────────────
   const barcode = getBarcodeBase64(data.id);
-  const bcW  = 36;               // further reduced width
-  const bcH  = 6;                // further reduced height
-  const bcX  = (W - bcW) / 2;   // centred
-  const bcY  = H - 12;
+  const bcW = 36;               // further reduced width
+  const bcH = 6;                // further reduced height
+  const bcX = (W - bcW) / 2;   // centred
+  const bcY = H - 12;
   if (barcode) doc.addImage(barcode, 'PNG', bcX, bcY, bcW, bcH);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(4.5);
@@ -546,7 +553,7 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' = 'student'
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' = 'student'
 ) {
   if (data.length === 0) return alert("No records found.");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [70, 100] });

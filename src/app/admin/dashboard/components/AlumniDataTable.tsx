@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Download, RotateCcw, User, Phone, MapPin } from "lucide-react";
@@ -14,23 +14,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LocalStaffRegistration } from "../types";
+import { AlumniRegistration } from "../types";
 import Link from "next/link";
 import { locations } from "@/data/locations";
 
-interface LocalStaffDataTableProps {
-  data: LocalStaffRegistration[];
+interface AlumniDataTableProps {
+  data: AlumniRegistration[];
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   itemsPerPage: number;
 }
 
-export function LocalStaffDataTable({
+export function AlumniDataTable({
   data,
   searchTerm,
   setSearchTerm,
   itemsPerPage,
-}: LocalStaffDataTableProps) {
+}: AlumniDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMounted, setHasMounted] = useState(false);
   const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -58,7 +58,7 @@ export function LocalStaffDataTable({
               size={16}
             />
             <Input
-              placeholder="Search Local Staff..."
+              placeholder="Search Alumni..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 h-10 bg-slate-50 border-none shadow-none focus-visible:ring-1 focus-visible:ring-slate-200 w-full"
@@ -89,19 +89,19 @@ export function LocalStaffDataTable({
             <TableHeader className="bg-slate-50/50">
               <TableRow className="border-slate-50">
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest pl-6">
-                  Staff Name
+                  Alumni Name
                 </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest pl-1">
                   Zone
                 </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
-                  Contact
-                </TableHead>
-                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
-                  Role
+                  Class & Category
                 </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
                   School
+                </TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
+                  Contact
                 </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-right pr-6">
                   Actions
@@ -116,16 +116,16 @@ export function LocalStaffDataTable({
                 >
                   <TableCell className="py-4 pl-6">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-8 w-8 border border-slate-100 shadow-sm overflow-hidden text-sky-600">
+                      <Avatar className="h-8 w-8 border border-slate-100 shadow-sm overflow-hidden text-pink-600">
                         {reg.photoUrl ? (
                           <AvatarImage src={reg.photoUrl} className="object-cover" />
                         ) : (
-                          <AvatarFallback className="bg-sky-50">
+                          <AvatarFallback className="bg-pink-50">
                             <User size={16} />
                           </AvatarFallback>
                         )}
                       </Avatar>
-                      <div className="font-normal text-sm text-slate-900">
+                      <div className="font-normal text-sm text-slate-900 uppercase">
                         {reg.name}
                       </div>
                     </div>
@@ -134,6 +134,21 @@ export function LocalStaffDataTable({
                     <div className="text-[10px] text-slate-600 uppercase tracking-tight flex items-center gap-1 font-bold">
                       <MapPin size={9} />
                       {reg.zone}
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-tight">
+                        {reg.className}
+                      </span>
+                      <span className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">
+                        {reg.category}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="text-[11px] font-normal text-slate-600 line-clamp-2 leading-tight">
+                      {locations.find(z => z.id === reg.zone)?.schools.find(s => s.name === reg.school)?.name || reg.school || "N/A"}
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
@@ -146,26 +161,12 @@ export function LocalStaffDataTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="py-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                      reg.role === "Teaching" 
-                        ? "bg-emerald-50 text-emerald-600 border border-emerald-100" 
-                        : "bg-amber-50 text-amber-600 border border-amber-100"
-                    }`}>
-                      {reg.role || "N/A"}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <div className="text-[11px] font-normal text-slate-600 line-clamp-2 leading-tight">
-                      {locations.find(z => z.id === reg.zone)?.schools.find(s => s.id === reg.school)?.name || "N/A"}
-                    </div>
-                  </TableCell>
                   <TableCell className="py-4 text-right pr-6">
-                    <Link href={`/admin/dashboard/local-staff/${reg.id}`}>
+                    <Link href={`/admin/dashboard/alumni-achievers/${reg.id}`}>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-sky-600 hover:text-sky-700 hover:bg-sky-50 rounded-xl transition-all"
+                        className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-pink-600 hover:text-pink-700 hover:bg-pink-50 rounded-xl transition-all"
                       >
                         View Profile
                       </Button>

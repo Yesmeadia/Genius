@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, SlidersHorizontal } from "lucide-react";
+import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap } from "lucide-react";
 
 interface DashboardSidebarProps {
   sidebarOpen: boolean;
@@ -20,10 +20,11 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
     { id: "guests", label: "Guest data", icon: <User size={20} />, href: "/admin/dashboard/guest-registry" },
     { id: "yesians", label: "Yesians", icon: <Users2 size={20} />, href: "/admin/dashboard/yesian-network" },
     { id: "local-staff", label: "Local Staff", icon: <User size={20} />, href: "/admin/dashboard/local-staff" },
+    { id: "alumni-achievers", label: "Alumni Achievers", icon: <GraduationCap size={20} />, href: "/admin/dashboard/alumni-achievers" },
+    { id: "volunteers", label: "Volunteers", icon: <ShieldCheck size={20} />, href: "/admin/dashboard/volunteers" },
     { id: "pass", label: "Access Pass", icon: <CreditCard size={20} />, href: "/admin/dashboard/access-pass" },
     { id: "reports", label: "Reports", icon: <BarChart3 size={20} />, href: "/admin/dashboard/reports" },
     { id: "export", label: "Export Center", icon: <Download size={20} />, href: "/admin/dashboard/master-export" },
-    { id: "settings", label: "Settings", icon: <SlidersHorizontal size={20} />, href: "/admin/dashboard/settings" },
   ];
 
   return (
