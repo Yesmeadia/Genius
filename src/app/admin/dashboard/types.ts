@@ -36,10 +36,23 @@ export interface YesianRegistration {
   photoUrl?: string;
 }
 
+export interface LocalStaffRegistration {
+  id: string;
+  name: string;
+  gender: string;
+  whatsappNumber: string;
+  zone: string;
+  school: string;
+  role: "Teaching" | "Non Teaching";
+  createdAt: any;
+  photoUrl?: string;
+}
+
 export interface DashboardStats {
   totalStudents: number;
   totalGuests: number;
   totalYesians: number;
+  totalLocalStaff: number;
   todayCount: number;
   totalParticipation: number;
   totalAccompanied: number;

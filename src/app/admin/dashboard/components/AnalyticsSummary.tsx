@@ -39,6 +39,15 @@ export function AnalyticsSummary({ stats }: AnalyticsSummaryProps) {
       trendColor: "bg-amber-100 text-amber-600"
     },
     {
+      label: "Local Staff",
+      value: stats.totalLocalStaff,
+      icon: <User size={20} />,
+      color: "text-sky-600 bg-sky-50",
+      glowColor: "bg-sky-500",
+      trend: `SUPPORT TIER`,
+      trendColor: "bg-sky-100 text-sky-600"
+    },
+    {
       label: "TOTAL SCHOOLS",
       value: `${stats.totalSchools} / ${stats.availableSchoolsCount}`,
       icon: <School size={20} />,

@@ -58,6 +58,22 @@ const registrationTypes = [
     cardBg: "rgba(255,255,255,0.45)",
     orbColor: "rgba(245,158,11,0.08)",
   },
+  {
+    id: "local-staff",
+    title: "Staff Registration",
+    subtitle: "For YES INDIA School Staffs",
+    description:
+      "Register as a staff member providing essential support for Genius Jam 2026 operations.",
+    href: "/register/local-staff",
+    accentHex: "#0ea5e9", // Sky
+    glow: "rgba(14,165,233,0.1)",
+    border: "rgba(14,165,233,0.12)",
+    badge: "Staff",
+    badgeBg: "rgba(14,165,233,0.06)",
+    badgeText: "#0ea5e9",
+    cardBg: "rgba(255,255,255,0.45)",
+    orbColor: "rgba(56,189,248,0.08)",
+  },
 ];
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */
@@ -70,7 +86,8 @@ export default function Home() {
   const visibleRegistrationTypes = registrationTypes
     .filter(type => {
       const setting = forms.find(f => f.id === type.id);
-      return setting ? setting.enabled : false;
+      // Default to true if not found in Firestore yet (ensures new forms show up instantly)
+      return setting ? setting.enabled : true;
     })
     .sort((a, b) => {
       const settingA = forms.find(f => f.id === a.id);
@@ -209,7 +226,7 @@ export default function Home() {
           </div>
         ) : (
           /* Improved Glass Cards Grid */
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 mb-20 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 mb-20 w-full">
             {visibleRegistrationTypes.map((type) => (
               <div
                 key={type.id}
@@ -223,45 +240,45 @@ export default function Home() {
                   boxShadow: "0 10px 40px -10px rgba(0,0,0,0.05), inset 0 0 20px 0 rgba(255,255,255,0.4)",
                 }}
               >
-              {/* Inner Glow Border */}
-              <div className="absolute inset-px rounded-[2.4rem] border border-white opacity-40 pointer-events-none" />
+                {/* Inner Glow Border */}
+                <div className="absolute inset-px rounded-[2.4rem] border border-white opacity-40 pointer-events-none" />
 
-              {/* Theme Orb Background */}
-              <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"
-                style={{ background: `radial-gradient(circle, ${type.accentHex} 0%, transparent 70%)` }} />
+                {/* Theme Orb Background */}
+                <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"
+                  style={{ background: `radial-gradient(circle, ${type.accentHex} 0%, transparent 70%)` }} />
 
-              {/* Badge (Icon removed) */}
-              <div className="flex justify-end items-start mb-10 relative z-10 transition-transform duration-500 group-hover:translate-z-10">
-                <span className="px-3.5 py-1.5 rounded-full text-[10px] font-normal uppercase tracking-widest"
-                  style={{ background: type.badgeBg, color: type.badgeText, border: `1px solid ${type.accentHex}15` }}>
-                  {type.badge}
-                </span>
+                {/* Badge (Icon removed) */}
+                <div className="flex justify-end items-start mb-10 relative z-10 transition-transform duration-500 group-hover:translate-z-10">
+                  <span className="px-3.5 py-1.5 rounded-full text-[10px] font-normal uppercase tracking-widest"
+                    style={{ background: type.badgeBg, color: type.badgeText, border: `1px solid ${type.accentHex}15` }}>
+                    {type.badge}
+                  </span>
+                </div>
+
+                {/* Content */}
+                <div className="relative z-10 transition-transform duration-500 group-hover:translate-z-14">
+                  <h2 className="text-2xl font-normal text-slate-900 mb-2 tracking-tight group-hover:text-indigo-600 transition-colors">
+                    {type.title}
+                  </h2>
+                  <p className="text-sm font-normal uppercase tracking-wider mb-4" style={{ color: `${type.accentHex}cc` }}>
+                    {type.subtitle}
+                  </p>
+                  <p className="text-slate-500 text-xs md:text-sm leading-relaxed font-medium line-clamp-3">
+                    {type.description}
+                  </p>
+                </div>
+
+                {/* Action Button */}
+                <div className="mt-auto pt-8 flex items-center gap-3 text-sm font-normal transition-all duration-300 relative z-10 group-hover:gap-5"
+                  style={{ color: type.accentHex }}>
+                  <span className="relative after:absolute after:bottom-[-2px] after:left-0 after:w-0 after:h-[2px] after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
+                    Get Started
+                  </span>
+                  <svg className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </div>
               </div>
-
-              {/* Content */}
-              <div className="relative z-10 transition-transform duration-500 group-hover:translate-z-14">
-                <h2 className="text-2xl font-normal text-slate-900 mb-2 tracking-tight group-hover:text-indigo-600 transition-colors">
-                  {type.title}
-                </h2>
-                <p className="text-sm font-normal uppercase tracking-wider mb-4" style={{ color: `${type.accentHex}cc` }}>
-                  {type.subtitle}
-                </p>
-                <p className="text-slate-500 text-xs md:text-sm leading-relaxed font-medium line-clamp-3">
-                  {type.description}
-                </p>
-              </div>
-
-              {/* Action Button */}
-              <div className="mt-auto pt-8 flex items-center gap-3 text-sm font-normal transition-all duration-300 relative z-10 group-hover:gap-5"
-                style={{ color: type.accentHex }}>
-                <span className="relative after:absolute after:bottom-[-2px] after:left-0 after:w-0 after:h-[2px] after:bg-current after:transition-all after:duration-300 group-hover:after:w-full">
-                  Get Started
-                </span>
-                <svg className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </div>
-            </div>
             ))}
           </div>
         )}

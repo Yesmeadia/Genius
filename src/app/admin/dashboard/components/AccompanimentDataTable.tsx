@@ -97,7 +97,6 @@ export function AccompanimentDataTable({
                 if (filterSchool && filterSchool !== "all") parts.push(`School: ${getSchoolName(filterSchool)}`);
                 if (filterClass && filterClass !== "all") parts.push(`Class: ${filterClass}`);
                 if (filterGender && filterGender !== "all") parts.push(`Gender: ${filterGender}`);
-                if (filterAccompaniment && filterAccompaniment !== "all") parts.push(`Status: ${filterAccompaniment}`);
 
                 const pdfTitle = parts.length > 0 ? parts.join(" | ") : "All Guardian Data";
                 const pdfFilename = isFiltered ? "guardian_data_filtered" : "all_guardian_data_master";
@@ -165,18 +164,6 @@ export function AccompanimentDataTable({
                 </Select>
               )}
               
-              {filterAccompaniment !== undefined && setFilterAccompaniment && (
-                <Select value={filterAccompaniment || "all"} onValueChange={setFilterAccompaniment}>
-                  <SelectTrigger className="w-full sm:w-[140px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-none shadow-xl">
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="accompanied">Accompanied</SelectItem>
-                    <SelectItem value="individual">Individual</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
             </div>
           )}
         </div>
@@ -203,19 +190,10 @@ export function AccompanimentDataTable({
                         <UserCircle size={16} />
                       </div>
                       <div>
-                        {reg.withParent ? (
-                          <>
-                            <div className="font-normal text-sm text-slate-900">{reg.parentName || "Unknown Guardian"}</div>
-                            <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
-                                {reg.relation || "Relative"} • {reg.parentGender || "Unspecified"}
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="font-normal text-sm text-slate-500">Individual Participant</div>
-                            <div className="text-[10px] text-slate-300 font-normal uppercase tracking-wide">No Guardian Data</div>
-                          </>
-                        )}
+                        <div className="font-normal text-sm text-slate-900">{reg.parentName || "Unknown Guardian"}</div>
+                        <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
+                            {reg.relation || "Relative"} • {reg.parentGender || "Unspecified"}
+                        </div>
                       </div>
                     </div>
                   </TableCell>

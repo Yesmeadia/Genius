@@ -7,11 +7,11 @@ import { db, storage, auth } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signOut } from "firebase/auth";
-import { YesianRegistration } from "../../types";
+import { LocalStaffRegistration } from "../../types";
 import { locations } from "@/data/locations";
 import {
   ArrowLeft, Calendar, User, ShieldCheck, Phone,
-  Pencil, X, Check, Camera, Loader2, UploadCloud,
+  Pencil, X, Check, Loader2, UploadCloud,
   Moon, Bell, MapPin, Briefcase, Download
 } from "lucide-react";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
@@ -23,54 +23,54 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import JsBarcode from "jsbarcode";
 
-interface YesianEditForm {
+interface LocalStaffEditForm {
   name: string;
   gender: string;
   whatsappNumber: string;
   zone: string;
-  designation: string;
+  school: string;
+  role: "Teaching" | "Non Teaching";
 }
 
-export default function YesianProfilePage() {
+export default function LocalStaffProfilePage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth(true);
-  const [registration, setRegistration] = useState<YesianRegistration | null>(null);
+  const [registration, setRegistration] = useState<LocalStaffRegistration | null>(null);
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editForm, setEditForm] = useState<YesianEditForm | null>(null);
+  const [editForm, setEditForm] = useState<LocalStaffEditForm | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id || !user) return;
-    const fetchYesian = async () => {
+    const fetchStaff = async () => {
       try {
-        const docRef = doc(db, "yesian_registrations", id as string);
+        const docRef = doc(db, "local_staff_registrations", id as string);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setRegistration({ id: docSnap.id, ...docSnap.data() } as YesianRegistration);
+          setRegistration({ id: docSnap.id, ...docSnap.data() } as LocalStaffRegistration);
         } else {
           router.push("/admin/dashboard");
         }
       } catch (error) {
-        console.error("Error fetching yesian:", error);
+        console.error("Error fetching local staff:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchYesian();
+    fetchStaff();
   }, [id, user, router]);
 
   useGSAP(() => {
@@ -93,7 +93,8 @@ export default function YesianProfilePage() {
       gender: registration.gender || "",
       whatsappNumber: registration.whatsappNumber || "",
       zone: registration.zone || "",
-      designation: registration.designation || "",
+      school: registration.school || "",
+      role: (registration.role as any) || "Teaching",
     });
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -114,7 +115,7 @@ export default function YesianProfilePage() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const updateField = (field: keyof YesianEditForm, value: string) => {
+  const updateField = (field: keyof LocalStaffEditForm, value: string | boolean) => {
     setEditForm(prev => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -124,7 +125,7 @@ export default function YesianProfilePage() {
     try {
       let photoUrl = registration?.photoUrl || "";
       if (photoFile) {
-        const storageRef = ref(storage, `photos/yesian_${Date.now()}_${photoFile.name}`);
+        const storageRef = ref(storage, `photos/local_staff_${Date.now()}_${photoFile.name}`);
         const snapshot = await uploadBytes(storageRef, photoFile);
         photoUrl = await getDownloadURL(snapshot.ref);
       }
@@ -133,10 +134,11 @@ export default function YesianProfilePage() {
         gender: editForm.gender,
         whatsappNumber: editForm.whatsappNumber,
         zone: editForm.zone,
-        designation: editForm.designation.toUpperCase(),
+        school: editForm.school,
+        role: editForm.role,
         photoUrl,
       };
-      await updateDoc(doc(db, "yesian_registrations", id as string), updateData);
+      await updateDoc(doc(db, "local_staff_registrations", id as string), updateData);
       setRegistration(prev => (prev ? { ...prev, ...updateData } : prev));
       setEditMode(false);
       setEditForm(null);
@@ -229,8 +231,8 @@ export default function YesianProfilePage() {
                   <Pencil className="mr-2 h-4 w-4" /> Edit Record
                 </Button>
                 <Button
-                  onClick={() => generateBatchAccessPasses([registration], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'yesian')}
-                  className="h-10 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-amber-100"
+                  onClick={() => generateBatchAccessPasses([registration], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'local-staff')}
+                  className="h-10 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-sky-100"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download ID
                 </Button>
@@ -240,10 +242,10 @@ export default function YesianProfilePage() {
         </div>
 
         {editMode && (
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-3">
-            <Pencil size={14} className="text-amber-500 shrink-0" />
-            <p className="text-[11px] font-normal text-amber-700 uppercase tracking-widest">
-              Edit Mode Active — Update Yesian details below
+          <div className="flex items-center gap-3 bg-sky-50 border border-sky-100 rounded-2xl px-5 py-3">
+            <Pencil size={14} className="text-sky-500 shrink-0" />
+            <p className="text-[11px] font-normal text-sky-700 uppercase tracking-widest">
+              Edit Mode Active — Update Staff details below
             </p>
           </div>
         )}
@@ -295,14 +297,14 @@ export default function YesianProfilePage() {
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Gender</Label>
                       <div className="flex gap-4 py-1">
-                        {["male","female"].map(g => (
+                        {["male", "female"].map(g => (
                           <label key={g} className="flex items-center gap-2 cursor-pointer">
                             <input
                               type="radio"
                               value={g}
                               checked={editForm?.gender === g}
                               onChange={() => updateField("gender", g)}
-                              className="w-4 h-4 text-amber-600"
+                              className="w-4 h-4 text-sky-600"
                             />
                             <span className="text-sm font-medium text-slate-700 capitalize">{g}</span>
                           </label>
@@ -315,8 +317,8 @@ export default function YesianProfilePage() {
                     <h2 className="text-2xl font-normal text-slate-900 leading-tight mb-2 tracking-tight">
                       {registration.name}
                     </h2>
-                    <p className="text-sm font-normal text-amber-600 uppercase tracking-[0.2em] mb-6">
-                      {registration.designation}
+                    <p className="text-sm font-normal text-sky-600 uppercase tracking-[0.2em] mb-6">
+                      LOCAL STAFF
                     </p>
                     <div className="flex flex-col items-center gap-1.5 pt-4 border-t border-slate-50">
                       <canvas
@@ -352,7 +354,7 @@ export default function YesianProfilePage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 py-1">
-                  <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                  <div className="h-10 w-10 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
                     <Calendar size={20} />
                   </div>
                   <div>
@@ -369,17 +371,23 @@ export default function YesianProfilePage() {
             <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
               <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
                 <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
-                  <Briefcase className="text-amber-600" size={22} />
+                  <Briefcase className="text-sky-600" size={22} />
                   Professional & Contact Details
                 </CardTitle>
-                <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Yesian member assignment</CardDescription>
+                <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Local staff assignment</CardDescription>
               </CardHeader>
               <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
                 {editMode ? (
                   <>
                     <div className="space-y-2">
                       <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Zone Assignment</Label>
-                      <Select value={editForm?.zone || ""} onValueChange={v => updateField("zone", v)}>
+                      <Select
+                        value={editForm?.zone || ""}
+                        onValueChange={v => {
+                          updateField("zone", v);
+                          updateField("school", "");
+                        }}
+                      >
                         <SelectTrigger className="border-slate-100 bg-slate-50">
                           <SelectValue placeholder="Select Zone" />
                         </SelectTrigger>
@@ -391,12 +399,33 @@ export default function YesianProfilePage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Designation</Label>
-                      <Input
-                        value={editForm?.designation || ""}
-                        onChange={e => updateField("designation", e.target.value.toUpperCase())}
-                        className="uppercase border-slate-100 bg-slate-50"
-                      />
+                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Select School</Label>
+                      <Select
+                        value={editForm?.school || ""}
+                        onValueChange={v => updateField("school", v)}
+                        disabled={!editForm?.zone}
+                      >
+                        <SelectTrigger className="border-slate-100 bg-slate-50 [&>span]:line-clamp-none">
+                          <SelectValue placeholder={editForm?.zone ? "Select School" : "Select Zone First"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locations.find(z => z.id === editForm?.zone)?.schools.map(s => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Role</Label>
+                      <Select value={editForm?.role || ""} onValueChange={v => updateField("role", v)}>
+                        <SelectTrigger className="border-slate-100 bg-slate-50">
+                          <SelectValue placeholder="Select Role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Teaching">Teaching</SelectItem>
+                          <SelectItem value="Non Teaching">Non Teaching</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">WhatsApp Number</Label>
@@ -413,12 +442,17 @@ export default function YesianProfilePage() {
                   <>
                     <div className="space-y-8">
                       <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                        <div className="h-12 w-12 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600 shrink-0">
                           <MapPin size={24} />
                         </div>
                         <div>
-                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Zone Assignment</div>
-                          <div className="text-base font-normal text-slate-800 leading-snug">{getZoneName(registration.zone)}</div>
+                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Zone & School</div>
+                          <div className="text-base font-normal text-slate-800 leading-snug">
+                            {getZoneName(registration.zone)}
+                            <div className="text-[11px] text-slate-400 mt-1 uppercase tracking-tight">
+                              {locations.find(z => z.id === registration.zone)?.schools.find(s => s.id === registration.school)?.name || "N/A"}
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-start gap-4">
@@ -426,8 +460,10 @@ export default function YesianProfilePage() {
                           <Briefcase size={24} />
                         </div>
                         <div>
-                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Designation</div>
-                          <div className="text-base font-normal text-slate-800 leading-snug uppercase">{registration.designation}</div>
+                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Staff Role</div>
+                          <div className="text-base font-normal text-sky-600 leading-snug uppercase font-bold tracking-widest">
+                            {registration.role || "N/A"}
+                          </div>
                         </div>
                       </div>
                     </div>

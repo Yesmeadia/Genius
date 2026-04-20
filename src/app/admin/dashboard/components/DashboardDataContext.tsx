@@ -1,0 +1,199 @@
+"use client";
+
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { db, auth } from "@/lib/firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { locations } from "@/data/locations";
+import { 
+  Registration, 
+  GuestRegistration, 
+  YesianRegistration, 
+  LocalStaffRegistration, 
+  DashboardStats 
+} from "../types";
+
+interface DashboardDataContextType {
+  registrations: Registration[];
+  guestRegistrations: GuestRegistration[];
+  yesianRegistrations: YesianRegistration[];
+  localStaffRegistrations: LocalStaffRegistration[];
+  stats: DashboardStats;
+  loading: boolean;
+  lastSync: string;
+  // Common filtering states (optional, but useful to keep sync during navigation)
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  filterZone: string;
+  setFilterZone: (zone: string) => void;
+  filterSchool: string;
+  setFilterSchool: (school: string) => void;
+  filterClass: string;
+  setFilterClass: (cls: string) => void;
+  filterGender: string;
+  setFilterGender: (gender: string) => void;
+  filterAccompaniment: string;
+  setFilterAccompaniment: (acc: string) => void;
+  resetFilters: () => void;
+  filterOptions: { zones: string[]; schools: string[]; classes: string[] };
+}
+
+const DashboardDataContext = createContext<DashboardDataContextType | undefined>(undefined);
+
+export function DashboardDataProvider({ children }: { children: React.ReactNode }) {
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [guestRegistrations, setGuestRegistrations] = useState<GuestRegistration[]>([]);
+  const [yesianRegistrations, setYesianRegistrations] = useState<YesianRegistration[]>([]);
+  const [localStaffRegistrations, setLocalStaffRegistrations] = useState<LocalStaffRegistration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
+
+  // Shared Filtering States
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterZone, setFilterZone] = useState("all");
+  const [filterSchool, setFilterSchool] = useState("all");
+  const [filterClass, setFilterClass] = useState("all");
+  const [filterGender, setFilterGender] = useState("all");
+  const [filterAccompaniment, setFilterAccompaniment] = useState("all");
+
+  useEffect(() => {
+    // Listeners
+    const qStudents = query(collection(db, "registrations"), orderBy("createdAt", "desc"));
+    const unsubStudents = onSnapshot(qStudents, (snap) => {
+      setRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Registration[]);
+      setLoading(false);
+      setLastSync(new Date().toLocaleTimeString());
+    });
+
+    const qGuests = query(collection(db, "guest_registrations"), orderBy("createdAt", "desc"));
+    const unsubGuests = onSnapshot(qGuests, (snap) => {
+      setGuestRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as GuestRegistration[]);
+    });
+
+    const qYesians = query(collection(db, "yesian_registrations"), orderBy("createdAt", "desc"));
+    const unsubYesians = onSnapshot(qYesians, (snap) => {
+      setYesianRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as YesianRegistration[]);
+    });
+
+    const qStaff = query(collection(db, "local_staff_registrations"), orderBy("createdAt", "desc"));
+    const unsubStaff = onSnapshot(qStaff, (snap) => {
+      setLocalStaffRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as LocalStaffRegistration[]);
+    });
+
+    return () => {
+      unsubStudents();
+      unsubGuests();
+      unsubYesians();
+      unsubStaff();
+    };
+  }, []);
+
+  const filterOptions = useMemo(() => {
+    const zones = Array.from(new Set(registrations.map(r => r.zone))).sort();
+    const schools = Array.from(new Set(registrations.map(r => r.school))).sort();
+    const classes = Array.from(new Set(registrations.map(r => r.className))).sort();
+    return { zones, schools, classes };
+  }, [registrations]);
+
+  const stats: DashboardStats = useMemo(() => {
+    const today = new Date();
+    const todayCount = registrations.filter(r => {
+      if (!r.createdAt) return false;
+      const date = r.createdAt.toDate ? r.createdAt.toDate() : new Date(r.createdAt);
+      return date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear();
+    }).length;
+
+    const studentMales = registrations.filter(r => r.gender?.toLowerCase() === "male").length;
+    const studentFemales = registrations.filter(r => r.gender?.toLowerCase() === "female").length;
+    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length;
+
+    const trendMap = new Map();
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }).reverse();
+
+    last7Days.forEach(date => trendMap.set(date, 0));
+    [...registrations, ...guestRegistrations].forEach(doc => {
+      if (!doc.createdAt) return;
+      const date = (doc.createdAt.toDate ? doc.createdAt.toDate() : new Date(doc.createdAt))
+        .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (trendMap.has(date)) trendMap.set(date, trendMap.get(date) + 1);
+    });
+
+    const trendData = last7Days.map(date => ({ date, count: trendMap.get(date) }));
+
+    return {
+      totalStudents: registrations.length,
+      totalGuests: guestRegistrations.length,
+      totalYesians: yesianRegistrations.length,
+      totalLocalStaff: localStaffRegistrations.length,
+      todayCount,
+      totalParticipation,
+      totalAccompanied: registrations.filter(r => r.withParent).length,
+      totalSchools: new Set(registrations.map(r => r.school)).size,
+      totalZones: new Set(registrations.map(r => r.zone)).size,
+      availableSchoolsCount: locations.reduce((acc, z) => acc + z.schools.length, 0),
+      availableZonesCount: locations.length,
+      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
+      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
+      lastUpdated: lastSync,
+      trendData,
+      platformData: [
+        { name: 'Students', value: registrations.length },
+        { name: 'Guests', value: guestRegistrations.length },
+        { name: 'Yesians', value: yesianRegistrations.length },
+        { name: 'Local Staff', value: localStaffRegistrations.length },
+      ],
+    };
+  }, [registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, lastSync]);
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setFilterZone("all");
+    setFilterSchool("all");
+    setFilterClass("all");
+    setFilterGender("all");
+    setFilterAccompaniment("all");
+  };
+
+  const value = {
+    registrations,
+    guestRegistrations,
+    yesianRegistrations,
+    localStaffRegistrations,
+    stats,
+    loading,
+    lastSync,
+    searchTerm,
+    setSearchTerm,
+    filterZone,
+    setFilterZone,
+    filterSchool,
+    setFilterSchool,
+    filterClass,
+    setFilterClass,
+    filterGender,
+    setFilterGender,
+    filterAccompaniment,
+    setFilterAccompaniment,
+    resetFilters,
+    filterOptions
+  };
+
+  return (
+    <DashboardDataContext.Provider value={value}>
+      {children}
+    </DashboardDataContext.Provider>
+  );
+}
+
+export function useDashboardData() {
+  const context = useContext(DashboardDataContext);
+  if (context === undefined) {
+    throw new Error("useDashboardData must be used within a DashboardDataProvider");
+  }
+  return context;
+}

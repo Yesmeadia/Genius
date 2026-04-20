@@ -4,7 +4,7 @@ import { locations } from "@/data/locations";
 import JsBarcode from "jsbarcode";
 import { useRef, useEffect } from "react";
 
-export type PassType = 'student' | 'guest' | 'yesian';
+export type PassType = 'student' | 'guest' | 'yesian' | 'local-staff';
 
 export interface AccessPassTheme {
   primary: string;
@@ -26,7 +26,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
   const bgSrc =
     passType === 'student' ? '/pass/delegates.png'
     : passType === 'guest'  ? '/pass/guest.png'
-                             : '/pass/officials.png';
+                             : '/pass/officials.png'; // officials.png used for yesian & local-staff
 
   const getSchoolName = (schoolId: string) => {
     for (const zone of locations) {
@@ -52,7 +52,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
   }
 
   // Photo
-  const photoUrl = (passType === 'student' || passType === 'yesian') ? registration?.photoUrl : null;
+  const photoUrl = (passType === 'student' || passType === 'yesian' || passType === 'local-staff') ? registration?.photoUrl : null;
 
   // Barcode
   useEffect(() => {
@@ -134,7 +134,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
           {/* ZONE | SCHOOL */}
           <p
             className="font-bold uppercase tracking-wide text-orange-600 leading-tight mt-0.5 truncate"
-            style={{ fontSize: 'clamp(6px, 2vw, 10px)', color: passType === 'guest' ? '#059669' : passType === 'yesian' ? '#d97706' : '#ea580c' }}
+            style={{ fontSize: 'clamp(6px, 2vw, 10px)', color: passType === 'guest' ? '#059669' : (passType === 'yesian' ? '#d97706' : (passType === 'local-staff' ? '#0ea5e9' : '#ea580c')) }}
           >
             {infoLine}
           </p>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, User, Zap, School, Archive, ArrowRight } from "lucide-react";
 import { AccessPassDesign } from "./AccessPassDesign";
-import { Registration, GuestRegistration, YesianRegistration } from "../types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "../types";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -16,17 +16,19 @@ interface AccessPassCenterProps {
     registrations: Registration[];
     guestRegistrations: GuestRegistration[];
     yesianRegistrations: YesianRegistration[];
+    localStaffRegistrations: LocalStaffRegistration[];
 }
 
-type PassType = 'student' | 'guest' | 'yesian';
+type PassType = 'student' | 'guest' | 'yesian' | 'local-staff';
 
 const PASS_META: Record<PassType, { label: string; plural: string; color: string; bg: string; icon: React.ReactNode }> = {
-    student: { label: 'Delegate',  plural: 'Delegates',  color: 'text-orange-600', bg: 'bg-orange-600', icon: <Users size={16} /> },
-    guest:   { label: 'Guest',     plural: 'Guests',     color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <User size={16} /> },
-    yesian:  { label: 'Official',  plural: 'Officials',  color: 'text-amber-600',  bg: 'bg-amber-600',  icon: <Zap size={16} /> },
+    student:     { label: 'Delegate',  plural: 'Delegates',  color: 'text-orange-600', bg: 'bg-orange-600', icon: <Users size={16} /> },
+    guest:       { label: 'Guest',     plural: 'Guests',     color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <User size={16} /> },
+    yesian:      { label: 'Official',  plural: 'Officials',  color: 'text-amber-600',  bg: 'bg-amber-600',  icon: <Zap size={16} /> },
+    'local-staff': { label: 'Staff',     plural: 'Staff',      color: 'text-sky-600',    bg: 'bg-sky-600',    icon: <User size={16} /> },
 };
 
-export default function AccessPassCenter({ registrations, guestRegistrations, yesianRegistrations }: AccessPassCenterProps) {
+export default function AccessPassCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations }: AccessPassCenterProps) {
     const [passType, setPassType] = useState<PassType>('student');
     const [selectedZone, setSelectedZone]   = useState("all");
     const [selectedSchool, setSelectedSchool] = useState("all");
@@ -36,8 +38,9 @@ export default function AccessPassCenter({ registrations, guestRegistrations, ye
     const activeData = useMemo(() => {
         if (passType === 'student') return registrations;
         if (passType === 'guest')   return guestRegistrations;
-        return yesianRegistrations;
-    }, [passType, registrations, guestRegistrations, yesianRegistrations]);
+        if (passType === 'yesian')  return yesianRegistrations;
+        return localStaffRegistrations;
+    }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations]);
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];

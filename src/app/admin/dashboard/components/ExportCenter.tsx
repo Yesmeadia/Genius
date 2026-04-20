@@ -3,22 +3,24 @@ import {
   generateRegistrationPDF, 
   generateBatchAccessPasses,
   generateGuestExportPDF,
-  generateYesianExportPDF
+  generateYesianExportPDF,
+  generateLocalStaffExportPDF
 } from "@/lib/exportUtils";
 import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap } from "lucide-react";
-import { Registration, GuestRegistration, YesianRegistration } from "../types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "../types";
 
 interface ExportCenterProps {
   registrations: Registration[];
   guestRegistrations: GuestRegistration[];
   yesianRegistrations: YesianRegistration[];
+  localStaffRegistrations: LocalStaffRegistration[];
 }
 
-export function ExportCenter({ registrations, guestRegistrations, yesianRegistrations }: ExportCenterProps) {
+export function ExportCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations }: ExportCenterProps) {
   const [selectedZone, setSelectedZone] = useState("all");
   const [selectedSchool, setSelectedSchool] = useState("all");
   const [selectedClass, setSelectedClass] = useState("all");
@@ -274,6 +276,32 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
                 className="w-full h-12 mt-auto font-black rounded-xl bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-200 transition-all uppercase tracking-widest text-[10px]"
             >
               <Download className="mr-2 h-4 w-4" /> Download Roster
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Local Staff Export */}
+        <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-sky-50/30 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-sky-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
+          <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
+          
+          <CardContent className="p-8 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-6">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-sky-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <User size={24} className="text-sky-600" />
+              </div>
+              <div className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                {localStaffRegistrations.length} Staff
+              </div>
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2">Staff Registry</h3>
+            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Complete records for locally hired support staff.</p>
+
+            <Button 
+                onClick={() => generateLocalStaffExportPDF(localStaffRegistrations, "Local Staff Report", "genius_jam_local_staff")}
+                className="w-full h-12 mt-auto font-black rounded-xl bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-200 transition-all uppercase tracking-widest text-[10px]"
+            >
+              <Download className="mr-2 h-4 w-4" /> Download Registry
             </Button>
           </CardContent>
         </Card>

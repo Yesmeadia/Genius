@@ -1,25 +1,29 @@
 "use client";
 
-import { LayoutDashboard, Users, Download, LogOut, ChevronRight, SlidersHorizontal, Bell, ShieldCheck, CreditCard, User, Users2 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, SlidersHorizontal } from "lucide-react";
 
 interface DashboardSidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   onSignOut: () => void;
 }
 
-export function DashboardSidebar({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, onSignOut }: DashboardSidebarProps) {
+export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: DashboardSidebarProps) {
+  const pathname = usePathname();
+  
   const menuItems = [
-    { id: "overview", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-    { id: "records", label: "Students data", icon: <Users size={20} /> },
-    { id: "accompaniments", label: "Guardian Data", icon: <ShieldCheck size={20} /> },
-    { id: "guests", label: "Guest data", icon: <User size={20} /> },
-    { id: "yesians", label: "Yesians", icon: <Users2 size={20} /> },
-    { id: "pass", label: "Access Pass", icon: <CreditCard size={20} /> },
-    { id: "export", label: "Export Center", icon: <Download size={20} /> },
-    { id: "settings", label: "Settings", icon: <SlidersHorizontal size={20} /> },
+    { id: "overview", label: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin/dashboard" },
+    { id: "records", label: "Students data", icon: <Users size={20} />, href: "/admin/dashboard/students-data" },
+    { id: "accompaniments", label: "Guardian Data", icon: <ShieldCheck size={20} />, href: "/admin/dashboard/guardian-data" },
+    { id: "guests", label: "Guest data", icon: <User size={20} />, href: "/admin/dashboard/guest-registry" },
+    { id: "yesians", label: "Yesians", icon: <Users2 size={20} />, href: "/admin/dashboard/yesian-network" },
+    { id: "local-staff", label: "Local Staff", icon: <User size={20} />, href: "/admin/dashboard/local-staff" },
+    { id: "pass", label: "Access Pass", icon: <CreditCard size={20} />, href: "/admin/dashboard/access-pass" },
+    { id: "reports", label: "Reports", icon: <BarChart3 size={20} />, href: "/admin/dashboard/reports" },
+    { id: "export", label: "Export Center", icon: <Download size={20} />, href: "/admin/dashboard/master-export" },
+    { id: "settings", label: "Settings", icon: <SlidersHorizontal size={20} />, href: "/admin/dashboard/settings" },
   ];
 
   return (
@@ -42,11 +46,11 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, activeTab, setAc
       {/* Navigation */}
       <nav className="flex-grow px-4 py-4 space-y-1">
         {menuItems.map((item) => {
-          const isActive = activeTab === item.id;
+          const isActive = pathname === item.href;
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              href={item.href}
               className={`w-full flex items-center rounded-2xl transition-all duration-200 group ${sidebarOpen ? 'gap-4 px-4 py-3.5' : 'justify-center p-3.5'} ${isActive
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
                 : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
@@ -60,7 +64,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, activeTab, setAc
                   {item.label}
                 </span>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>

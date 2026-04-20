@@ -2,7 +2,29 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
 import { locations } from "@/data/locations";
-import { Registration, GuestRegistration, YesianRegistration } from "@/app/admin/dashboard/types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "@/app/admin/dashboard/types";
+
+/** Robust filename sanitization for cross-browser compatibility */
+const sanitizeFilename = (filename: string): string => {
+  return filename
+    .replace(/[^a-z0-9\-_]/gi, '_') // Replace non-alphanumeric (except - and _) with _
+    .replace(/_{2,}/g, '_')         // Remove duplicate underscores
+    .substring(0, 255);           // Ensure it's not too long for filesystem
+};
+
+/** Manual download trigger to bypass Chrome/Firefox restrictions on async save() */
+const triggerDownload = (doc: jsPDF, filename: string) => {
+  const cleanName = sanitizeFilename(filename);
+  const pdfBlob = doc.output('blob');
+  const url = URL.createObjectURL(pdfBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${cleanName}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+};
 
 const getBarcodeBase64 = (text: string): string | null => {
   try {
@@ -103,11 +125,10 @@ export async function generateRegistrationPDF(
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 8 },
-    styles: { fontSize: 7, cellPadding: 2 },
     didDrawPage: (data) => addFooter(doc, data)
   });
 
-  doc.save(`${filename}.pdf`);
+  triggerDownload(doc, filename);
 }
 
 /**
@@ -135,7 +156,7 @@ export async function generateGuestExportPDF(data: GuestRegistration[], title: s
     styles: { fontSize: 7, cellPadding: 2 },
     didDrawPage: (data) => addFooter(doc, data)
   });
-  doc.save(`${filename}.pdf`);
+  triggerDownload(doc, filename);
 }
 
 /**
@@ -164,7 +185,243 @@ export async function generateYesianExportPDF(data: YesianRegistration[], title:
     styles: { fontSize: 7, cellPadding: 2 },
     didDrawPage: (data) => addFooter(doc, data)
   });
-  doc.save(`${filename}.pdf`);
+  triggerDownload(doc, filename);
+}
+
+/**
+ * Local Staff Registration PDF
+ */
+export async function generateLocalStaffExportPDF(data: LocalStaffRegistration[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => [
+    index + 1,
+    reg.name,
+    reg.role || "N/A",
+    getSchoolName(reg.school),
+    reg.zone,
+    reg.whatsappNumber,
+    reg.createdAt?.toDate ? reg.createdAt.toDate().toLocaleString() : "N/A"
+  ]);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Staff Name", "Role", "School", "Zone", "WhatsApp", "Created At"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
+}
+
+/**
+ * Strategic Participation Report PDF
+ * Aggregated Gender, Zone, and School-wise distribution for Students and Staff
+ */
+export async function generateStrategicReportPDF(
+  registrations: Registration[],
+  localStaff: LocalStaffRegistration[],
+  yesians: YesianRegistration[],
+) {
+  const doc = new jsPDF({ orientation: "portrait" });
+  const title = "STRATEGIC PARTICIPATION REPORT";
+  await addHeader(doc, title);
+
+  let currentY = 55;
+
+  // 1. STUDENT GENDER BY ZONE
+  const zoneGenderMap = registrations.reduce((acc: any, r) => {
+    const zone = r.zone || 'N/A';
+    const gender = r.gender?.toLowerCase() === 'male' ? 'Male' : 
+                   r.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    if (!acc[zone]) acc[zone] = { Male: 0, Female: 0, Total: 0 };
+    acc[zone][gender]++;
+    acc[zone].Total++;
+    return acc;
+  }, {});
+
+  const zoneGenderBody = Object.entries(zoneGenderMap).map(([zone, counts]: [string, any]) => [
+    zone,
+    counts.Male,
+    counts.Female,
+    counts.Total
+  ]);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("1. Student Gender Distribution by Zone", 14, currentY);
+  
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["Zone/Region", "Male Students", "Female Students", "Grand Total"]],
+    body: zoneGenderBody as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [30, 41, 59], fontSize: 9 },
+    styles: { fontSize: 8 },
+    foot: [["TOTAL", 
+      Object.values(zoneGenderMap).reduce((a: number, b: any) => a + b.Male, 0),
+      Object.values(zoneGenderMap).reduce((a: number, b: any) => a + b.Female, 0),
+      registrations.length
+    ]],
+    footStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: 'bold' }
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 2. STAFF GENDER BY SCHOOL
+  const staffSchoolMap = localStaff.reduce((acc: any, s) => {
+    const schoolName = getSchoolName(s.school);
+    const gender = s.gender?.toLowerCase() === 'male' ? 'Male' : 
+                   s.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    if (!acc[schoolName]) acc[schoolName] = { Male: 0, Female: 0, Total: 0 };
+    acc[schoolName][gender]++;
+    acc[schoolName].Total++;
+    return acc;
+  }, {});
+
+  const staffBody = Object.entries(staffSchoolMap).map(([school, counts]: [string, any]) => [
+    school,
+    counts.Male,
+    counts.Female,
+    counts.Total
+  ]);
+
+  if (currentY > 230) { doc.addPage(); currentY = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("2. Local Staff Distribution by School", 14, currentY);
+
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["School Institution", "Male Staff", "Female Staff", "Grand Total"]],
+    body: staffBody as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [14, 165, 233], fontSize: 9 },
+    styles: { fontSize: 8 },
+    foot: [["TOTAL", 
+      Object.values(staffSchoolMap).reduce((a: number, b: any) => a + b.Male, 0),
+      Object.values(staffSchoolMap).reduce((a: number, b: any) => a + b.Female, 0),
+      localStaff.length
+    ]],
+    footStyles: { fillColor: [240, 249, 255], textColor: [14, 165, 233], fontStyle: 'bold' }
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 3. STUDENT GENDER BY SCHOOL
+  const schoolGenderMap = registrations.reduce((acc: any, r) => {
+    const schoolName = getSchoolName(r.school);
+    const gender = r.gender?.toLowerCase() === 'male' ? 'Male' : 
+                   r.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    if (!acc[schoolName]) acc[schoolName] = { Male: 0, Female: 0, Total: 0 };
+    acc[schoolName][gender]++;
+    acc[schoolName].Total++;
+    return acc;
+  }, {});
+
+  const schoolGenderBody = Object.entries(schoolGenderMap).map(([school, counts]: [string, any]) => [
+    school,
+    counts.Male,
+    counts.Female,
+    counts.Total
+  ]);
+
+  if (currentY > 230) { doc.addPage(); currentY = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("3. Student Gender Distribution by School", 14, currentY);
+
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["School Institution", "Male Students", "Female Students", "Grand Total"]],
+    body: schoolGenderBody as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [79, 70, 229], fontSize: 9 },
+    styles: { fontSize: 8 },
+    foot: [["TOTAL", 
+      Object.values(schoolGenderMap).reduce((a: number, b: any) => a + b.Male, 0),
+      Object.values(schoolGenderMap).reduce((a: number, b: any) => a + b.Female, 0),
+      registrations.length
+    ]],
+    footStyles: { fillColor: [245, 243, 255], textColor: [79, 70, 229], fontStyle: 'bold' }
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 4. TOP SCHOOL PARTICIPATION (STUDENTS)
+  const studentSchoolMap = registrations.reduce((acc: any, r) => {
+    const schoolName = getSchoolName(r.school);
+    acc[schoolName] = (acc[schoolName] || 0) + 1;
+    return acc;
+  }, {});
+
+  const schoolRows = Object.entries(studentSchoolMap)
+    .sort((a: any, b: any) => b[1] - a[1])
+    .slice(0, 25)
+    .map(([name, count], i) => [i + 1, name, count]);
+
+  if (currentY > 230) { doc.addPage(); currentY = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("4. Top 25 Schools by Enrollment (Ranked)", 14, currentY);
+
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["Rank", "School Name", "Total Students"]],
+    body: schoolRows as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [16, 185, 129], fontSize: 9 },
+    styles: { fontSize: 8 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 5. YESIAN MEMBERS BY ZONE
+  const yesianZoneMap = yesians.reduce((acc: any, y) => {
+    const zone = y.zone || 'N/A';
+    const gender = y.gender?.toLowerCase() === 'male' ? 'Male' : 
+                   y.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+    if (!acc[zone]) acc[zone] = { Male: 0, Female: 0, Total: 0 };
+    acc[zone][gender]++;
+    acc[zone].Total++;
+    return acc;
+  }, {});
+
+  const yesianBody = Object.entries(yesianZoneMap).map(([zone, counts]: [string, any]) => [
+    zone,
+    counts.Male,
+    counts.Female,
+    counts.Total
+  ]);
+
+  if (currentY > 230) { doc.addPage(); currentY = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("5. Yesian Member Distribution by Zone", 14, currentY);
+
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["Zone/Region", "Male Yesians", "Female Yesians", "Grand Total"]],
+    body: yesianBody as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [245, 158, 11], fontSize: 9 },
+    styles: { fontSize: 8 },
+    foot: [["TOTAL", 
+      Object.values(yesianZoneMap).reduce((a: number, b: any) => a + b.Male, 0),
+      Object.values(yesianZoneMap).reduce((a: number, b: any) => a + b.Female, 0),
+      yesians.length
+    ]],
+    footStyles: { fillColor: [255, 251, 235], textColor: [180, 83, 9], fontStyle: 'bold' },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+
+  const dateStr = new Date().toISOString().split('T')[0];
+  triggerDownload(doc, `Strategic_Report_${dateStr}`);
 }
 
 async function addHeader(doc: jsPDF, title: string) {
@@ -201,7 +458,7 @@ function addFooter(doc: jsPDF, data: any) {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian',
+  type: 'student' | 'guest' | 'yesian' | 'local-staff',
   kalashFontLoaded: boolean
 ) {
   const W = doc.internal.pageSize.width;   // 70mm
@@ -230,7 +487,7 @@ async function drawBadgeContent(
   const photoX  = stripW + 1 + (photoAreaW - photoW) / 2;
   const photoY  = 12;                // push down from top — adds space from header
 
-  const photoSrc = (type === 'student' || type === 'yesian') ? data.photoUrl : null;
+  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) doc.addImage(photo, 'JPEG', photoX, photoY, photoW, photoH);
@@ -255,6 +512,7 @@ async function drawBadgeContent(
   let tc = [217, 119, 6]; // amber default
   if (type === 'student') tc = [234, 88, 12];   // orange (matches delegate card)
   else if (type === 'guest') tc = [5, 150, 105]; // emerald
+  else if (type === 'local-staff') tc = [14, 165, 233]; // sky blue
 
   doc.setFontSize(6.5);
   doc.setFont('helvetica', 'bold');
@@ -262,6 +520,10 @@ async function drawBadgeContent(
   let infoText = '';
   if (type === 'student')    infoText = `${data.zone} | ${getSchoolName(data.school)}`;
   else if (type === 'guest') infoText = data.address || '';
+  else if (type === 'local-staff') {
+    const schoolName = getSchoolName(data.school);
+    infoText = `${data.role || ''}\n${data.zone} | ${schoolName}`;
+  }
   else                       infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
   const infoY = splitY + 17;
   doc.text(infoText.toUpperCase(), 4, infoY, { maxWidth: W - 16 });
@@ -284,7 +546,7 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' = 'student'
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' = 'student'
 ) {
   if (data.length === 0) return alert("No records found.");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [70, 100] });
@@ -308,5 +570,5 @@ export async function generateBatchAccessPasses(
     if (i > 0) doc.addPage([70, 100], "portrait");
     await drawBadgeContent(doc, data[i], type, kalashFontLoaded);
   }
-  doc.save(`${filename}.pdf`);
+  triggerDownload(doc, filename);
 }
