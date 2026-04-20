@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { Figtree } from "next/font/google"; // New: Importing Figtree
+import { Figtree } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import ScrollToTop from "@/components/ScrollToTop";
 
 const figtree = Figtree({
   subsets: ["latin"],
-  weight: ["400", "500", "700", "900"], // Supporting common weights
+  weight: ["400", "500", "700", "900"],
   variable: "--font-figtree",
 });
 
 export const metadata: Metadata = {
-  title: "Genius Jam 3 | Event Registration",
-  description: "Join the 2026 talent series. Please fill out the details.",
+  title: "YES genius | National Level Talent Search",
+  description: "National Level Talent Search by YES India Foundation",
 };
 
 export default function RootLayout({
@@ -20,9 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth" data-scroll-behavior="smooth">
-      <body className={`${figtree.variable} font-figtree antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${figtree.variable} font-figtree antialiased`} suppressHydrationWarning>
+        {/* Cache Bust */}
         <Providers>
+          <ScrollToTop />
           {children}
         </Providers>
       </body>

@@ -6,99 +6,122 @@ import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Home, UserPlus } from "lucide-react";
+import Footer from "@/components/Footer";
+import MathCanvas from "@/components/MathCanvas";
 
 export default function SuccessPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useGSAP(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    // Ambient Orbs
+    gsap.to(".bg-orb", {
+      y: "random(-30, 30)", x: "random(-30, 30)",
+      duration: "random(8, 12)", repeat: -1, yoyo: true,
+      ease: "sine.inOut", stagger: { each: 2, from: "random" },
+    });
 
-    tl.from(".success-header > *", {
-      opacity: 0,
-      y: -20,
-      stagger: 0.1,
-      duration: 0.8
-    })
-    .from(".checkmark-container", {
-      scale: 0,
-      opacity: 0,
-      rotate: -45,
-      duration: 1,
-      ease: "back.out(1.7)"
-    }, "-=0.4")
-    .from(".success-content > *", {
-      opacity: 0,
-      y: 20,
-      stagger: 0.1,
-      duration: 0.8
-    }, "-=0.6")
-    .from(".action-buttons > *", {
-      opacity: 0,
-      y: 10,
-      stagger: 0.1,
-      duration: 0.6
-    }, "-=0.4");
+    const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+    tl.fromTo(".success-card",
+      { opacity: 0, scale: 0.9, y: 40, filter: "blur(15px)" },
+      { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 1.2, delay: 0.2 }
+    )
+      .fromTo(".success-content > *",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, stagger: 0.1, duration: 0.8 },
+        "-=0.6"
+      )
+      .fromTo(".action-buttons button",
+        { opacity: 0, x: -10 },
+        { opacity: 1, x: 0, stagger: 0.1, duration: 0.6 },
+        "-=0.4"
+      );
+
+    // Success icon bounce
+    gsap.to(".success-icon", {
+      y: -10,
+      duration: 1.5,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut"
+    });
   }, { scope: containerRef });
 
   return (
-    <main ref={containerRef} className="min-h-screen bg-white font-figtree font-normal flex flex-col">
-      <div className="container mx-auto py-12 px-4 flex-grow flex flex-col items-center">
-        
-        <header className="success-header flex flex-col items-center text-center mb-16">
-          <div className="flex flex-col items-center gap-6 mb-8">
-            <img src="/yeslogo.png" alt="YES INDIA Logo" className="h-6 md:h-8 w-auto object-contain opacity-50" />
-            <img src="/Genius.png" alt="Genius Jam Logo" className="h-16 md:h-24 w-auto object-contain" />
-          </div>
-          <div className="text-[10px] md:text-xs font-normal tracking-[0.3em] text-gray-300 uppercase mt-4">
-            Official Confirmation
-          </div>
-        </header>
+    <main
+      ref={containerRef}
+      className="relative min-h-screen font-sans overflow-hidden bg-white flex flex-col items-center justify-center py-12 px-6"
+    >
+      <MathCanvas />
 
-        {/* Success Visual */}
-        <div className="flex-grow flex flex-col items-center justify-center -mt-12">
-          <div className="checkmark-container mb-8">
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-50 rounded-full scale-150 blur-2xl opacity-50 animate-pulse" />
-              <CheckCircle2 className="w-24 h-24 md:w-32 md:h-32 text-emerald-500 relative" strokeWidth={1.5} />
-            </div>
-          </div>
+      {/* Super Premium Ambient Layer */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="bg-orb absolute top-1/4 left-1/4 w-[50%] h-[50%] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)", filter: "blur(100px)" }} />
+        <div className="bg-orb absolute bottom-1/4 right-1/4 w-[40%] h-[40%] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%)", filter: "blur(80px)" }} />
+        <div className="absolute inset-0 opacity-[0.02]"
+          style={{ backgroundImage: "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+      </div>
 
-          <div className="success-content text-center max-w-lg">
-            <h1 className="text-4xl md:text-6xl font-normal text-slate-900 tracking-tight mb-6">
-              Registration Completed
-            </h1>
-            <p className="text-lg md:text-xl text-slate-500 font-normal leading-relaxed mb-12">
-              The student's details have been successfully recorded. 
-              We look forward to seeing the talent showcase!
-            </p>
+      <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
+        {/* Success Card */}
+        <div className="success-card w-full rounded-[3.5rem] p-[2px] relative mb-12 glass-shimmer">
+          {/* Border glow */}
+          <div className="absolute inset-0 rounded-[3.5rem] bg-gradient-to-br from-emerald-500/20 via-transparent to-indigo-500/20 opacity-60" />
 
-            <div className="action-buttons flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                onClick={() => router.push("/")}
-                className="h-12 px-8 font-normal text-base shadow-lg shadow-primary/10"
-              >
-                <UserPlus className="mr-2 h-5 w-5" />
-                Register Another Student
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => router.push("/")}
-                className="h-12 px-8 font-normal text-base border-slate-100 text-slate-400 hover:text-slate-900"
-              >
-                <Home className="mr-2 h-5 w-5" />
-                Go to Home
-              </Button>
+          <div className="relative rounded-[3.4rem] p-10 md:p-16 flex flex-col items-center text-center overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.6)",
+              backdropFilter: "blur(50px)",
+              WebkitBackdropFilter: "blur(50px)",
+              boxShadow: "0 30px 70px -10px rgba(0,0,0,0.08), inset 0 0 30px 0 rgba(255,255,255,0.4)",
+            }}>
+            {/* Inner border line */}
+            <div className="absolute inset-px rounded-[3.35rem] border border-white opacity-70 pointer-events-none" />
+
+            <div className="success-content flex flex-col items-center">
+              <div className="success-icon w-24 h-24 rounded-[2rem] bg-emerald-50 flex items-center justify-center mb-10 shadow-xl shadow-emerald-500/10 border border-emerald-100">
+                <CheckCircle2 className="w-12 h-12 text-emerald-500 stroke-[2.5]" />
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-100 bg-emerald-50/50 mb-8 overflow-hidden">
+                <span className="text-[10px] font-black tracking-[0.3em] uppercase text-emerald-600">
+                  Registration Successful
+                </span>
+              </div>
+
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-6">
+                You're all set for <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-indigo-600">YES GENIUS</span>
+              </h1>
+
+              <p className="max-w-md text-base md:text-lg font-medium leading-relaxed text-slate-500 mb-12">
+                Your registration has been recorded successfully. We're excited to see you excel at the national talent series.
+              </p>
+
+              <div className="action-buttons flex flex-wrap justify-center gap-4 w-full">
+                <Button
+                  onClick={() => router.push("/")}
+                  className="h-14 px-8 rounded-full bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                >
+                  <Home className="w-4 h-4" />
+                  Return Home
+                </Button>
+
+                <Button
+                  onClick={() => router.push("/")}
+                  variant="outline"
+                  className="h-14 px-8 rounded-full border-2 border-slate-100 bg-white/50 hover:bg-white text-slate-900 font-extrabold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                >
+                  <UserPlus className="w-4 h-4 text-indigo-500" />
+                  New Registration
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Minimal Footer */}
-        <footer className="mt-20 pt-10 border-t border-slate-50 w-full text-center">
-          <p className="text-slate-400 text-[10px] font-normal uppercase tracking-widest italic">
-            Official YES India Document • 2026 Series
-          </p>
-        </footer>
+        <Footer />
       </div>
     </main>
   );

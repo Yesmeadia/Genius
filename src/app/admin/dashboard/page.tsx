@@ -30,27 +30,21 @@ import { PerformanceCharts } from "./components/PerformanceCharts";
 import AccessPassCenter from "./components/AccessPassCenter";
 import { StudentDataTable } from "./components/StudentDataTable";
 import { AccompanimentDataTable } from "./components/AccompanimentDataTable";
+import { GuestDataTable } from "./components/GuestDataTable";
+import { YesianDataTable } from "./components/YesianDataTable";
 import { ExportCenter } from "./components/ExportCenter";
+import RegistrationSettings from "./components/RegistrationSettings";
 
-interface Registration {
-  id: string;
-  studentName: string;
-  parentage: string;
-  className: string;
-  gender: string;
-  zone: string;
-  school: string;
-  withParent: boolean;
-  parentName?: string;
-  parentGender?: string;
-  relation?: string;
-  createdAt: any;
-}
+import { Registration, GuestRegistration, YesianRegistration, DashboardStats } from "./types";
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth(true);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [guestRegistrations, setGuestRegistrations] = useState<GuestRegistration[]>([]);
+  const [yesianRegistrations, setYesianRegistrations] = useState<YesianRegistration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [guestLoading, setGuestLoading] = useState(true);
+  const [yesianLoading, setYesianLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterZone, setFilterZone] = useState("all");
   const [filterSchool, setFilterSchool] = useState("all");
@@ -60,23 +54,50 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [hasMounted, setHasMounted] = useState(false);
+  const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
   const router = useRouter();
+
+  // Reset scroll when tab changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
 
   useEffect(() => {
     setHasMounted(true);
     if (!user) return;
 
-    const q = query(collection(db, "registrations"), orderBy("createdAt", "desc"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Registration[];
+    // Students
+    const qStudents = query(collection(db, "registrations"), orderBy("createdAt", "desc"));
+    const unsubscribeStudents = onSnapshot(qStudents, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Registration[];
       setRegistrations(docs);
       setLoading(false);
+      setLastSync(new Date().toLocaleTimeString());
     });
 
-    return () => unsubscribe();
+    // Guests
+    const qGuests = query(collection(db, "guest_registrations"), orderBy("createdAt", "desc"));
+    const unsubscribeGuests = onSnapshot(qGuests, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as GuestRegistration[];
+      setGuestRegistrations(docs);
+      setGuestLoading(false);
+      setLastSync(new Date().toLocaleTimeString());
+    });
+
+    // Yesians
+    const qYesians = query(collection(db, "yesian_registrations"), orderBy("createdAt", "desc"));
+    const unsubscribeYesians = onSnapshot(qYesians, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as YesianRegistration[];
+      setYesianRegistrations(docs);
+      setGuestLoading(false);
+      setLastSync(new Date().toLocaleTimeString());
+    });
+
+    return () => {
+      unsubscribeStudents();
+      unsubscribeGuests();
+      unsubscribeYesians();
+    };
   }, [user]);
 
   // Derived filter options
@@ -88,7 +109,7 @@ export default function Dashboard() {
   }, [registrations]);
 
   // Data Aggregation
-  const stats = useMemo(() => {
+  const stats: DashboardStats = useMemo(() => {
     const today = new Date();
     const todayCount = registrations.filter(r => {
       if (!r.createdAt) return false;
@@ -98,19 +119,71 @@ export default function Dashboard() {
         date.getFullYear() === today.getFullYear();
     }).length;
 
-    const males = registrations.filter(r => r.gender.toLowerCase() === 'male' || r.gender.toLowerCase() === 'boy').length;
-    const females = registrations.filter(r => r.gender.toLowerCase() === 'female' || r.gender.toLowerCase() === 'girl').length;
+    // Aggregate Gender from all sources
+    const studentMales = registrations.filter(r => r.gender?.toLowerCase() === "male").length;
+    const studentFemales = registrations.filter(r => r.gender?.toLowerCase() === "female").length;
+    
+    const guestMales = guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length;
+    const guestFemales = guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length;
+    
+    const yesianMales = yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length;
+    const yesianFemales = yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length;
+
+    const malesCount = studentMales + guestMales + yesianMales;
+    const femalesCount = studentFemales + guestFemales + yesianFemales;
+
+    const totalSchools = new Set(registrations.map(r => r.school)).size;
+    const totalZones = new Set(registrations.map(r => r.zone)).size;
+
+    // Available totals from master data
+    const availableZonesCount = locations.length;
+    const availableSchoolsCount = locations.reduce((acc, zone) => acc + zone.schools.length, 0);
+
+    // Trend Data Logic (Last 7 Days)
+    const allDocs = [...registrations, ...guestRegistrations, ...yesianRegistrations];
+    const trendMap = new Map();
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }).reverse();
+
+    last7Days.forEach(date => trendMap.set(date, 0));
+    allDocs.forEach(doc => {
+      if (!doc.createdAt) return;
+      const date = (doc.createdAt.toDate ? doc.createdAt.toDate() : new Date(doc.createdAt))
+        .toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (trendMap.has(date)) {
+        trendMap.set(date, trendMap.get(date) + 1);
+      }
+    });
+
+    const trendData = last7Days.map(date => ({ date, count: trendMap.get(date) }));
+
+    const platformData = [
+      { name: 'Students', value: registrations.length },
+      { name: 'Guests', value: guestRegistrations.length },
+      { name: 'Yesians', value: yesianRegistrations.length },
+    ];
 
     return {
-      total: registrations.length,
-      withParent: registrations.filter(r => r.withParent).length,
-      uniqueSchools: new Set(registrations.map(r => r.school)).size,
-      uniqueZones: new Set(registrations.map(r => r.zone)).size,
+      totalStudents: registrations.length,
+      totalGuests: guestRegistrations.length,
+      totalYesians: yesianRegistrations.length,
       todayCount,
-      males,
-      females,
+      totalParticipation: registrations.length + guestRegistrations.length + yesianRegistrations.length,
+      totalAccompanied: registrations.filter(r => r.withParent).length,
+      totalSchools,
+      totalZones,
+      availableSchoolsCount,
+      availableZonesCount,
+      malesCount,
+      femalesCount,
+      lastUpdated: lastSync,
+      trendData,
+      platformData,
     };
-  }, [registrations]);
+  }, [registrations, guestRegistrations, yesianRegistrations]);
 
   const aggregatedData = useMemo(() => {
     // Gender
@@ -177,6 +250,21 @@ export default function Dashboard() {
     return matchesSearch && matchesZone && matchesSchool && matchesClass && matchesGender && matchesAccompaniment;
   }), [registrations, searchTerm, filterZone, filterSchool, filterClass, filterGender, filterAccompaniment]);
 
+  const filteredGuests = useMemo(() => guestRegistrations.filter(r => {
+    const searchLow = searchTerm.toLowerCase();
+    return (r.name?.toLowerCase() || "").includes(searchLow) ||
+      (r.whatsappNumber || "").includes(searchLow) ||
+      (r.address?.toLowerCase() || "").includes(searchLow);
+  }), [guestRegistrations, searchTerm]);
+
+  const filteredYesians = useMemo(() => yesianRegistrations.filter(r => {
+    const searchLow = searchTerm.toLowerCase();
+    return (r.name?.toLowerCase() || "").includes(searchLow) ||
+      (r.whatsappNumber || "").includes(searchLow) ||
+      (r.zone?.toLowerCase() || "").includes(searchLow) ||
+      (r.designation?.toLowerCase() || "").includes(searchLow);
+  }), [yesianRegistrations, searchTerm]);
+
   const resetFilters = () => {
     setSearchTerm("");
     setFilterZone("all");
@@ -196,7 +284,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center bg-white font-figtree">
         <div className="flex flex-col items-center gap-2">
           <div className="w-8 h-8 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs font-black tracking-widest uppercase text-slate-400">Restoring Experience</p>
+          <p className="text-xs font-normal tracking-widest uppercase text-slate-400">Restoring Experience</p>
         </div>
       </div>
     );
@@ -205,7 +293,8 @@ export default function Dashboard() {
   return (
     <div className="bg-slate-50 flex font-figtree font-normal">
       <DashboardSidebar
-        sidebarOpen={true}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onSignOut={handleSignOut}
@@ -215,11 +304,33 @@ export default function Dashboard() {
         {/* Top Professional Header */}
         <header className="bg-white/70 backdrop-blur-md sticky top-0 z-20 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4 lg:gap-0 border-b border-slate-100">
           <div className="flex items-center gap-4 w-full md:w-auto">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="rounded-2xl h-10 w-10 text-slate-400 hover:bg-slate-50 relative"
+            >
+              <Menu size={20} />
+              {!sidebarOpen && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+              )}
+            </Button>
+            
             <div className="md:hidden">
-              <img src="/yeslogo.png" alt="Logo" className="h-8 w-auto" />
+              <img src="/yeslogo.png" alt="Logo" className="h-6 w-auto" />
             </div>
+            
             <div>
-              <h1 className="text-lg md:text-xl font-normal text-slate-900 leading-none">Dashboard Overview</h1>
+              <h1 className="text-lg md:text-xl font-normal text-slate-900 leading-none">
+                {activeTab === "overview" && "Dashboard Overview"}
+                {activeTab === "records" && "Student Management"}
+                {activeTab === "accompaniments" && "Guardian Database"}
+                {activeTab === "guests" && "Guest Registry"}
+                {activeTab === "yesians" && "Yesian Network"}
+                {activeTab === "pass" && "Access Pass Center"}
+                {activeTab === "export" && "Master Export Center"}
+                {activeTab === "settings" && "Portal Configuration"}
+              </h1>
             </div>
           </div>
 
@@ -232,19 +343,19 @@ export default function Dashboard() {
                 <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 text-slate-400 hover:bg-slate-50">
                   <Bell size={20} />
                 </Button>
-                <span className="absolute top-2 right-2 w-4 h-4 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[8px] text-white font-black animate-pulse">1</span>
+                <span className="absolute top-2 right-2 w-4 h-4 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[8px] text-white font-normal animate-pulse">1</span>
               </div>
             </div>
 
             {/* User Profile Area */}
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <div className="text-[13px] font-black text-slate-900 leading-none">Administrator</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Administrator</div>
+                <div className="text-[13px] font-normal text-slate-900 leading-none">Administrator</div>
+                <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mt-1">Administrator</div>
               </div>
               <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
                 <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=Admin`} />
-                <AvatarFallback className="bg-indigo-600 text-white font-black text-xs">AD</AvatarFallback>
+                <AvatarFallback className="bg-indigo-600 text-white font-normal text-xs">AD</AvatarFallback>
               </Avatar>
             </div>
           </div>
@@ -268,8 +379,7 @@ export default function Dashboard() {
                 </div>
 
                 <PerformanceCharts
-                  genderData={aggregatedData.genderData}
-                  zoneData={aggregatedData.zoneData}
+                  stats={stats}
                   accompanimentData={aggregatedData.accompanimentData}
                   relationData={aggregatedData.relationData}
                 />
@@ -322,12 +432,46 @@ export default function Dashboard() {
               </div>
             )}
 
+            {activeTab === 'guests' && (
+              <div className="mt-4">
+                <GuestDataTable
+                  data={filteredGuests}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  itemsPerPage={20}
+                />
+              </div>
+            )}
+
+            {activeTab === 'yesians' && (
+              <div className="mt-4">
+                <YesianDataTable
+                  data={filteredYesians}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  itemsPerPage={20}
+                />
+              </div>
+            )}
+
             {activeTab === 'export' && (
-              <ExportCenter registrations={registrations} />
+              <ExportCenter 
+                registrations={registrations} 
+                guestRegistrations={guestRegistrations}
+                yesianRegistrations={yesianRegistrations}
+              />
             )}
 
             {activeTab === 'pass' && (
-              <AccessPassCenter registrations={registrations} />
+              <AccessPassCenter 
+                registrations={registrations} 
+                guestRegistrations={guestRegistrations}
+                yesianRegistrations={yesianRegistrations}
+              />
+            )}
+
+            {activeTab === 'settings' && (
+              <RegistrationSettings />
             )}
           </div>
 

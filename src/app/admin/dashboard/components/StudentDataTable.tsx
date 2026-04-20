@@ -203,7 +203,7 @@ export function StudentDataTable({
                 <TableRow key={reg.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
                   <TableCell className="py-4 pl-6">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+                      <Avatar className="h-8 w-8 border border-slate-100 shadow-sm">
                         {reg.photoUrl && <AvatarImage src={reg.photoUrl} className="object-cover" />}
                         <AvatarFallback className="bg-slate-50 text-slate-400">
                           <User size={16} />

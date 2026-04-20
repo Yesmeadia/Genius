@@ -23,7 +23,7 @@ export const locations: Zone[] = [
     id: "Poonch",
     name: "Poonch",
     schools: [
-      { id: "sch-4", name: " YES RAZA UL ULOOM ISLAMIA HSS - POONCH" },
+      { id: "sch-4", name: "YES RAZA UL ULOOM ISLAMIA HSS - POONCH" },
       { id: "sch-5", name: "YASEEN ENGLISH SCHOOL - TERWAN" },
       { id: "sch-6", name: "YASEEN ENGLISH SCHOOL - MALDIYALAN" },
       { id: "sch-7", name: "YASEEN ENGLISH SCHOOL - CHANDAK" },

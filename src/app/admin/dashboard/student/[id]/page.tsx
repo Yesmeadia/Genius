@@ -15,7 +15,7 @@ import {
   Pencil, X, Check, Camera, Loader2, UploadCloud,
   Moon, Bell
 } from "lucide-react";
-import { generateAccessPass } from "@/lib/exportUtils";
+import { generateBatchAccessPasses } from "@/lib/exportUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +53,9 @@ export default function StudentProfilePage() {
   const [registration, setRegistration] = useState<Registration | null>(null);
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
@@ -209,7 +212,8 @@ export default function StudentProfilePage() {
     return (
       <div className="bg-slate-50 flex font-figtree font-normal">
         <DashboardSidebar
-          sidebarOpen={true}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
           activeTab="records"
           setActiveTab={() => router.push("/admin/dashboard")}
           onSignOut={handleSignOut}
@@ -233,7 +237,8 @@ export default function StudentProfilePage() {
     <div className="bg-slate-50 flex font-figtree font-normal">
       {/* Sidebar */}
       <DashboardSidebar
-        sidebarOpen={true}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         activeTab="records"
         setActiveTab={(tab) => router.push("/admin/dashboard")}
         onSignOut={handleSignOut}
@@ -262,17 +267,17 @@ export default function StudentProfilePage() {
                 <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 text-slate-400 hover:bg-slate-50">
                   <Bell size={20} />
                 </Button>
-                <span className="absolute top-2 right-2 w-4 h-4 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[8px] text-white font-black animate-pulse">1</span>
+                <span className="absolute top-2 right-2 w-4 h-4 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[8px] text-white font-normal animate-pulse">1</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <div className="text-[13px] font-black text-slate-900 leading-none">Administrator</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Admin</div>
+                <div className="text-[13px] font-normal text-slate-900 leading-none">Administrator</div>
+                <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mt-1">Admin</div>
               </div>
               <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-slate-100">
                 <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=Admin`} />
-                <AvatarFallback className="bg-indigo-600 text-white font-black text-xs">AD</AvatarFallback>
+                <AvatarFallback className="bg-indigo-600 text-white font-normal text-xs">AD</AvatarFallback>
               </Avatar>
             </div>
           </div>
@@ -300,14 +305,14 @@ export default function StudentProfilePage() {
                       variant="outline"
                       onClick={cancelEdit}
                       disabled={saving}
-                      className="h-10 rounded-xl border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-widest"
+                      className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest"
                     >
                       <X className="mr-2 h-4 w-4" /> Cancel
                     </Button>
                     <Button
                       onClick={handleSave}
                       disabled={saving}
-                      className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
+                      className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
                     >
                       {saving ? (
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
@@ -321,13 +326,13 @@ export default function StudentProfilePage() {
                     <Button
                       variant="outline"
                       onClick={enterEditMode}
-                      className="h-10 rounded-xl border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                      className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
                     >
                       <Pencil className="mr-2 h-4 w-4" /> Edit Record
                     </Button>
                     <Button
-                      onClick={() => generateAccessPass(registration)}
-                      className="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-100"
+                      onClick={() => generateBatchAccessPasses([registration], `AccessPass_${registration.studentName.replace(/\s+/g, '_')}`, 'student')}
+                      className="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-100"
                     >
                       <Download className="mr-2 h-4 w-4" /> Download ID
                     </Button>
@@ -340,7 +345,7 @@ export default function StudentProfilePage() {
             {editMode && (
               <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-3">
                 <Pencil size={14} className="text-amber-500 shrink-0" />
-                <p className="text-[11px] font-bold text-amber-700 uppercase tracking-widest">
+                <p className="text-[11px] font-normal text-amber-700 uppercase tracking-widest">
                   Edit Mode Active — Make your changes below, then click Save Changes
                 </p>
               </div>
@@ -349,7 +354,7 @@ export default function StudentProfilePage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
               {/* Left Column: Photo & Quick Info */}
-              <div className="lg:col-span-4 space-y-6">
+              <div className="lg:col-span-3 space-y-6">
                 <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden bg-white">
                   <div className="aspect-[3/4] relative overflow-hidden bg-slate-100 group">
                     <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
@@ -367,7 +372,7 @@ export default function StudentProfilePage() {
                         className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                       >
                         <UploadCloud size={36} strokeWidth={1.5} />
-                        <span className="text-xs font-bold uppercase tracking-widest">Change Photo</span>
+                        <span className="text-xs font-normal uppercase tracking-widest">Change Photo</span>
                       </button>
                     )}
 
@@ -384,12 +389,12 @@ export default function StudentProfilePage() {
                         <button
                           type="button"
                           onClick={() => photoInputRef.current?.click()}
-                          className="flex items-center gap-1.5 bg-white/90 backdrop-blur text-slate-700 border-none shadow-sm px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-tighter hover:bg-white transition-colors"
+                          className="flex items-center gap-1.5 bg-white/90 backdrop-blur text-slate-700 border-none shadow-sm px-3 py-1.5 rounded-xl font-normal text-[10px] uppercase tracking-tighter hover:bg-white transition-colors"
                         >
                           <Camera size={12} /> Upload
                         </button>
                       ) : (
-                        <Badge className="bg-white/90 backdrop-blur text-slate-900 border-none shadow-sm px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-tighter">
+                        <Badge className="bg-white/90 backdrop-blur text-slate-900 border-none shadow-sm px-3 py-1.5 rounded-xl font-normal text-[10px] uppercase tracking-tighter">
                           {registration.gender}
                         </Badge>
                       )}
@@ -400,16 +405,16 @@ export default function StudentProfilePage() {
                     {editMode ? (
                       <div className="space-y-3 text-left">
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</Label>
+                          <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Full Name</Label>
                           <Input
                             value={editForm?.studentName || ""}
                             onChange={e => updateField("studentName", e.target.value.toUpperCase())}
-                            className="uppercase font-bold text-center text-slate-900 border-slate-100 bg-slate-50 focus-visible:ring-indigo-200"
+                            className="uppercase font-normal text-center text-slate-900 border-slate-100 bg-slate-50 focus-visible:ring-indigo-200"
                             placeholder="Student Name"
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Class</Label>
+                          <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Class</Label>
                           <Select value={editForm?.className || ""} onValueChange={v => updateField("className", v)}>
                             <SelectTrigger className="border-slate-100 bg-slate-50">
                               <SelectValue placeholder="Select Class" />
@@ -422,7 +427,7 @@ export default function StudentProfilePage() {
                           </Select>
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gender</Label>
+                          <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Gender</Label>
                           <div className="flex gap-4 py-1">
                             {["Male","Female"].map(g => (
                               <label key={g} className="flex items-center gap-2 cursor-pointer">
@@ -441,10 +446,10 @@ export default function StudentProfilePage() {
                       </div>
                     ) : (
                       <>
-                        <h2 className="text-2xl font-black text-slate-900 leading-tight mb-2 tracking-tight">
+                        <h2 className="text-2xl font-normal text-slate-900 leading-tight mb-2 tracking-tight">
                           {registration.studentName}
                         </h2>
-                        <p className="text-sm font-bold text-indigo-600 uppercase tracking-[0.2em] mb-4">
+                        <p className="text-sm font-normal text-indigo-600 uppercase tracking-[0.2em] mb-4">
                           Class {registration.className}
                         </p>
                         <div className="flex flex-col items-center gap-1.5 pt-2 border-t border-slate-50">
@@ -464,7 +469,7 @@ export default function StudentProfilePage() {
                             }}
                             className="w-full max-w-[200px]"
                           />
-                          <div className="text-[9px] font-mono font-bold text-slate-400 tracking-[0.18em] uppercase">
+                          <div className="text-[9px] font-mono font-normal text-slate-400 tracking-[0.18em] uppercase">
                             {registration.id.substring(0, 8)}
                           </div>
                         </div>
@@ -476,7 +481,7 @@ export default function StudentProfilePage() {
                 {/* Status Card */}
                 <Card className="profile-card border-none shadow-md rounded-2xl bg-white p-6">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between text-[11px] font-bold uppercase text-slate-400 tracking-widest border-b border-slate-50 pb-3">
+                    <div className="flex items-center justify-between text-[11px] font-normal uppercase text-slate-400 tracking-widest border-b border-slate-50 pb-3">
                       <span>Registration Status</span>
                       <span className="text-emerald-500 flex items-center gap-1">
                         <ShieldCheck size={14} /> Confirmed
@@ -487,8 +492,8 @@ export default function StudentProfilePage() {
                         <Calendar size={20} />
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Created At</div>
-                        <div className="text-sm font-bold text-slate-700">{formatDate(registration.createdAt)}</div>
+                        <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none mb-1">Created At</div>
+                        <div className="text-sm font-normal text-slate-700">{formatDate(registration.createdAt)}</div>
                       </div>
                     </div>
                   </div>
@@ -496,16 +501,16 @@ export default function StudentProfilePage() {
               </div>
 
               {/* Right Column */}
-              <div className="lg:col-span-8 space-y-8">
+              <div className="lg:col-span-9 space-y-8">
 
                 {/* Academic & Location Details */}
                 <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
                   <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
-                    <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                    <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
                       <BookOpen className="text-indigo-600" size={22} />
                       Academic & Location Details
                     </CardTitle>
-                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-bold pt-1">Primary registration information</CardDescription>
+                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Primary registration information</CardDescription>
                   </CardHeader>
                   <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
                     {editMode ? (
@@ -515,7 +520,7 @@ export default function StudentProfilePage() {
                             <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
                               <MapPin size={20} />
                             </div>
-                            <Label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Zone Assignment</Label>
+                            <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Zone Assignment</Label>
                           </div>
                           <Select value={editForm?.zone || ""} onValueChange={v => updateField("zone", v)}>
                             <SelectTrigger className="border-slate-100 bg-slate-50">
@@ -534,7 +539,7 @@ export default function StudentProfilePage() {
                             <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
                               <School size={20} />
                             </div>
-                            <Label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Educational Institution</Label>
+                            <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Educational Institution</Label>
                           </div>
                           <Select value={editForm?.school || ""} onValueChange={v => updateField("school", v)} disabled={!editForm?.zone}>
                             <SelectTrigger className="border-slate-100 bg-slate-50">
@@ -553,7 +558,7 @@ export default function StudentProfilePage() {
                             <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0">
                               <User size={20} />
                             </div>
-                            <Label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Parentage</Label>
+                            <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Parentage</Label>
                           </div>
                           <Input
                             value={editForm?.parentage || ""}
@@ -568,7 +573,7 @@ export default function StudentProfilePage() {
                             <div className="h-10 w-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 shrink-0">
                               <Phone size={20} />
                             </div>
-                            <Label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Mobile Number</Label>
+                            <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Mobile Number</Label>
                           </div>
                           <Input
                             type="tel"
@@ -588,8 +593,8 @@ export default function StudentProfilePage() {
                               <School size={24} />
                             </div>
                             <div>
-                              <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Educational Institution</div>
-                              <div className="text-base font-bold text-slate-800 leading-snug">{getSchoolName(registration.school)}</div>
+                              <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Educational Institution</div>
+                              <div className="text-base font-normal text-slate-800 leading-snug">{getSchoolName(registration.school)}</div>
                             </div>
                           </div>
                           <div className="flex items-start gap-4">
@@ -597,8 +602,8 @@ export default function StudentProfilePage() {
                               <MapPin size={24} />
                             </div>
                             <div>
-                              <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Zone Assignment</div>
-                              <div className="text-base font-bold text-slate-800 leading-snug">{getZoneName(registration.zone)}</div>
+                              <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Zone Assignment</div>
+                              <div className="text-base font-normal text-slate-800 leading-snug">{getZoneName(registration.zone)}</div>
                             </div>
                           </div>
                         </div>
@@ -609,8 +614,8 @@ export default function StudentProfilePage() {
                               <User size={24} />
                             </div>
                             <div>
-                              <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Parentage</div>
-                              <div className="text-base font-bold text-slate-800 leading-snug uppercase">{registration.parentage}</div>
+                              <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Parentage</div>
+                              <div className="text-base font-normal text-slate-800 leading-snug uppercase">{registration.parentage}</div>
                             </div>
                           </div>
                           <div className="flex items-start gap-4">
@@ -618,8 +623,8 @@ export default function StudentProfilePage() {
                               <Phone size={24} />
                             </div>
                             <div>
-                              <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Mobile Number</div>
-                              <div className="text-base font-bold text-slate-800 leading-snug">
+                              <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Mobile Number</div>
+                              <div className="text-base font-normal text-slate-800 leading-snug">
                                 {registration.mobileNumber || <span className="text-slate-300 font-normal">Not provided</span>}
                               </div>
                             </div>
@@ -635,15 +640,15 @@ export default function StudentProfilePage() {
                   <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-3">
+                        <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
                           <ShieldCheck className="text-emerald-600" size={22} />
                           Guardian Accompaniment
                         </CardTitle>
-                        <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-bold pt-1">Details for event access card generation</CardDescription>
+                        <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Details for event access card generation</CardDescription>
                       </div>
                       {editMode && (
                         <div className="flex items-center gap-3">
-                          <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">
                             {editForm?.withParent ? "Accompanied" : "Individual"}
                           </Label>
                           <Switch
@@ -663,7 +668,7 @@ export default function StudentProfilePage() {
                               <div className="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
                                 <User size={18} />
                               </div>
-                              <Label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Guardian Name</Label>
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Guardian Name</Label>
                             </div>
                             <Input
                               value={editForm.parentName}
@@ -677,7 +682,7 @@ export default function StudentProfilePage() {
                               <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
                                 <ShieldCheck size={18} />
                               </div>
-                              <Label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Relation</Label>
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Relation</Label>
                             </div>
                             <Input
                               value={editForm.relation}
@@ -687,7 +692,7 @@ export default function StudentProfilePage() {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Guardian Gender</Label>
+                            <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Guardian Gender</Label>
                             <div className="flex gap-4 py-2">
                               {["Male","Female"].map(g => (
                                 <label key={g} className="flex items-center gap-2 cursor-pointer">
@@ -721,8 +726,8 @@ export default function StudentProfilePage() {
                                 <User size={24} />
                               </div>
                               <div>
-                                <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Guardian Name</div>
-                                <div className="text-base font-bold text-slate-800 leading-snug uppercase">{registration.parentName}</div>
+                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Guardian Name</div>
+                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{registration.parentName}</div>
                               </div>
                             </div>
                             <div className="flex items-start gap-4">
@@ -730,8 +735,8 @@ export default function StudentProfilePage() {
                                 <ShieldCheck size={24} />
                               </div>
                               <div>
-                                <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Relation</div>
-                                <div className="text-base font-bold text-slate-800 leading-snug uppercase">{registration.relation}</div>
+                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Relation</div>
+                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{registration.relation}</div>
                               </div>
                             </div>
                           </div>
@@ -741,8 +746,8 @@ export default function StudentProfilePage() {
                                 <User size={24} />
                               </div>
                               <div>
-                                <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Guardian Gender</div>
-                                <div className="text-base font-bold text-slate-800 leading-snug uppercase">{registration.parentGender}</div>
+                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Guardian Gender</div>
+                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{registration.parentGender}</div>
                               </div>
                             </div>
                           </div>
@@ -752,7 +757,7 @@ export default function StudentProfilePage() {
                           <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
                             <User size={32} />
                           </div>
-                          <h3 className="text-slate-900 font-bold mb-1">Individual Participation</h3>
+                          <h3 className="text-slate-900 font-normal mb-1">Individual Participation</h3>
                           <p className="text-slate-400 text-sm max-w-xs">This student is registered as an individual and will not be accompanied by a guardian.</p>
                         </div>
                       )
