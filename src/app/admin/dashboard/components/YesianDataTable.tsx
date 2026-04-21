@@ -77,7 +77,14 @@ export function YesianDataTable({
               Reset
             </Button>
           )}
-          <Button className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm">
+          <Button 
+            onClick={() => {
+              import("@/lib/exportUtils").then(m => {
+                m.generateYesianExportPDF(data, "Yesian Network Registry", "yesian_network_data");
+              });
+            }}
+            className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
+          >
             <Download size={14} className="mr-2" /> Export
           </Button>
         </div>

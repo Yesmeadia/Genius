@@ -2,7 +2,16 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
 import { locations } from "@/data/locations";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "@/app/admin/dashboard/types";
+import { 
+  Registration, 
+  GuestRegistration, 
+  YesianRegistration, 
+  LocalStaffRegistration, 
+  AlumniRegistration, 
+  VolunteerRegistration, 
+  AwardeeRegistration, 
+  DriverStaffRegistration 
+} from "@/app/admin/dashboard/types";
 
 /** Robust filename sanitization for cross-browser compatibility */
 const sanitizeFilename = (filename: string): string => {
@@ -145,13 +154,12 @@ export async function generateGuestExportPDF(data: GuestRegistration[], title: s
     index + 1,
     reg.name,
     reg.whatsappNumber,
-    reg.address,
-    reg.createdAt?.toDate ? reg.createdAt.toDate().toLocaleString() : "N/A"
+    reg.address
   ]);
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Guest Name", "WhatsApp", "Address", "Created At"]],
+    head: [["#", "Guest Name", "WhatsApp", "Address"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [5, 150, 105], textColor: [255, 255, 255], fontSize: 8 },
@@ -174,13 +182,12 @@ export async function generateYesianExportPDF(data: YesianRegistration[], title:
     reg.name,
     reg.designation,
     reg.zone,
-    reg.whatsappNumber,
-    reg.createdAt?.toDate ? reg.createdAt.toDate().toLocaleString() : "N/A"
+    reg.whatsappNumber
   ]);
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Member Name", "Designation", "Zone", "WhatsApp", "Created At"]],
+    head: [["#", "Member Name", "Designation", "Zone", "WhatsApp"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [217, 119, 6], textColor: [255, 255, 255], fontSize: 8 },
@@ -204,16 +211,137 @@ export async function generateLocalStaffExportPDF(data: LocalStaffRegistration[]
     reg.role || "N/A",
     getSchoolName(reg.school),
     reg.zone,
-    reg.whatsappNumber,
-    reg.createdAt?.toDate ? reg.createdAt.toDate().toLocaleString() : "N/A"
+    reg.whatsappNumber
   ]);
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Staff Name", "Role", "School", "Zone", "WhatsApp", "Created At"]],
+    head: [["#", "Staff Name", "Role", "School", "Zone", "WhatsApp"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
+}
+
+/**
+ * Alumni Registration PDF
+ */
+export async function generateAlumniExportPDF(data: AlumniRegistration[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => [
+    index + 1,
+    reg.name,
+    reg.category,
+    reg.className,
+    getSchoolName(reg.school),
+    reg.zone,
+    reg.whatsappNumber
+  ]);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Alumni Name", "Category", "Class", "School", "Zone", "WhatsApp"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
+}
+
+/**
+ * Volunteer Registration PDF
+ */
+export async function generateVolunteerExportPDF(data: VolunteerRegistration[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => [
+    index + 1,
+    reg.volunteerName,
+    reg.parentage,
+    reg.className,
+    getSchoolName(reg.school),
+    reg.zone,
+    reg.whatsappNumber || reg.mobileNumber || "N/A"
+  ]);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Volunteer Name", "Parentage", "Class", "School", "Zone", "Contact"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
+}
+
+/**
+ * Awardee Registration PDF
+ */
+export async function generateAwardeeExportPDF(data: AwardeeRegistration[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => [
+    index + 1,
+    reg.name,
+    reg.category,
+    reg.className,
+    reg.rank,
+    reg.selectionType,
+    getSchoolName(reg.school),
+    reg.zone,
+    reg.whatsappNumber
+  ]);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Awardee Name", "Category", "Class", "Rank", "Type", "School", "Zone", "WhatsApp"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [124, 58, 237], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
+}
+
+/**
+ * Driver & Staff Registration PDF
+ */
+export async function generateDriverStaffExportPDF(data: DriverStaffRegistration[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => [
+    index + 1,
+    reg.name,
+    reg.staffType,
+    reg.vehicleType || "N/A",
+    reg.vehicleNumber || "N/A",
+    reg.zone,
+    reg.whatsappNumber
+  ]);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Name", "Staff Type", "Vehicle", "Plate No.", "Zone", "WhatsApp"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 8 },
     styles: { fontSize: 7, cellPadding: 2 },
     didDrawPage: (data) => addFooter(doc, data)
   });

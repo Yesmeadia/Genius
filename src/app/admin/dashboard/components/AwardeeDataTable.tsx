@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, RotateCcw, User, Phone, MapPin, Award } from "lucide-react";
+import { Search, Download, RotateCcw, User, Phone, MapPin, Award, ShieldCheck } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -83,11 +83,22 @@ export function AwardeeDataTable({
               Reset
             </Button>
           )}
-          <Button 
-            onClick={() => generateBatchAccessPasses(data, 'Awardee_Access_Passes', 'awardee')}
+          <Button
+            onClick={() => {
+              import("@/lib/exportUtils").then(m => {
+                m.generateAwardeeExportPDF(data, "Awardee Selection Registry", "awardee_registry_data");
+              });
+            }}
             className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
           >
-            <Download size={14} className="mr-2" /> Export
+            <Download size={14} className="mr-2" /> Export PDF
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => generateBatchAccessPasses(data, 'Awardee_Access_Passes', 'awardee')}
+            className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold text-violet-600 border-violet-100 bg-violet-50 hover:bg-violet-100 transition-all rounded-xl shadow-sm"
+          >
+            <ShieldCheck size={14} className="mr-2" /> Batch Passes
           </Button>
         </div>
       </CardHeader>

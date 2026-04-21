@@ -51,6 +51,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.includes("/local-staff")) return "Local Staff Database";
     if (pathname.includes("/alumni-achievers")) return "Alumni Achievers Data";
     if (pathname.includes("/volunteers")) return "Volunteers Registration";
+    if (pathname.includes("/awardee")) return "Awardee Management";
+    if (pathname.includes("/driver-staff")) return "Drivers & Staff Registry";
     if (pathname.includes("/access-pass")) return "Access Pass Center";
     if (pathname.includes("/reports")) return "Analytics & Reports";
     if (pathname.includes("/master-export")) return "Master Export Center";

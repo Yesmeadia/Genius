@@ -83,10 +83,21 @@ export function DriverStaffDataTable({
             </Button>
           )}
           <Button 
-            onClick={() => generateBatchAccessPasses(data, 'Driver_Staff_Access_Passes', 'driver-staff')}
+            onClick={() => {
+              import("@/lib/exportUtils").then(m => {
+                m.generateDriverStaffExportPDF(data, "Drivers & Staff Registry", "driver_staff_data");
+              });
+            }}
             className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
           >
-            <Download size={14} className="mr-2" /> Export
+            <Download size={14} className="mr-2" /> Export PDF
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => generateBatchAccessPasses(data, 'Driver_Staff_Access_Passes', 'driver-staff')}
+            className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold text-indigo-600 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-all rounded-xl shadow-sm"
+          >
+            <ShieldCheck size={14} className="mr-2" /> Batch Passes
           </Button>
         </div>
       </CardHeader>
