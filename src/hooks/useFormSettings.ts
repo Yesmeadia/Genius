@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
 export interface FormSetting {
-  id: "student" | "guest" | "yesian" | "local-staff" | "alumni-achiever" | "volunteer";
+  id: "student" | "guest" | "yesian" | "local-staff" | "alumni-achiever" | "volunteer" | "awardee" | "driver-staff";
   label: string;
   enabled: boolean;
   order: number;
@@ -18,6 +18,8 @@ const DEFAULT_SETTINGS: FormSetting[] = [
   { id: "local-staff", label: "Local Staff Registration", enabled: true, order: 3 },
   { id: "alumni-achiever", label: "Alumni Achiever Registration", enabled: true, order: 4 },
   { id: "volunteer", label: "Volunteer Registration", enabled: true, order: 5 },
+  { id: "awardee", label: "Awardee Registration", enabled: true, order: 6 },
+  { id: "driver-staff", label: "Driver & Staff Registration", enabled: true, order: 7 },
 ];
 
 const SETTINGS_DOC = doc(db, "settings", "registrationForms");

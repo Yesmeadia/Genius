@@ -75,13 +75,43 @@ export interface VolunteerRegistration {
   photoUrl?: string;
 }
 
+export interface AwardeeRegistration {
+  id: string;
+  name: string;
+  gender: string;
+  whatsappNumber: string;
+  zone: string;
+  school: string;
+  category: string;
+  className: string;
+  rank: string;
+  selectionType: string;
+  createdAt: any;
+  photoUrl?: string;
+}
+
+export interface DriverStaffRegistration {
+  id: string;
+  name: string;
+  gender: string;
+  whatsappNumber: string;
+  zone: string;
+  staffType: "DRIVER" | "SUPPORT STAFF";
+  vehicleNumber?: string;
+  vehicleType?: string;
+  photoUrl: string;
+  createdAt: any;
+}
+
 export interface DashboardStats {
   totalStudents: number;
   totalGuests: number;
   totalYesians: number;
-  totalLocalStaff: number;
+  totalStaff: number;
   totalAlumni: number;
   totalVolunteers: number;
+  totalAwardees: number;
+  totalDriverStaff: number;
   todayCount: number;
   totalParticipation: number;
   totalAccompanied: number;
@@ -94,6 +124,21 @@ export interface DashboardStats {
   lastUpdated: string;
   trendData: { date: string; count: number }[];
   platformData: { name: string; value: number }[];
+}
+
+export interface DashboardDataContextType {
+  registrations: Registration[];
+  guestRegistrations: GuestRegistration[];
+  yesianRegistrations: YesianRegistration[];
+  localStaffRegistrations: LocalStaffRegistration[];
+  alumniRegistrations: AlumniRegistration[];
+  volunteerRegistrations: VolunteerRegistration[];
+  awardeeRegistrations: AwardeeRegistration[];
+  driverStaffRegistrations: DriverStaffRegistration[];
+  stats: DashboardStats;
+  loading: boolean;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
 }
 
 export interface DataTableProps {

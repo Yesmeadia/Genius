@@ -4,14 +4,16 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from "
 import { db, auth } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import { locations } from "@/data/locations";
-import { 
-  Registration, 
-  GuestRegistration, 
-  YesianRegistration, 
+import {
+  Registration,
+  GuestRegistration,
+  YesianRegistration,
   LocalStaffRegistration,
   AlumniRegistration,
   VolunteerRegistration,
-  DashboardStats 
+  DashboardStats,
+  AwardeeRegistration,
+  DriverStaffRegistration
 } from "../types";
 
 interface DashboardDataContextType {
@@ -21,6 +23,8 @@ interface DashboardDataContextType {
   localStaffRegistrations: LocalStaffRegistration[];
   alumniRegistrations: AlumniRegistration[];
   volunteerRegistrations: VolunteerRegistration[];
+  awardeeRegistrations: AwardeeRegistration[];
+  driverStaffRegistrations: DriverStaffRegistration[];
   stats: DashboardStats;
   loading: boolean;
   lastSync: string;
@@ -50,6 +54,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   const [localStaffRegistrations, setLocalStaffRegistrations] = useState<LocalStaffRegistration[]>([]);
   const [alumniRegistrations, setAlumniRegistrations] = useState<AlumniRegistration[]>([]);
   const [volunteerRegistrations, setVolunteerRegistrations] = useState<VolunteerRegistration[]>([]);
+  const [awardeeRegistrations, setAwardeeRegistrations] = useState<AwardeeRegistration[]>([]);
+  const [driverStaffRegistrations, setDriverStaffRegistrations] = useState<DriverStaffRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
 
@@ -95,6 +101,16 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       setVolunteerRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as VolunteerRegistration[]);
     });
 
+    const qAwardees = query(collection(db, "awardee_registrations"), orderBy("createdAt", "desc"));
+    const unsubAwardees = onSnapshot(qAwardees, (snap) => {
+      setAwardeeRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AwardeeRegistration[]);
+    });
+
+    const qDriverStaff = query(collection(db, "driver_staff_registrations"), orderBy("createdAt", "desc"));
+    const unsubDriverStaff = onSnapshot(qDriverStaff, (snap) => {
+      setDriverStaffRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as DriverStaffRegistration[]);
+    });
+
     return () => {
       unsubStudents();
       unsubGuests();
@@ -102,6 +118,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       unsubStaff();
       unsubAlumni();
       unsubVolunteers();
+      unsubAwardees();
+      unsubDriverStaff();
     };
   }, []);
 
@@ -124,7 +142,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
 
     const studentMales = registrations.filter(r => r.gender?.toLowerCase() === "male").length;
     const studentFemales = registrations.filter(r => r.gender?.toLowerCase() === "female").length;
-    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length + alumniRegistrations.length + volunteerRegistrations.length;
+    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length + alumniRegistrations.length + volunteerRegistrations.length + awardeeRegistrations.length + driverStaffRegistrations.length;
 
     const trendMap = new Map();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -147,9 +165,11 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalStudents: registrations.length,
       totalGuests: guestRegistrations.length,
       totalYesians: yesianRegistrations.length,
-      totalLocalStaff: localStaffRegistrations.length,
+      totalStaff: localStaffRegistrations.length,
       totalAlumni: alumniRegistrations.length,
       totalVolunteers: volunteerRegistrations.length,
+      totalAwardees: awardeeRegistrations.length,
+      totalDriverStaff: driverStaffRegistrations.length,
       todayCount,
       totalParticipation,
       totalAccompanied: registrations.filter(r => r.withParent).length,
@@ -157,8 +177,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalZones: new Set(registrations.map(r => r.zone)).size,
       availableSchoolsCount: locations.reduce((acc, z) => acc + z.schools.length, 0),
       availableZonesCount: locations.length,
-      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
-      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
+      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
+      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
       lastUpdated: lastSync,
       trendData,
       platformData: [
@@ -168,9 +188,11 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
         { name: 'Local Staff', value: localStaffRegistrations.length },
         { name: 'Alumni', value: alumniRegistrations.length },
         { name: 'Volunteers', value: volunteerRegistrations.length },
+        { name: 'Awardees', value: awardeeRegistrations.length },
+        { name: 'Drivers/Staff', value: driverStaffRegistrations.length },
       ],
     };
-  }, [registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, alumniRegistrations, volunteerRegistrations, lastSync]);
+  }, [registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, driverStaffRegistrations, lastSync]);
 
   const resetFilters = () => {
     setSearchTerm("");
@@ -188,6 +210,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     localStaffRegistrations,
     alumniRegistrations,
     volunteerRegistrations,
+    awardeeRegistrations,
+    driverStaffRegistrations,
     stats,
     loading,
     lastSync,

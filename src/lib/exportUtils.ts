@@ -63,6 +63,7 @@ const getBase64ImageFromUrl = async (imageUrl: string) => {
     }
 
     // For local assets (e.g. /yeslogo.png) use standard fetch
+    console.log(`Fetching local asset: ${imageUrl}`);
     const res = await fetch(imageUrl);
     const blob = await res.blob();
     return await new Promise<string>((resolve, reject) => {
@@ -80,6 +81,7 @@ const getBase64ImageFromUrl = async (imageUrl: string) => {
 /** Fetches a local font file and returns its raw base64 string (without data: prefix) for jsPDF */
 const getFontBase64 = async (path: string): Promise<string | null> => {
   try {
+    console.log(`Fetching font: ${path}`);
     const res = await fetch(path);
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
@@ -455,7 +457,7 @@ function addFooter(doc: jsPDF, data: any) {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer',
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'driver-staff',
   kalashFontLoaded: boolean
 ) {
   const W = doc.internal.pageSize.width;   // 70mm
@@ -484,7 +486,7 @@ async function drawBadgeContent(
   const photoX = stripW + 1 + (photoAreaW - photoW) / 2;
   const photoY = 12;                // push down from top — adds space from header
 
-  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer') ? data.photoUrl : null;
+  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'driver-staff') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) doc.addImage(photo, 'JPEG', photoX, photoY, photoW, photoH);
@@ -492,7 +494,7 @@ async function drawBadgeContent(
 
 
   // ── 3. NAME (single line) ──────────────────────────────────────
-  const fullName = (type === 'student' ? data.studentName : type === 'volunteer' ? data.volunteerName : data.name || '').trim();
+  const fullName = (type === 'student' ? data.studentName : type === 'volunteer' ? data.volunteerName : (data.name || '')).trim();
 
   // Auto-scale font size based on name length
   const nameFontSize = fullName.length <= 10 ? 12
@@ -512,6 +514,8 @@ async function drawBadgeContent(
   else if (type === 'local-staff') tc = [14, 165, 233]; // sky blue
   else if (type === 'alumni-achiever') tc = [236, 72, 153]; // pink
   else if (type === 'volunteer') tc = [217, 119, 6]; // amber
+  else if (type === 'awardee') tc = [124, 58, 237]; // violet
+  else if (type === 'driver-staff') tc = [79, 70, 229]; // indigo
 
   doc.setFontSize(6.5);
   doc.setFont('helvetica', 'bold');
@@ -530,6 +534,15 @@ async function drawBadgeContent(
   else if (type === 'volunteer') {
     const schoolName = getSchoolName(data.school);
     infoText = `${data.className || ''}\n${data.zone} | ${schoolName}`;
+  }
+  else if (type === 'awardee') {
+    const schoolName = getSchoolName(data.school);
+    infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${data.zone} | ${schoolName}`;
+  }
+  else if (type === 'driver-staff') {
+    infoText = data.staffType === 'DRIVER' 
+      ? `DRIVER | ${data.vehicleType || ''}\n${data.vehicleNumber || ''}\nZONE: ${data.zone || ''}`
+      : `SUPPORT STAFF\nZONE: ${data.zone || ''}`;
   }
   else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
   const infoY = splitY + 17;
@@ -553,7 +566,7 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' = 'student'
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'driver-staff' = 'student'
 ) {
   if (data.length === 0) return alert("No records found.");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [70, 100] });

@@ -8,8 +8,12 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "overrides": {
+    "serialize-javascript": "7.0.5"
+  },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-select": "^2.2.6",
@@ -32,7 +36,8 @@
     "react-hook-form": "^7.72.1",
     "recharts": "^2.15.4",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/jsbarcode": "^3.11.4",

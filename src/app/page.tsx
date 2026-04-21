@@ -106,6 +106,38 @@ const registrationTypes = [
     cardBg: "rgba(255,255,255,0.45)",
     orbColor: "rgba(217,119,6,0.08)",
   },
+  {
+    id: "awardee",
+    title: "Awardee Registration",
+    subtitle: "For Award Recipients",
+    description:
+      "Register as an Awardee to be recognized at the Genius Jam 2026 event.",
+    href: "/register/awardee",
+    accentHex: "#8b5cf6", // Violet
+    glow: "rgba(139,92,246,0.1)",
+    border: "rgba(139,92,246,0.12)",
+    badge: "Awardee",
+    badgeBg: "rgba(139,92,246,0.06)",
+    badgeText: "#8b5cf6",
+    cardBg: "rgba(255,255,255,0.45)",
+    orbColor: "rgba(139,92,246,0.08)",
+  },
+  {
+    id: "driver-staff",
+    title: "Drivers & Support",
+    subtitle: "For Transport & Support",
+    description:
+      "Register as a driver or support staff to manage logistics and transportation for Genius Jam 2026.",
+    href: "/register/driver-staff",
+    accentHex: "#4f46e5", // Indigo
+    glow: "rgba(79,70,229,0.1)",
+    border: "rgba(79,70,229,0.12)",
+    badge: "Transport",
+    badgeBg: "rgba(79,70,229,0.06)",
+    badgeText: "#4f46e5",
+    cardBg: "rgba(255,255,255,0.45)",
+    orbColor: "rgba(79,70,229,0.08)",
+  },
 ];
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */

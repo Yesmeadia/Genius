@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap, Truck } from "lucide-react";
 
 interface DashboardSidebarProps {
   sidebarOpen: boolean;
@@ -12,7 +12,7 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: DashboardSidebarProps) {
   const pathname = usePathname();
-  
+
   const menuItems = [
     { id: "overview", label: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/admin/dashboard" },
     { id: "records", label: "Students data", icon: <Users size={20} />, href: "/admin/dashboard/students-data" },
@@ -22,6 +22,8 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
     { id: "local-staff", label: "Local Staff", icon: <User size={20} />, href: "/admin/dashboard/local-staff" },
     { id: "alumni-achievers", label: "Alumni Achievers", icon: <GraduationCap size={20} />, href: "/admin/dashboard/alumni-achievers" },
     { id: "volunteers", label: "Volunteers", icon: <ShieldCheck size={20} />, href: "/admin/dashboard/volunteers" },
+    { id: "awardees", label: "Awardees", icon: <BarChart3 size={20} />, href: "/admin/dashboard/awardee" },
+    { id: "driver-staff", label: "Drivers & Staff", icon: <Truck size={20} />, href: "/admin/dashboard/driver-staff" },
     { id: "pass", label: "Access Pass", icon: <CreditCard size={20} />, href: "/admin/dashboard/access-pass" },
     { id: "reports", label: "Reports", icon: <BarChart3 size={20} />, href: "/admin/dashboard/reports" },
     { id: "export", label: "Export Center", icon: <Download size={20} />, href: "/admin/dashboard/master-export" },
@@ -45,7 +47,10 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
       </div>
 
       {/* Navigation */}
-      <nav className="flex-grow px-4 py-4 space-y-1">
+      <nav 
+        data-lenis-prevent
+        className="flex-1 min-h-0 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar"
+      >
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -71,7 +76,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
       </nav>
 
       {/* Logout/Footer */}
-      <div className="p-6 border-t border-slate-50 mt-auto">
+      <div className="p-6 border-t border-slate-50">
         <button
           onClick={onSignOut}
           className={`flex items-center text-slate-400 hover:text-red-500 w-full transition-colors group ${sidebarOpen ? 'gap-4 px-4 py-3' : 'justify-center p-3'}`}
