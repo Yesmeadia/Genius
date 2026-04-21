@@ -16,7 +16,7 @@ export const locations: Zone[] = [
     schools: [
       { id: "sch-1", name: "YASEEN ENGLISH SCHOOL - MALOORA" },
       { id: "sch-2", name: "YES SOLAH IDARATHUL ALOOM SCHOOL - NARBAL" },
-      { id: "sch-3", name: "YES DARUL ULOOM JAMIA ZAINUL ISLAM - PAHALGHAM" },
+      { id: "sch-3", name: "YASEEN COLLEGE OF INTEGRATED STUDIES - PAHALGHAM" },
     ],
   },
   {
