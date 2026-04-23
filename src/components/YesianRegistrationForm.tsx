@@ -148,10 +148,9 @@ export default function YesianRegistrationForm() {
                       key={option}
                       className={`
                         relative flex items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300
-                        ${
-                          isSelected
-                            ? "border-amber-500 bg-amber-50/50 shadow-sm"
-                            : "border-slate-100 bg-white/50 hover:border-slate-200"
+                        ${isSelected
+                          ? "border-amber-500 bg-amber-50/50 shadow-sm"
+                          : "border-slate-100 bg-white/50 hover:border-slate-200"
                         }
                       `}
                     >
@@ -260,7 +259,7 @@ export default function YesianRegistrationForm() {
                   onChange: (e) =>
                     (e.target.value = e.target.value.toUpperCase()),
                 })}
-                placeholder="E.G. COORDINATOR, VOLUNTEER"
+                placeholder="Enter Designation"
                 className={`h-12 bg-white/50 border-slate-200 focus:border-amber-500 focus:ring-amber-500/20 transition-all uppercase placeholder:text-slate-300 ${errors.designation ? "border-destructive" : ""}`}
               />
               {errors.designation && (
