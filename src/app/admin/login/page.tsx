@@ -61,7 +61,7 @@ export default function LoginPage() {
             <CardHeader className="text-center space-y-1 pb-8">
                 <div className="flex flex-col items-center gap-4 mb-4">
                     <img src="/yeslogo.png" alt="Logo" className="h-5 w-auto opacity-50" />
-                    <img src="/Genius.png" alt="Logo" className="h-12 w-auto" />
+                    <img src="/Genius.png" alt="Logo" className="h-16 w-auto" />
                 </div>
                 <CardDescription className="text-slate-500">Sign in to manage registrations</CardDescription>
             </CardHeader>

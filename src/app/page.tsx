@@ -263,7 +263,7 @@ export default function Home() {
             <img src="/yeslogo.png" alt="YES INDIA" className="h-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-700" />
             <div className="relative">
               <div className="absolute -inset-4 bg-indigo-500/5 blur-3xl rounded-full" />
-              <img src="/Genius.png" alt="Genius Jam" className="h-24 md:h-32 object-contain relative drop-shadow-[0_8px_30px_rgb(0,0,0,0.04)]" />
+              <img src="/Genius.png" alt="Genius Jam" className="h-32 md:h-44 object-contain relative drop-shadow-[0_8px_30px_rgb(0,0,0,0.04)]" />
             </div>
           </div>
           <h1 className="text-xs font-normal tracking-[0.25em] text-slate-400 uppercase mt-2 mb-2">

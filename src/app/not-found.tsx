@@ -12,7 +12,7 @@ export default function NotFound() {
         <div className="flex items-center justify-center gap-3 opacity-55">
           <img src="/yeslogo.png" alt="YES Logo" className="h-5 w-auto" />
           <div className="w-[1px] h-3.5 bg-slate-200" />
-          <img src="/Genius.png" alt="Genius Logo" className="h-9 w-auto" />
+          <img src="/Genius.png" alt="Genius Logo" className="h-12 w-auto" />
         </div>
 
         {/* 404 Visual */}

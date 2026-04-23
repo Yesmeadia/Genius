@@ -73,7 +73,7 @@ export default function YesianRegistrationPage() {
         <header className="page-header flex flex-col items-center text-center mb-4 px-4">
           <div className="flex flex-col items-center gap-8 mb-10">
             <img src="/yeslogo.png" alt="YES INDIA" className="h-6 opacity-30 grayscale" />
-            <img src="/Genius.png" alt="Genius Jam" className="h-16 md:h-22 object-contain" />
+            <img src="/Genius.png" alt="Genius Jam" className="h-20 md:h-28 object-contain" />
           </div>
 
           <h1 className="text-xs font-black tracking-[0.25em] text-slate-400 uppercase mt-2 mb-2">

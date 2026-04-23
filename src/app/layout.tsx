@@ -11,7 +11,7 @@ const figtree = Figtree({
 });
 
 export const metadata: Metadata = {
-  title: "YES genius | National Level Talent Search",
+  title: "YES genius Jam 3.0 | YES India Foundation",
   description: "National Level Talent Search by YES India Foundation",
 };
 

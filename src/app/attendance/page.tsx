@@ -290,7 +290,7 @@ export default function AttendancePage() {
         <header className="page-header flex flex-col items-center text-center mb-16">
           <div className="flex flex-col items-center gap-8 mb-10">
             <img src="/yeslogo.png" alt="YES INDIA" className="h-8 opacity-40 grayscale" />
-            <img src="/Genius.png" alt="Genius Jam" className="h-20 md:h-24 object-contain" />
+            <img src="/Genius.png" alt="Genius Jam" className="h-24 md:h-32 object-contain" />
           </div>
           <div className="space-y-4">
             <h1 className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
