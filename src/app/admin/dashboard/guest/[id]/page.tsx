@@ -4,15 +4,17 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { GuestRegistration } from "../../types";
 import {
   ArrowLeft, Calendar, User, Phone, MapPin,
   Pencil, X, Check, Loader2, ShieldCheck, Briefcase,
-  Moon, Bell, Download
+  Moon, Bell, Download, Trash2, CheckCircle2
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
+import { moveToRecycleBin } from "@/lib/deleteUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +30,7 @@ interface GuestEditForm {
   gender: string;
   whatsappNumber: string;
   address: string;
+  attendance: boolean;
 }
 
 export default function GuestProfilePage() {
@@ -42,6 +45,7 @@ export default function GuestProfilePage() {
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState<GuestEditForm | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!id || !user) return;
@@ -78,6 +82,7 @@ export default function GuestProfilePage() {
       gender: registration.gender || "",
       whatsappNumber: registration.whatsappNumber || "",
       address: registration.address || "",
+      attendance: registration.attendance || false,
     });
     setEditMode(true);
   };
@@ -87,7 +92,7 @@ export default function GuestProfilePage() {
     setEditForm(null);
   };
 
-  const updateField = (field: keyof GuestEditForm, value: string) => {
+  const updateField = (field: keyof GuestEditForm, value: any) => {
     setEditForm(prev => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -100,6 +105,8 @@ export default function GuestProfilePage() {
         gender: editForm.gender,
         whatsappNumber: editForm.whatsappNumber,
         address: editForm.address,
+        attendance: editForm.attendance,
+        attendedAt: editForm.attendance && !registration?.attendance ? new Date() : (editForm.attendance ? registration?.attendedAt : null)
       };
       await updateDoc(doc(db, "guest_registrations", id as string), updateData);
       setRegistration(prev => (prev ? { ...prev, ...updateData } : prev));
@@ -110,6 +117,28 @@ export default function GuestProfilePage() {
       alert("Failed to save changes. Please try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !registration) return;
+    
+    const confirmDelete = window.confirm(`Are you sure you want to delete the record for ${registration.name}? This record will be moved to the Recycle Bin.`);
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await moveToRecycleBin(
+        id as string,
+        "guest_registrations",
+        registration,
+        "Guest"
+      );
+      router.push("/admin/dashboard/guest");
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      alert("Failed to delete record. Please try again.");
+      setIsDeleting(false);
     }
   };
 
@@ -190,6 +219,18 @@ export default function GuestProfilePage() {
                   <Pencil className="mr-2 h-4 w-4" /> Edit Record
                 </Button>
                 <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
+                >
+                  {isDeleting ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                  ) : (
+                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                  )}
+                </Button>
+                <Button
                   onClick={() => generateBatchAccessPasses([registration], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'guest')}
                   className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
                 >
@@ -247,6 +288,21 @@ export default function GuestProfilePage() {
                         ))}
                       </div>
                     </div>
+                    <div className="pt-4 border-t border-slate-50">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Attendance</Label>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold uppercase ${editForm?.attendance ? 'text-emerald-500' : 'text-slate-400'}`}>
+                            {editForm?.attendance ? 'Present' : 'Absent'}
+                          </span>
+                          <Switch
+                            checked={editForm?.attendance || false}
+                            onCheckedChange={v => updateField("attendance", v)}
+                            className="data-[state=checked]:bg-emerald-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -289,15 +345,29 @@ export default function GuestProfilePage() {
                     <ShieldCheck size={14} /> Confirmed
                   </span>
                 </div>
-                <div className="flex items-center gap-3 py-1">
-                  <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
-                    <Calendar size={20} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none mb-1">Joined Date</div>
-                    <div className="text-sm font-normal text-slate-700">{formatDate(registration.createdAt)}</div>
-                  </div>
+                <div className="flex items-center justify-between text-[11px] font-normal uppercase text-slate-400 tracking-widest border-b border-slate-50 pt-3 pb-3">
+                  <span>Attendance Status</span>
+                  {registration.attendance ? (
+                    <span className="text-emerald-500 flex items-center gap-1 font-bold">
+                      <CheckCircle2 size={14} /> Present
+                    </span>
+                  ) : (
+                    <span className="text-red-400 flex items-center gap-1 font-bold">
+                      <X size={14} /> Absent
+                    </span>
+                  )}
                 </div>
+                {registration.attendance && (
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                      <Calendar size={20} />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none mb-1">Check-in Time</div>
+                      <div className="text-sm font-normal text-slate-700">{formatDate(registration.attendedAt)}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           </div>

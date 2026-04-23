@@ -21,6 +21,8 @@ export interface Registration {
   relation?: string;
   createdAt: any;
   photoUrl?: string;
+  attendance?: boolean;
+  attendedAt?: any;
 }
 
 export interface GuestRegistration {
@@ -30,6 +32,8 @@ export interface GuestRegistration {
   whatsappNumber: string;
   address: string;
   createdAt: any;
+  attendance?: boolean;
+  attendedAt?: any;
 }
 
 export interface YesianRegistration {
@@ -41,6 +45,8 @@ export interface YesianRegistration {
   designation: string;
   createdAt: any;
   photoUrl?: string;
+  attendance?: boolean;
+  attendedAt?: any;
 }
 
 export interface LocalStaffRegistration {
@@ -53,6 +59,8 @@ export interface LocalStaffRegistration {
   role: "Teaching" | "Non Teaching";
   createdAt: any;
   photoUrl?: string;
+  attendance?: boolean;
+  attendedAt?: any;
 }
 
 export interface AlumniRegistration {
@@ -67,6 +75,8 @@ export interface AlumniRegistration {
   createdAt: any;
   photoUrl?: string;
   withParent?: boolean;
+  attendance?: boolean;
+  attendedAt?: any;
   accompaniments?: Accompaniment[];
 }
 
@@ -82,6 +92,8 @@ export interface VolunteerRegistration {
   className: string;
   createdAt: any;
   photoUrl?: string;
+  attendance?: boolean;
+  attendedAt?: any;
 }
 
 export interface AwardeeRegistration {
@@ -98,6 +110,8 @@ export interface AwardeeRegistration {
   createdAt: any;
   photoUrl?: string;
   withParent?: boolean;
+  attendance?: boolean;
+  attendedAt?: any;
   accompaniments?: Accompaniment[];
 }
 
@@ -112,6 +126,8 @@ export interface DriverStaffRegistration {
   vehicleType?: string;
   photoUrl: string;
   createdAt: any;
+  attendance?: boolean;
+  attendedAt?: any;
 }
 
 export interface DashboardStats {
@@ -170,3 +186,14 @@ export interface DataTableProps {
   setFilterSchool?: (val: string) => void;
   resetFilters?: () => void;
 }
+
+export interface DeletedRecord {
+  id: string;
+  originalId: string;
+  originalCollection: string;
+  data: any;
+  deletedAt: any;
+  deletedBy?: string;
+  type: string;
+}
+

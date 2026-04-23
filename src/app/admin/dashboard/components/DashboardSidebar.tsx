@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap, Truck } from "lucide-react";
+import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap, Truck, Trash2 } from "lucide-react";
 
 interface DashboardSidebarProps {
   sidebarOpen: boolean;
@@ -25,6 +25,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
     { id: "awardees", label: "Awardees", icon: <BarChart3 size={20} />, href: "/admin/dashboard/awardee" },
     { id: "driver-staff", label: "Drivers & Staff", icon: <Truck size={20} />, href: "/admin/dashboard/driver-staff" },
     { id: "pass", label: "Access Pass", icon: <CreditCard size={20} />, href: "/admin/dashboard/access-pass" },
+    { id: "recycle-bin", label: "Recycle Bin", icon: <Trash2 size={20} />, href: "/admin/dashboard/recycle-bin" },
     { id: "reports", label: "Reports", icon: <BarChart3 size={20} />, href: "/admin/dashboard/reports" },
     { id: "export", label: "Export Center", icon: <Download size={20} />, href: "/admin/dashboard/master-export" },
   ];

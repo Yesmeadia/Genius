@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { AwardeeRegistration } from "../types";
 import Link from "next/link";
 import { locations } from "@/data/locations";
@@ -125,6 +126,9 @@ export function AwardeeDataTable({
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
                   Contact
                 </TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
+                  Attendance
+                </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-right pr-6">
                   Actions
                 </TableHead>
@@ -197,6 +201,17 @@ export function AwardeeDataTable({
                         </span>
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    {reg.attendance ? (
+                      <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-100 font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-none">
+                        Present
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-slate-50/50 text-slate-300 border-slate-100 font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-none">
+                        Absent
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="py-4 text-right pr-6">
                     <Link href={`/admin/dashboard/awardee/${reg.id}`}>

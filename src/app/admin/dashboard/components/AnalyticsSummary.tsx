@@ -18,10 +18,10 @@ export function AnalyticsSummary({ stats }: AnalyticsSummaryProps) {
     { label: "Alumni", value: stats.totalAlumni, icon: <Archive />, color: "orange", trend: "Alumni", href: "/admin/dashboard/alumni-achievers" },
     { label: "Volunteers", value: stats.totalVolunteers, icon: <ShieldCheck />, color: "blue", trend: "Crew", href: "/admin/dashboard/volunteers" },
     { label: "Awardees", value: stats.totalAwardees, icon: <Zap />, color: "yellow", trend: "Rankers", href: "/admin/dashboard/awardee" },
-    { label: "Transport", value: stats.totalDriverStaff, icon: <Truck />, color: "indigo", trend: "Active", href: "/admin/dashboard/driver-staff" },
+    { label: "Transport & Support", value: stats.totalDriverStaff, icon: <Truck />, color: "indigo", trend: "Active", href: "/admin/dashboard/driver-staff" },
     { label: "Schools", value: stats.totalSchools, icon: <School />, color: "cyan", trend: "Synced" },
     { label: "Zones", value: stats.totalZones, icon: <MapPin />, color: "rose", trend: "Active" },
-    { label: "Security", value: stats.totalAccompanied, icon: <ShieldCheck />, color: "purple", trend: "Verified" },
+    { label: "Accompanied", value: stats.totalAccompanied, icon: <ShieldCheck />, color: "purple", trend: "Parents" },
     { label: "Total Data", value: stats.totalParticipation, icon: <Archive />, color: "slate", trend: "Global", href: "/admin/dashboard/reports" }
   ];
 

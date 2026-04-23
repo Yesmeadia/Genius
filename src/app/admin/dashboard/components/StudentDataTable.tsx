@@ -192,6 +192,7 @@ export function StudentDataTable({
               <TableRow className="border-slate-50">
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest pl-6">Student</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">School & Zone</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Attendance</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Accompaniment</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Mobile</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-center">Action</TableHead>
@@ -224,6 +225,17 @@ export function StudentDataTable({
                     <div className="text-[10px] text-slate-400 uppercase tracking-tight">
                       {reg.zone}
                     </div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    {reg.attendance ? (
+                      <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-100 font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-none">
+                        Present
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-slate-50/50 text-slate-300 border-slate-100 font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-none">
+                        Absent
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="py-4">
                     {reg.withParent ? (

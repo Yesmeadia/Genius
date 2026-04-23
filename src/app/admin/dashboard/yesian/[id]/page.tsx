@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { db, storage, auth } from "@/lib/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signOut } from "firebase/auth";
 import { YesianRegistration } from "../../types";
@@ -12,9 +12,11 @@ import { locations } from "@/data/locations";
 import {
   ArrowLeft, Calendar, User, ShieldCheck, Phone,
   Pencil, X, Check, Camera, Loader2, UploadCloud,
-  Moon, Bell, MapPin, Briefcase, Download
+  Moon, Bell, MapPin, Briefcase, Download, Trash2, CheckCircle2
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
+import { moveToRecycleBin } from "@/lib/deleteUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +37,7 @@ interface YesianEditForm {
   whatsappNumber: string;
   zone: string;
   designation: string;
+  attendance: boolean;
 }
 
 export default function YesianProfilePage() {
@@ -51,6 +54,7 @@ export default function YesianProfilePage() {
   const [editForm, setEditForm] = useState<YesianEditForm | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -94,6 +98,7 @@ export default function YesianProfilePage() {
       whatsappNumber: registration.whatsappNumber || "",
       zone: registration.zone || "",
       designation: registration.designation || "",
+      attendance: registration.attendance || false,
     });
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -114,7 +119,7 @@ export default function YesianProfilePage() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const updateField = (field: keyof YesianEditForm, value: string) => {
+  const updateField = (field: keyof YesianEditForm, value: any) => {
     setEditForm(prev => (prev ? { ...prev, [field]: value } : prev));
   };
 
@@ -135,6 +140,8 @@ export default function YesianProfilePage() {
         zone: editForm.zone,
         designation: editForm.designation.toUpperCase(),
         photoUrl,
+        attendance: editForm.attendance,
+        attendedAt: editForm.attendance && !registration?.attendance ? new Date() : (editForm.attendance ? registration?.attendedAt : null)
       };
       await updateDoc(doc(db, "yesian_registrations", id as string), updateData);
       setRegistration(prev => (prev ? { ...prev, ...updateData } : prev));
@@ -147,6 +154,28 @@ export default function YesianProfilePage() {
       alert("Failed to save changes. Please try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !registration) return;
+    
+    const confirmDelete = window.confirm(`Are you sure you want to delete the record for ${registration.name}? This record will be moved to the Recycle Bin.`);
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await moveToRecycleBin(
+        id as string,
+        "yesian_registrations",
+        registration,
+        "Yesian"
+      );
+      router.push("/admin/dashboard/yesian");
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      alert("Failed to delete record. Please try again.");
+      setIsDeleting(false);
     }
   };
 
@@ -229,6 +258,18 @@ export default function YesianProfilePage() {
                   <Pencil className="mr-2 h-4 w-4" /> Edit Record
                 </Button>
                 <Button
+                  variant="outline"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
+                >
+                  {isDeleting ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                  ) : (
+                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                  )}
+                </Button>
+                <Button
                   onClick={() => generateBatchAccessPasses([registration], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'yesian')}
                   className="h-10 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-amber-100"
                 >
@@ -309,6 +350,21 @@ export default function YesianProfilePage() {
                         ))}
                       </div>
                     </div>
+                    <div className="pt-4 border-t border-slate-50">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Attendance</Label>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold uppercase ${editForm?.attendance ? 'text-emerald-500' : 'text-slate-400'}`}>
+                            {editForm?.attendance ? 'Present' : 'Absent'}
+                          </span>
+                          <Switch
+                            checked={editForm?.attendance || false}
+                            onCheckedChange={v => updateField("attendance", v as any)}
+                            className="data-[state=checked]:bg-emerald-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -351,15 +407,29 @@ export default function YesianProfilePage() {
                     <ShieldCheck size={14} /> Confirmed
                   </span>
                 </div>
-                <div className="flex items-center gap-3 py-1">
-                  <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                    <Calendar size={20} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none mb-1">Joined Date</div>
-                    <div className="text-sm font-normal text-slate-700">{formatDate(registration.createdAt)}</div>
-                  </div>
+                <div className="flex items-center justify-between text-[11px] font-normal uppercase text-slate-400 tracking-widest border-b border-slate-50 pt-3 pb-3">
+                  <span>Attendance Status</span>
+                  {registration.attendance ? (
+                    <span className="text-emerald-500 flex items-center gap-1 font-bold">
+                      <CheckCircle2 size={14} /> Present
+                    </span>
+                  ) : (
+                    <span className="text-red-400 flex items-center gap-1 font-bold">
+                      <X size={14} /> Absent
+                    </span>
+                  )}
                 </div>
+                {registration.attendance && (
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                      <Calendar size={20} />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none mb-1">Check-in Time</div>
+                      <div className="text-sm font-normal text-slate-700">{formatDate(registration.attendedAt)}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           </div>

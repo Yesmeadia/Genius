@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GuestRegistration } from "../types";
 
@@ -104,6 +105,9 @@ export function GuestDataTable({
                   Address
                 </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
+                  Attendance
+                </TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
                   Registered At
                 </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-right pr-6">
@@ -144,6 +148,17 @@ export function GuestDataTable({
                         {reg.address}
                       </span>
                     </div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    {reg.attendance ? (
+                      <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-100 font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-none">
+                        Present
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-slate-50/50 text-slate-300 border-slate-100 font-bold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-lg shadow-none">
+                        Absent
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="py-4 text-right pr-6 text-[10px] text-slate-400 font-normal uppercase tracking-tighter">
                     {hasMounted && reg.createdAt?.toDate
