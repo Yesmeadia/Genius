@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { 
-  generateRegistrationPDF, 
+import { useState, useMemo, useEffect } from "react";
+import {
+  generateRegistrationPDF,
   generateBatchAccessPasses,
   generateGuestExportPDF,
   generateYesianExportPDF,
@@ -31,6 +31,30 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
     const classes = Array.from(new Set(registrations.map(r => r.className))).sort();
     return { zones, schools, classes };
   }, [registrations]);
+
+  const filteredSchools = useMemo(() => {
+    if (selectedZone === "all") return filterOptions.schools;
+    return Array.from(new Set(
+      registrations
+        .filter(r => r.zone === selectedZone)
+        .map(r => r.school)
+    )).sort();
+  }, [selectedZone, filterOptions.schools, registrations]);
+
+  const filteredClasses = useMemo(() => {
+    if (selectedZone === "all") return filterOptions.classes;
+    return Array.from(new Set(
+      registrations
+        .filter(r => r.zone === selectedZone)
+        .map(r => r.className)
+    )).sort();
+  }, [selectedZone, filterOptions.classes, registrations]);
+
+  // Reset dependent filters when zone changes
+  useEffect(() => {
+    setSelectedSchool("all");
+    setSelectedClass("all");
+  }, [selectedZone]);
 
   const getSchoolName = (schoolId: string) => {
     for (const zone of locations) {
@@ -87,43 +111,39 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-10 text-center md:text-left">
-        <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">Master Export Center</h2>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-3">Batch process Reports & Access Passes</p>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {/* Zone Report */}
         <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-white relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-indigo-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
-          
-          <CardContent className="p-8 relative z-20 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-indigo-50 shadow-sm group-hover:rotate-12 transition-transform duration-500">
-                <MapPin size={24} className="text-indigo-600" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <MapPin size={18} className="text-indigo-600" />
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Zone-wise Export</h3>
-            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Process records filtered by operational zones.</p>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Zone Export</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Operational zones.</p>
 
             <Select value={selectedZone} onValueChange={setSelectedZone}>
-              <SelectTrigger className="w-full mb-6 h-14 rounded-2xl bg-slate-50/80 backdrop-blur border border-slate-100/50 font-medium text-sm text-slate-700 shadow-inner">
-                <SelectValue placeholder="Select Target Zone..." />
+              <SelectTrigger className="w-full mb-3 h-10 rounded-lg bg-slate-50/80 backdrop-blur border border-slate-100/50 font-medium text-[11px] text-slate-700 shadow-inner">
+                <SelectValue placeholder="Target Zone..." />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border flex flex-col shadow-xl">
+              <SelectContent className="rounded-xl border flex flex-col shadow-xl">
                 <SelectItem value="all">All Zones</SelectItem>
                 {filterOptions.zones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
               </SelectContent>
             </Select>
 
-            <div className="flex flex-col gap-3 mt-auto">
-              <Button onClick={() => handleGeneratePDF('zone')} className="w-full h-12 font-black rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[10px]">
-                <Download className="mr-2 h-4 w-4" /> Download PDF Report
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button onClick={() => handleGeneratePDF('zone')} className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]">
+                <Download className="mr-2 h-3 w-3" /> PDF Report
               </Button>
-              <Button onClick={() => handleGeneratePasses('zone')} className="w-full h-12 font-black rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all uppercase tracking-widest text-[10px]">
-                <CreditCard className="mr-2 h-4 w-4" /> Generate Access Passes
+              <Button onClick={() => handleGeneratePasses('zone')} className="w-full h-9 font-black rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all uppercase tracking-widest text-[8px]">
+                <CreditCard className="mr-2 h-3 w-3" /> Access Passes
               </Button>
             </div>
           </CardContent>
@@ -133,23 +153,23 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
         <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-white relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
-          
-          <CardContent className="p-8 relative z-20 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-emerald-50 shadow-sm group-hover:rotate-12 transition-transform duration-500">
-                <School size={24} className="text-emerald-600" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <School size={18} className="text-emerald-600" />
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">School Export</h3>
-            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Process sheets for specific educational institutions.</p>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">School Export</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Specific institutions.</p>
 
             <Select value={selectedSchool} onValueChange={setSelectedSchool}>
-              <SelectTrigger className="w-full mb-6 h-auto min-h-[3.5rem] py-3 rounded-2xl bg-slate-50/80 backdrop-blur border border-slate-100/50 font-medium text-slate-700 shadow-inner [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words [&>span]:text-left text-xs md:text-sm">
-                <SelectValue placeholder="Select Institution..." />
+              <SelectTrigger className="w-full mb-3 h-auto min-h-[2.5rem] py-2 rounded-lg bg-slate-50/80 backdrop-blur border border-slate-100/50 font-medium text-slate-700 shadow-inner [&>span]:line-clamp-none [&>span]:whitespace-normal [&>span]:break-words [&>span]:text-left text-[10px] md:text-[11px]">
+                <SelectValue placeholder="Institution..." />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border flex flex-col shadow-xl">
+              <SelectContent className="rounded-xl border flex flex-col shadow-xl">
                 <SelectItem value="all">All Institutions</SelectItem>
-                {filterOptions.schools.map(s => (
+                {filteredSchools.map(s => (
                   <SelectItem key={s} value={s}>
                     <div className="whitespace-normal break-words text-xs leading-snug md:text-sm md:leading-normal max-w-[75vw] md:max-w-none py-1">
                       {getSchoolName(s)}
@@ -159,12 +179,12 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
               </SelectContent>
             </Select>
 
-            <div className="flex flex-col gap-3 mt-auto">
-              <Button onClick={() => handleGeneratePDF('school')} className="w-full h-12 font-black rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[10px]">
-                <Download className="mr-2 h-4 w-4" /> Download PDF Report
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button onClick={() => handleGeneratePDF('school')} className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]">
+                <Download className="mr-2 h-3 w-3" /> PDF Report
               </Button>
-              <Button onClick={() => handleGeneratePasses('school')} className="w-full h-12 font-black rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all uppercase tracking-widest text-[10px]">
-                <CreditCard className="mr-2 h-4 w-4" /> Generate Access Passes
+              <Button onClick={() => handleGeneratePasses('school')} className="w-full h-9 font-black rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all uppercase tracking-widest text-[8px]">
+                <CreditCard className="mr-2 h-3 w-3" /> Access Passes
               </Button>
             </div>
           </CardContent>
@@ -174,32 +194,32 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
         <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-white relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-rose-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
-          
-          <CardContent className="p-8 relative z-20 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-rose-50 shadow-sm group-hover:rotate-12 transition-transform duration-500">
-                <Archive size={24} className="text-rose-600" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-50 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <Archive size={18} className="text-rose-600" />
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Class-wise Export</h3>
-            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Extract statistical data by student grade levels.</p>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Class Export</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Grade levels.</p>
 
             <Select value={selectedClass} onValueChange={setSelectedClass}>
-              <SelectTrigger className="w-full mb-6 h-14 rounded-2xl bg-slate-50/80 backdrop-blur border border-slate-100/50 font-medium text-sm text-slate-700 shadow-inner">
-                <SelectValue placeholder="Select Grade Level..." />
+              <SelectTrigger className="w-full mb-3 h-10 rounded-lg bg-slate-50/80 backdrop-blur border border-slate-100/50 font-medium text-[11px] text-slate-700 shadow-inner">
+                <SelectValue placeholder="Grade Level..." />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border flex flex-col shadow-xl">
+              <SelectContent className="rounded-xl border flex flex-col shadow-xl">
                 <SelectItem value="all">All Classes</SelectItem>
-                {filterOptions.classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
+                {filteredClasses.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
               </SelectContent>
             </Select>
 
-            <div className="flex flex-col gap-3 mt-auto">
-              <Button onClick={() => handleGeneratePDF('class')} className="w-full h-12 font-black rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[10px]">
-                <Download className="mr-2 h-4 w-4" /> Download PDF Report
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button onClick={() => handleGeneratePDF('class')} className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]">
+                <Download className="mr-2 h-3 w-3" /> PDF Report
               </Button>
-              <Button onClick={() => handleGeneratePasses('class')} className="w-full h-12 font-black rounded-xl bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all uppercase tracking-widest text-[10px]">
-                <CreditCard className="mr-2 h-4 w-4" /> Generate Access Passes
+              <Button onClick={() => handleGeneratePasses('class')} className="w-full h-9 font-black rounded-lg bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-100 transition-all uppercase tracking-widest text-[8px]">
+                <CreditCard className="mr-2 h-3 w-3" /> Access Passes
               </Button>
             </div>
           </CardContent>
@@ -209,21 +229,21 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
         <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-white relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-slate-400 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
-          
-          <CardContent className="p-8 relative z-20 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
-                <FileText size={24} className="text-slate-900" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <FileText size={18} className="text-slate-900" />
               </div>
-              <div className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+              <div className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
                 {registrations.length} Total
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Master Dump</h3>
-            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Complete, unfiltered PDF registry of all students.</p>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Master Dump</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Complete student registry.</p>
 
-            <Button onClick={() => handleGeneratePDF('all')} className="w-full h-12 mt-auto font-black rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[10px]">
-              <Download className="mr-2 h-4 w-4" /> Export Complete DB
+            <Button onClick={() => handleGeneratePDF('all')} className="w-full h-9 mt-auto font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]">
+              <Download className="mr-2 h-3 w-3" /> Export Complete DB
             </Button>
           </CardContent>
         </Card>
@@ -232,25 +252,33 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
         <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-emerald-50/30 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
-          
-          <CardContent className="p-8 relative z-20 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-emerald-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
-                <User size={24} className="text-emerald-700" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <User size={18} className="text-emerald-700" />
               </div>
-              <div className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+              <div className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
                 {guestRegistrations.length} Guests
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Guest Ledger</h3>
-            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Export visitor manifests with contact addresses.</p>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Guest Ledger</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Visitor manifests.</p>
 
-            <Button 
-                onClick={() => generateGuestExportPDF(guestRegistrations, "Guest Registration Report", "genius_jam_guests")} 
-                className="w-full h-12 mt-auto font-black rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all uppercase tracking-widest text-[10px]"
-            >
-              <Download className="mr-2 h-4 w-4" /> Download Manifest
-            </Button>
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button
+                onClick={() => generateGuestExportPDF(guestRegistrations, "Guest Registration Report", "genius_jam_guests")}
+                className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <Download className="mr-2 h-3 w-3" /> PDF Report
+              </Button>
+              <Button
+                onClick={() => generateBatchAccessPasses(guestRegistrations, "passes_guests", 'guest')}
+                className="w-full h-9 font-black rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <CreditCard className="mr-2 h-3 w-3" /> Access Passes
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -258,25 +286,33 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
         <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-amber-50/30 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
-          
-          <CardContent className="p-8 relative z-20 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-amber-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
-                <Zap size={24} className="text-amber-600" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <Zap size={18} className="text-amber-600" />
               </div>
-              <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+              <div className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
                 {yesianRegistrations.length} Members
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Yesian Roster</h3>
-            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Complete assignment data for YES INDIA members.</p>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Yesians Data</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">YES INDIA members.</p>
 
-            <Button 
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button
                 onClick={() => generateYesianExportPDF(yesianRegistrations, "Yesian Member Report", "genius_jam_yesians")}
-                className="w-full h-12 mt-auto font-black rounded-xl bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-200 transition-all uppercase tracking-widest text-[10px]"
-            >
-              <Download className="mr-2 h-4 w-4" /> Download Roster
-            </Button>
+                className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <Download className="mr-2 h-3 w-3" /> PDF Roster
+              </Button>
+              <Button
+                onClick={() => generateBatchAccessPasses(yesianRegistrations, "passes_yesians", 'yesian')}
+                className="w-full h-9 font-black rounded-lg bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <CreditCard className="mr-2 h-3 w-3" /> Access Passes
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -284,25 +320,33 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
         <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-sky-50/30 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
           <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-sky-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
-          
-          <CardContent className="p-8 relative z-20 flex flex-col h-full">
-            <div className="flex items-start justify-between mb-6">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-sky-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
-                <User size={24} className="text-sky-600" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-sky-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <User size={18} className="text-sky-600" />
               </div>
-              <div className="bg-sky-100 text-sky-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+              <div className="bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
                 {localStaffRegistrations.length} Staff
               </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Staff Registry</h3>
-            <p className="text-[13px] font-medium text-slate-500 mb-8 max-w-[200px] leading-relaxed">Complete records for locally hired support staff.</p>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Staff Registry</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Support staff.</p>
 
-            <Button 
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button
                 onClick={() => generateLocalStaffExportPDF(localStaffRegistrations, "Local Staff Report", "genius_jam_local_staff")}
-                className="w-full h-12 mt-auto font-black rounded-xl bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-200 transition-all uppercase tracking-widest text-[10px]"
-            >
-              <Download className="mr-2 h-4 w-4" /> Download Registry
-            </Button>
+                className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <Download className="mr-2 h-3 w-3" /> PDF Registry
+              </Button>
+              <Button
+                onClick={() => generateBatchAccessPasses(localStaffRegistrations, "passes_local_staff", 'local-staff')}
+                className="w-full h-9 font-black rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <CreditCard className="mr-2 h-3 w-3" /> Access Passes
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
