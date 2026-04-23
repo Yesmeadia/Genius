@@ -168,9 +168,11 @@ export function AwardeeDataTable({
                       <span className="text-[11px] font-bold text-violet-700 uppercase tracking-tight">
                         {reg.className}
                       </span>
-                      <span className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">
-                        {reg.category}
-                      </span>
+                      {reg.selectionType !== "State/UT Rank Holder" && (
+                        <span className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">
+                          {reg.category}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="py-4">

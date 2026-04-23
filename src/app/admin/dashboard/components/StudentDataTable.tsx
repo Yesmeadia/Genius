@@ -230,11 +230,14 @@ export function StudentDataTable({
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5 text-[10px] font-normal text-emerald-600 uppercase">
                           <UserCircle size={10} />
-                          Accompanied
+                          Accompanied {reg.accompaniments && reg.accompaniments.length > 1 ? `(${reg.accompaniments.length} Persons)` : ""}
                         </div>
                         {/* Request: show the Accompaniment in the table */}
                         <div className="text-[10px] font-normal text-slate-400">
-                            {reg.parentName} <span className="text-[9px] opacity-75">({reg.relation})</span>
+                            {reg.accompaniments && reg.accompaniments.length > 0 ? reg.accompaniments[0].name : (reg.parentName || "Unknown")} 
+                            <span className="text-[9px] opacity-75 ml-1">
+                                ({reg.accompaniments && reg.accompaniments.length > 0 ? reg.accompaniments[0].relation : (reg.relation || "Relative")})
+                            </span>
                         </div>
                       </div>
                     ) : (

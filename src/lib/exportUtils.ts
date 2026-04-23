@@ -117,18 +117,25 @@ export async function generateRegistrationPDF(
   const doc = new jsPDF({ orientation: "landscape" });
   await addHeader(doc, title);
 
-  const tableData = data.map((reg, index) => [
-    index + 1,
-    reg.studentName,
-    reg.gender,
-    reg.parentage,
-    reg.className,
-    getSchoolName(reg.school),
-    reg.zone,
-    reg.withParent ? "Yes" : "No",
-    reg.parentName || "-",
-    reg.mobileNumber || "-"
-  ]);
+  const tableData = data.map((reg, index) => {
+    let guardianInfo = reg.parentName || "-";
+    if (reg.accompaniments && reg.accompaniments.length > 0) {
+      guardianInfo = reg.accompaniments.map(a => `${a.name} (${a.relation})`).join(", ");
+    }
+
+    return [
+      index + 1,
+      reg.studentName,
+      reg.gender,
+      reg.parentage,
+      reg.className,
+      getSchoolName(reg.school),
+      reg.zone,
+      reg.withParent ? "Yes" : "No",
+      guardianInfo,
+      reg.mobileNumber || "-"
+    ];
+  });
 
   autoTable(doc, {
     startY: 50,
@@ -241,12 +248,13 @@ export async function generateAlumniExportPDF(data: AlumniRegistration[], title:
     reg.className,
     getSchoolName(reg.school),
     reg.zone,
+    reg.withParent ? "Yes" : "No",
     reg.whatsappNumber
   ]);
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Alumni Name", "Category", "Class", "School", "Zone", "WhatsApp"]],
+    head: [["#", "Alumni Name", "Category", "Class", "School", "Zone", "Acc.", "WhatsApp"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [234, 88, 12], textColor: [255, 255, 255], fontSize: 8 },
@@ -297,18 +305,19 @@ export async function generateAwardeeExportPDF(data: AwardeeRegistration[], titl
   const tableData = data.map((reg, index) => [
     index + 1,
     reg.name,
-    reg.category,
+    reg.selectionType === "State/UT Rank Holder" ? "-" : reg.category,
     reg.className,
     reg.rank,
     reg.selectionType,
     getSchoolName(reg.school),
     reg.zone,
+    reg.withParent ? "Yes" : "No",
     reg.whatsappNumber
   ]);
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Awardee Name", "Category", "Class", "Rank", "Type", "School", "Zone", "WhatsApp"]],
+    head: [["#", "Awardee Name", "Category", "Class", "Rank", "Type", "School", "Zone", "Acc.", "WhatsApp"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [124, 58, 237], textColor: [255, 255, 255], fontSize: 8 },

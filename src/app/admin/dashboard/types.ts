@@ -1,3 +1,9 @@
+export interface Accompaniment {
+  name: string;
+  gender: string;
+  relation: string;
+}
+
 export interface Registration {
   id: string;
   studentName: string;
@@ -9,6 +15,7 @@ export interface Registration {
   schoolName?: string;
   mobileNumber?: string;
   withParent: boolean;
+  accompaniments?: Accompaniment[];
   parentName?: string;
   parentGender?: string;
   relation?: string;
@@ -59,6 +66,8 @@ export interface AlumniRegistration {
   className: string;
   createdAt: any;
   photoUrl?: string;
+  withParent?: boolean;
+  accompaniments?: Accompaniment[];
 }
 
 export interface VolunteerRegistration {
@@ -88,6 +97,8 @@ export interface AwardeeRegistration {
   selectionType: string;
   createdAt: any;
   photoUrl?: string;
+  withParent?: boolean;
+  accompaniments?: Accompaniment[];
 }
 
 export interface DriverStaffRegistration {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { useState, useRef, useMemo } from "react";
 import { db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -20,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2 } from "lucide-react";
 import { locations } from "@/data/locations";
 
 interface AwardeeRegistrationData {
@@ -33,6 +35,8 @@ interface AwardeeRegistrationData {
   rank: string;
   selectionType: string;
   photo?: FileList;
+  withParent: boolean;
+  accompaniments: { name: string; gender: string; relation: string; }[];
 }
 
 export default function AwardeeRegistrationForm() {
@@ -59,11 +63,28 @@ export default function AwardeeRegistrationForm() {
       className: "",
       rank: "",
       selectionType: "",
+      withParent: false,
+      accompaniments: [],
     },
   });
 
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "accompaniments"
+  });
+
+  const withParent = watch("withParent");
+
+  // Add initial accompaniment field when withParent is toggled on
+  useGSAP(() => {
+    if (withParent && fields.length === 0) {
+      append({ name: "", gender: "MALE", relation: "" });
+    }
+  }, { dependencies: [withParent], scope: containerRef });
+
   const selectedZone = watch("zone");
   const selectedCategory = watch("category");
+  const selectedSelectionType = watch("selectionType");
 
   const schoolsForZone = useMemo(() => {
     if (!selectedZone) return [];
@@ -71,6 +92,9 @@ export default function AwardeeRegistrationForm() {
   }, [selectedZone]);
 
   const classesForCategory = useMemo(() => {
+    if (selectedSelectionType === "State/UT Rank Holder") {
+      return ["10th", "12th"];
+    }
     switch (selectedCategory) {
       case "Rainbow":
         return ["3rd", "4th", "5th"];
@@ -81,7 +105,7 @@ export default function AwardeeRegistrationForm() {
       default:
         return [];
     }
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedSelectionType]);
 
   useGSAP(
     () => {
@@ -112,6 +136,12 @@ export default function AwardeeRegistrationForm() {
         photoUrl,
         name: data.name.toUpperCase(),
         registrationType: "awardee",
+        withParent: data.withParent,
+        accompaniments: data.withParent ? data.accompaniments.map(a => ({
+          ...a,
+          name: a.name.toUpperCase(),
+          relation: a.relation.toUpperCase()
+        })) : []
       };
       // remove FileList object before saving
       delete (finalData as any).photo;
@@ -132,7 +162,7 @@ export default function AwardeeRegistrationForm() {
   return (
     <div ref={containerRef} className="w-full max-w-2xl mx-auto px-2 md:px-4 pb-12 md:pb-20">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 md:space-y-8">
-        
+
         {/* Personal Details Card */}
         <Card className="form-card border-none shadow-none bg-transparent">
           <CardHeader className="px-0 pt-0">
@@ -233,7 +263,7 @@ export default function AwardeeRegistrationForm() {
                     <Select
                       onValueChange={(val) => {
                         field.onChange(val);
-                        setValue("school", ""); 
+                        setValue("school", "");
                       }}
                       value={field.value}
                     >
@@ -286,6 +316,51 @@ export default function AwardeeRegistrationForm() {
           </CardContent>
         </Card>
 
+        {/* Selection Type Card */}
+        <Card className="form-card border-none shadow-none bg-transparent">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="text-xl font-normal text-slate-900 tracking-tight">
+              Type of Award
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {["State/UT Rank Holder", "YES Genius Rank Holder"].map((type) => {
+                const isSelected = watch("selectionType") === type;
+                return (
+                  <label
+                    key={type}
+                    className={`relative flex items-center justify-center p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 min-h-[72px]
+                      ${isSelected ? "border-indigo-500 bg-indigo-50/50 shadow-sm" : "border-slate-100 bg-white/50 hover:border-slate-200"}`}
+                  >
+                    <input
+                      type="radio"
+                      value={type}
+                      {...register("selectionType", {
+                        required: "Selection Type is required",
+                        onChange: () => {
+                          setValue("category", "");
+                          setValue("className", "");
+                        }
+                      })}
+                      className="absolute opacity-0"
+                    />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-indigo-500" : "border-slate-300"}`}>
+                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+                      </div>
+                      <span className={`text-[11px] font-bold tracking-widest text-center leading-tight ${isSelected ? "text-indigo-700" : "text-slate-400"}`}>
+                        {type.toUpperCase()}
+                      </span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+            {errors.selectionType && <p className="text-xs text-destructive mt-1 font-medium">{errors.selectionType.message}</p>}
+          </CardContent>
+        </Card>
+
         {/* Award Details Card */}
         <Card className="form-card border-none shadow-none bg-transparent">
           <CardHeader className="px-0 pt-0">
@@ -295,37 +370,39 @@ export default function AwardeeRegistrationForm() {
           </CardHeader>
           <CardContent className="px-0 space-y-4 md:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              <div className="space-y-2">
-                <Label className={`text-xs font-normal uppercase tracking-wider ${errors.category ? "text-destructive" : "text-slate-500"}`}>
-                  Category
-                </Label>
-                <Controller
-                  name="category"
-                  control={control}
-                  rules={{ required: "Category is required" }}
-                  render={({ field }) => (
-                    <Select
-                      onValueChange={(val) => {
-                        field.onChange(val);
-                        setValue("className", "");
-                      }}
-                      value={field.value}
-                    >
-                      <SelectTrigger className={`h-10 md:h-12 bg-white/50 focus:ring-indigo-500/20 uppercase ${errors.category ? "border-destructive" : ""}`}>
-                        <SelectValue placeholder="SELECT CATEGORY" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["Rainbow", "Planets", "Galaxy"].map((cat) => (
-                          <SelectItem key={cat} value={cat} className="uppercase">
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.category && <p className="text-xs text-destructive mt-1 font-medium">{errors.category.message}</p>}
-              </div>
+              {selectedSelectionType !== "State/UT Rank Holder" && (
+                <div className="space-y-2">
+                  <Label className={`text-xs font-normal uppercase tracking-wider ${errors.category ? "text-destructive" : "text-slate-500"}`}>
+                    Category
+                  </Label>
+                  <Controller
+                    name="category"
+                    control={control}
+                    rules={{ required: selectedSelectionType !== "State/UT Rank Holder" ? "Category is required" : false }}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={(val) => {
+                          field.onChange(val);
+                          setValue("className", "");
+                        }}
+                        value={field.value}
+                      >
+                        <SelectTrigger className={`h-10 md:h-12 bg-white/50 focus:ring-indigo-500/20 uppercase ${errors.category ? "border-destructive" : ""}`}>
+                          <SelectValue placeholder="SELECT CATEGORY" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["Rainbow", "Planets", "Galaxy"].map((cat) => (
+                            <SelectItem key={cat} value={cat} className="uppercase">
+                              {cat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.category && <p className="text-xs text-destructive mt-1 font-medium">{errors.category.message}</p>}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className={`text-xs font-normal uppercase tracking-wider ${errors.className ? "text-destructive" : "text-slate-500"}`}>
@@ -339,10 +416,10 @@ export default function AwardeeRegistrationForm() {
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
-                      disabled={!selectedCategory || classesForCategory.length === 0}
+                      disabled={!selectedCategory && selectedSelectionType !== "State/UT Rank Holder"}
                     >
                       <SelectTrigger className={`h-10 md:h-12 bg-white/50 focus:ring-indigo-500/20 uppercase ${errors.className ? "border-destructive" : ""}`}>
-                        <SelectValue placeholder={!selectedCategory ? "SELECT CATEGORY FIRST" : "SELECT CLASS"} />
+                        <SelectValue placeholder={(!selectedCategory && selectedSelectionType !== "State/UT Rank Holder") ? "SELECT CATEGORY FIRST" : "SELECT CLASS"} />
                       </SelectTrigger>
                       <SelectContent>
                         {classesForCategory.map((cls) => (
@@ -386,35 +463,6 @@ export default function AwardeeRegistrationForm() {
                   )}
                 />
                 {errors.rank && <p className="text-xs text-destructive mt-1 font-medium">{errors.rank.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label className={`text-xs font-normal uppercase tracking-wider ${errors.selectionType ? "text-destructive" : "text-slate-500"}`}>
-                  Selection Type of Award
-                </Label>
-                <Controller
-                  name="selectionType"
-                  control={control}
-                  rules={{ required: "Selection Type is required" }}
-                  render={({ field }) => (
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <SelectTrigger className={`h-10 md:h-12 bg-white/50 focus:ring-indigo-500/20 uppercase ${errors.selectionType ? "border-destructive" : ""}`}>
-                        <SelectValue placeholder="SELECT TYPE" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {["State/UT Rank Holder", "YES Genius Rank Holder"].map((type) => (
-                          <SelectItem key={type} value={type} className="uppercase">
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.selectionType && <p className="text-xs text-destructive mt-1 font-medium">{errors.selectionType.message}</p>}
               </div>
             </div>
           </CardContent>
@@ -460,6 +508,119 @@ export default function AwardeeRegistrationForm() {
               {errors.photo && <p className="text-xs text-destructive mt-1 font-medium">{errors.photo.message}</p>}
             </div>
           </CardContent>
+        </Card>
+
+        <div className="h-px bg-slate-200/20" />
+
+        {/* Section: Accompaniment */}
+        <Card className="form-card border-none shadow-none bg-transparent">
+          <div className="flex items-center justify-between py-2">
+            <div className="space-y-0.5">
+              <Label className="text-xl font-normal text-slate-900 tracking-tight cursor-pointer" htmlFor="withParent">
+                Accompaniment
+              </Label>
+              <p className="text-xs text-slate-500 font-medium">Is anyone coming along?</p>
+            </div>
+            <Controller
+              name="withParent"
+              control={control}
+              render={({ field }) => (
+                <Switch
+                  id="withParent"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  className="data-[state=checked]:bg-indigo-600"
+                />
+              )}
+            />
+          </div>
+
+          {withParent && (
+            <div className="space-y-6 pt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              {fields.map((field, index) => (
+                <div key={field.id} className="relative p-5 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-600/70">Person {index + 1}</h4>
+                    {fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        className="h-8 w-8 p-0 text-slate-300 hover:text-destructive transition-colors rounded-full"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-normal uppercase tracking-wider text-slate-500">Name</Label>
+                      <Input
+                        {...register(`accompaniments.${index}.name` as const, {
+                          required: "Required",
+                          onChange: (e) => (e.target.value = e.target.value.toUpperCase()),
+                        })}
+                        placeholder="FULL NAME"
+                        className="h-12 bg-white border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all uppercase placeholder:text-slate-300 shadow-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-normal uppercase tracking-wider text-slate-500">Relation</Label>
+                      <Input
+                        {...register(`accompaniments.${index}.relation` as const, {
+                          required: "Required",
+                          onChange: (e) => (e.target.value = e.target.value.toUpperCase()),
+                        })}
+                        placeholder="E.G. FATHER"
+                        className="h-12 bg-white border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all uppercase placeholder:text-slate-300 shadow-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-3 md:col-span-2">
+                      <Label className="text-xs font-normal uppercase tracking-wider text-slate-500">Gender</Label>
+                      <div className="grid grid-cols-2 gap-4">
+                        {["MALE", "FEMALE"].map((option) => {
+                          const isSelected = watch(`accompaniments.${index}.gender`) === option;
+                          return (
+                            <label
+                              key={option}
+                              className={`relative flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all duration-300
+                                ${isSelected ? "border-indigo-500 bg-indigo-50/30 shadow-sm" : "border-slate-100 bg-white hover:border-slate-200"}`}
+                            >
+                              <input
+                                type="radio"
+                                value={option}
+                                {...register(`accompaniments.${index}.gender` as const, { required: true })}
+                                className="absolute opacity-0"
+                              />
+                              <span className={`text-[10px] font-bold tracking-widest ${isSelected ? "text-indigo-700" : "text-slate-400"}`}>
+                                {option}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {fields.length < 3 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => append({ name: "", gender: "MALE", relation: "" })}
+                  className="w-full h-12 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30 text-slate-500 hover:text-indigo-600 transition-all rounded-2xl flex items-center justify-center gap-2"
+                >
+                  <Plus size={16} />
+                  <span className="text-xs font-bold uppercase tracking-widest">Add Another Person</span>
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
 
         <Button

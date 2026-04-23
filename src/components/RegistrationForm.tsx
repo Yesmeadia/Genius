@@ -1,7 +1,8 @@
 "use client";
 
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller, useWatch, useFieldArray } from "react-hook-form";
 import { useState, useEffect, useRef } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { Zone, School } from "@/data/locations";
 import { useLocations } from "@/hooks/useLocations";
 import { db, storage } from "@/lib/firebase";
@@ -24,6 +25,12 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+interface Accompaniment {
+  name: string;
+  gender: string;
+  relation: string;
+}
+
 interface FormData {
   studentName: string;
   parentage: string;
@@ -33,6 +40,8 @@ interface FormData {
   school: string;
   mobileNumber: string;
   withParent: boolean;
+  accompaniments: Accompaniment[];
+  // Legacy fields
   parentName?: string;
   parentGender?: string;
   relation?: string;
@@ -55,8 +64,14 @@ export default function RegistrationForm() {
       zone: "",
       school: "",
       className: "",
-      mobileNumber: ""
+      mobileNumber: "",
+      accompaniments: []
     }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "accompaniments"
   });
 
   const withParent = useWatch({ control, name: "withParent" });
@@ -67,6 +82,12 @@ export default function RegistrationForm() {
   useEffect(() => {
     setValue("school", "");
   }, [watchZone, setValue]);
+
+  useEffect(() => {
+    if (withParent && fields.length === 0) {
+      append({ name: "", gender: "", relation: "" });
+    }
+  }, [withParent, fields.length, append]);
 
   useGSAP(() => {
     gsap.from(".form-card", {
@@ -96,8 +117,15 @@ export default function RegistrationForm() {
         photoUrl,
         studentName: data.studentName?.toUpperCase() || "",
         parentage: data.parentage?.toUpperCase() || "",
-        parentName: data.parentName?.toUpperCase() || "",
-        relation: data.relation?.toUpperCase() || "",
+        // Map first accompaniment to legacy fields for backward compatibility
+        parentName: data.accompaniments?.[0]?.name?.toUpperCase() || "",
+        relation: data.accompaniments?.[0]?.relation?.toUpperCase() || "",
+        parentGender: data.accompaniments?.[0]?.gender || "",
+        accompaniments: data.accompaniments.map(a => ({
+          name: a.name.toUpperCase(),
+          gender: a.gender,
+          relation: a.relation.toUpperCase()
+        }))
       };
       // remove FileList object from finalData before saving
       delete (finalData as any).photo;
@@ -330,9 +358,9 @@ export default function RegistrationForm() {
           <div className="flex items-center justify-between py-2">
             <div className="space-y-0.5">
               <Label className="text-xl font-normal text-slate-900 tracking-tight cursor-pointer" htmlFor="withParent">
-                Guardian Accompaniment
+                Accompaniment
               </Label>
-              <p className="text-xs text-slate-500 font-medium">Is a parent/guardian coming along?</p>
+              <p className="text-xs text-slate-500 font-medium">Is anyone coming along?</p>
             </div>
             <Controller
               name="withParent"
@@ -349,50 +377,83 @@ export default function RegistrationForm() {
           </div>
 
           {withParent && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 animate-in fade-in slide-in-from-top-4 duration-500">
-              <div className="space-y-2">
-                <Label htmlFor="parentName" className="text-xs font-normal uppercase tracking-wider text-slate-500">Guardian Name</Label>
-                <Input
-                  {...register("parentName", {
-                    required: withParent ? "Required" : false,
-                    onChange: (e) => e.target.value = e.target.value.toUpperCase()
-                  })}
-                  placeholder="ACCOMPANYING PARENT NAME"
-                  className="h-12 bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all uppercase placeholder:text-slate-300"
-                />
-              </div>
+            <div className="space-y-6 pt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              {fields.map((field, index) => (
+                <div key={field.id} className="relative p-4 md:p-6 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4 md:space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-600/70">Person {index + 1}</h4>
+                    {fields.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => remove(index)}
+                        className="h-8 w-8 p-0 text-slate-300 hover:text-destructive transition-colors rounded-full"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="relation" className="text-xs font-normal uppercase tracking-wider text-slate-500">Relation</Label>
-                <Input
-                  {...register("relation", {
-                    required: withParent ? "Required" : false,
-                    onChange: (e) => e.target.value = e.target.value.toUpperCase()
-                  })}
-                  placeholder="E.G. FATHER, MOTHER"
-                  className="h-12 bg-white/50 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all uppercase placeholder:text-slate-300"
-                />
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-normal uppercase tracking-wider text-slate-500">Name</Label>
+                      <Input
+                        {...register(`accompaniments.${index}.name` as const, {
+                          required: "Required",
+                          onChange: (e) => e.target.value = e.target.value.toUpperCase()
+                        })}
+                        placeholder="FULL NAME"
+                        className="h-12 bg-white border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all uppercase placeholder:text-slate-300 shadow-sm"
+                      />
+                    </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-xs font-normal uppercase tracking-wider text-slate-500">Guardian Gender</Label>
-                <div className="flex gap-4 py-2">
-                  {['Male', 'Female'].map(g => (
-                    <label key={g} className="flex items-center space-x-2 cursor-pointer group/label">
-                      <div className="relative flex items-center justify-center">
-                        <input
-                          type="radio"
-                          value={g}
-                          {...register("parentGender", { required: withParent ? "Required" : false })}
-                          className="peer w-5 h-5 border-2 border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition-all bg-white/50 cursor-pointer appearance-none rounded-full checked:border-indigo-500"
-                        />
-                        <div className="absolute w-2.5 h-2.5 rounded-full bg-indigo-500 scale-0 peer-checked:scale-100 transition-transform" />
+                    <div className="space-y-2">
+                      <Label className="text-xs font-normal uppercase tracking-wider text-slate-500">Relation</Label>
+                      <Input
+                        {...register(`accompaniments.${index}.relation` as const, {
+                          required: "Required",
+                          onChange: (e) => e.target.value = e.target.value.toUpperCase()
+                        })}
+                        placeholder="E.G. FATHER, MOTHER"
+                        className="h-12 bg-white border-slate-200 focus:border-indigo-500 focus:ring-indigo-500/20 transition-all uppercase placeholder:text-slate-300 shadow-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs font-normal uppercase tracking-wider text-slate-500">Guardian Gender</Label>
+                      <div className="flex gap-4 py-2">
+                        {['Male', 'Female'].map(g => (
+                          <label key={g} className="flex items-center space-x-2 cursor-pointer group/label">
+                            <div className="relative flex items-center justify-center">
+                              <input
+                                type="radio"
+                                value={g}
+                                {...register(`accompaniments.${index}.gender` as const, { required: "Required" })}
+                                className="peer w-5 h-5 border-2 border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition-all bg-white cursor-pointer appearance-none rounded-full checked:border-indigo-500"
+                              />
+                              <div className="absolute w-2.5 h-2.5 rounded-full bg-indigo-500 scale-0 peer-checked:scale-100 transition-transform" />
+                            </div>
+                            <span className="text-sm font-normal text-slate-600 group-hover/label:text-slate-900 transition-colors">{g}</span>
+                          </label>
+                        ))}
                       </div>
-                      <span className="text-sm font-normal text-slate-600 group-hover/label:text-slate-900 transition-colors">{g}</span>
-                    </label>
-                  ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
+
+              {fields.length < 3 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => append({ name: "", gender: "", relation: "" })}
+                  className="w-full h-12 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/30 text-slate-500 hover:text-indigo-600 transition-all rounded-xl flex items-center justify-center gap-2"
+                >
+                  <Plus size={16} />
+                  <span className="text-xs font-bold uppercase tracking-widest">Add Another Person</span>
+                </Button>
+              )}
             </div>
           )}
         </Card>

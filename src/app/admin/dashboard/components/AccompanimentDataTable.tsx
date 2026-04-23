@@ -175,7 +175,7 @@ export function AccompanimentDataTable({
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow className="border-slate-50">
-                <TableHead className="py-4 text-[10px] font-normal text-emerald-600 uppercase tracking-widest pl-6">Guardian Profile</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-emerald-600 uppercase tracking-widest pl-6">Accompaniment Profile</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Student Linked</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Institution Location</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Timestamp</TableHead>
@@ -185,17 +185,35 @@ export function AccompanimentDataTable({
               {displayData.map((reg) => (
                 <TableRow key={reg.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
                   <TableCell className="py-4 pl-6">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${reg.withParent ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
-                        <UserCircle size={16} />
+                    {reg.accompaniments && reg.accompaniments.length > 0 ? (
+                      <div className="space-y-3">
+                        {reg.accompaniments.map((acc, i) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center bg-emerald-50 text-emerald-600">
+                              <UserCircle size={14} />
+                            </div>
+                            <div>
+                              <div className="font-normal text-[12px] text-slate-900 leading-none mb-1">{acc.name}</div>
+                              <div className="text-[9px] text-slate-400 font-normal uppercase tracking-wide">
+                                {acc.relation} • {acc.gender}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div>
-                        <div className="font-normal text-sm text-slate-900">{reg.parentName || "Unknown Guardian"}</div>
-                        <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
-                            {reg.relation || "Relative"} • {reg.parentGender || "Unspecified"}
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${reg.withParent ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                          <UserCircle size={16} />
+                        </div>
+                        <div>
+                          <div className="font-normal text-sm text-slate-900">{reg.parentName || "Unknown Guardian"}</div>
+                          <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">
+                              {reg.relation || "Relative"} • {reg.parentGender || "Unspecified"}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="font-normal text-[13px] text-slate-600">{reg.studentName}</div>
