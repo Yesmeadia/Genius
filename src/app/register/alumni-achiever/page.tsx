@@ -7,13 +7,15 @@ import { useRef } from "react";
 import Link from "next/link";
 import Footer from "@/components/Footer";
 import MathCanvas from "@/components/MathCanvas";
-import { useFormSettings } from "@/hooks/useFormSettings";
+import { useFormSettings, isFormActive, useAutoRefresh } from "@/hooks/useFormSettings";
+import ClosingPopup from "@/components/ClosingPopup";
 
 export default function AlumniAchieverRegistrationPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { forms, loading: settingsLoading } = useFormSettings();
   const formSettings = forms.find(f => f.id === "alumni-achiever");
-  const isEnabled = formSettings ? formSettings.enabled : true;
+  const isEnabled = isFormActive(formSettings);
+  useAutoRefresh(formSettings);
 
   useGSAP(() => {
     if (settingsLoading) return;
@@ -85,16 +87,14 @@ export default function AlumniAchieverRegistrationPage() {
           </div>
         ) : !isEnabled ? (
           <div className="flex flex-col items-center gap-6 py-20 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center border border-slate-100 shadow-sm">
-              <img src="/yeslogo.png" alt="Logo" className="w-10 opacity-20 grayscale" />
-            </div>
             <div>
               <h2 className="text-xl font-black text-slate-900 tracking-tight">Registration Closed</h2>
-              <p className="text-sm text-slate-400 font-medium mt-1">This registration portal is currently offline. Check back soon!</p>
+              <p className="text-sm text-slate-400 font-medium mt-1">This registration portal is closed. Please Visit again later!</p>
             </div>
           </div>
         ) : (
           <div className="form-container max-w-3xl mx-auto">
+            <ClosingPopup formId="alumni-achiever" />
             <AlumniAchieverRegistrationForm />
           </div>
         )}

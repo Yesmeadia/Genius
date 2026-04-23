@@ -6,7 +6,8 @@ import { useRef, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 import MathCanvas from "@/components/MathCanvas";
-import { useFormSettings } from "@/hooks/useFormSettings";
+import { useFormSettings, isFormActive } from "@/hooks/useFormSettings";
+import CountdownDisplay from "@/components/CountdownDisplay";
 
 /* ─── Registration card data ───────────────────────────────────────────── */
 const registrationTypes = [
@@ -150,8 +151,7 @@ export default function Home() {
   const visibleRegistrationTypes = registrationTypes
     .filter(type => {
       const setting = forms.find(f => f.id === type.id);
-      // Default to true if not found in Firestore yet (ensures new forms show up instantly)
-      return setting ? setting.enabled : true;
+      return isFormActive(setting);
     })
     .sort((a, b) => {
       const settingA = forms.find(f => f.id === a.id);
@@ -281,7 +281,9 @@ export default function Home() {
           /* No Forms Available State */
           <div className="flex flex-col items-center gap-6 py-20 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="w-20 h-20 rounded-3xl bg-slate-50 flex items-center justify-center border border-slate-100 shadow-sm">
-              <img src="/yeslogo.png" alt="Logo" className="w-10 opacity-20 grayscale" />
+              <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-11a9 9 0 110 18 9 9 0 010-18z" />
+              </svg>
             </div>
             <div>
               <h2 className="text-xl font-normal text-slate-900 tracking-tight">Registrations Closed</h2>
@@ -311,8 +313,15 @@ export default function Home() {
                 <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full blur-3xl opacity-0 group-hover:opacity-40 transition-opacity duration-700"
                   style={{ background: `radial-gradient(circle, ${type.accentHex} 0%, transparent 70%)` }} />
 
-                {/* Badge (Icon removed) */}
-                <div className="flex justify-end items-start mb-10 relative z-10 transition-transform duration-500 group-hover:translate-z-10">
+                {/* Header (Countdown + Badge) */}
+                <div className="flex justify-between items-start mb-10 relative z-10 transition-transform duration-500 group-hover:translate-z-10">
+                  {(() => {
+                    const setting = forms.find(f => f.id === type.id);
+                    if (setting?.autoClose && setting.closingDate && setting.closingTime) {
+                      return <CountdownDisplay closingDate={setting.closingDate} closingTime={setting.closingTime} />;
+                    }
+                    return <div />;
+                  })()}
                   <span className="px-3.5 py-1.5 rounded-full text-[10px] font-normal uppercase tracking-widest"
                     style={{ background: type.badgeBg, color: type.badgeText, border: `1px solid ${type.accentHex}15` }}>
                     {type.badge}
