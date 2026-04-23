@@ -6,13 +6,14 @@ import { useParams, useRouter } from "next/navigation";
 import { db, storage } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { AlumniRegistration } from "../../types";
+import { AlumniRegistration, Accompaniment } from "../../types";
 import { locations } from "@/data/locations";
 import {
   ArrowLeft, Calendar, User, ShieldCheck, Phone,
   Pencil, X, Check, Loader2, UploadCloud,
-  MapPin, GraduationCap, Download
+  MapPin, GraduationCap, Download, Plus, Trash2
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ interface AlumniEditForm {
   school: string;
   category: string;
   className: string;
+  withParent: boolean;
+  accompaniments: Accompaniment[];
 }
 
 export default function AlumniProfilePage() {
@@ -102,6 +105,8 @@ export default function AlumniProfilePage() {
       school: registration.school || "",
       category: registration.category || "",
       className: registration.className || "",
+      withParent: registration.withParent || false,
+      accompaniments: registration.accompaniments || [],
     });
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -122,8 +127,29 @@ export default function AlumniProfilePage() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const updateField = (field: keyof AlumniEditForm, value: string) => {
+  const updateField = (field: keyof AlumniEditForm, value: any) => {
     setEditForm(prev => (prev ? { ...prev, [field]: value } : prev));
+  };
+
+  const addAccompaniment = () => {
+    if (!editForm) return;
+    const current = editForm.accompaniments || [];
+    if (current.length >= 3) return;
+    updateField("accompaniments", [...current, { name: "", relation: "", gender: "Male" }]);
+  };
+
+  const removeAccompaniment = (index: number) => {
+    if (!editForm) return;
+    const current = [...editForm.accompaniments];
+    current.splice(index, 1);
+    updateField("accompaniments", current);
+  };
+
+  const updateAccompaniment = (index: number, field: keyof Accompaniment, value: string) => {
+    if (!editForm) return;
+    const current = [...editForm.accompaniments];
+    current[index] = { ...current[index], [field]: value };
+    updateField("accompaniments", current);
   };
 
   const handleSave = async () => {
@@ -144,6 +170,8 @@ export default function AlumniProfilePage() {
         school: editForm.school,
         category: editForm.category,
         className: editForm.className,
+        withParent: editForm.withParent,
+        accompaniments: editForm.accompaniments,
         photoUrl,
       };
       await updateDoc(doc(db, "alumni_registrations", id as string), updateData);
@@ -526,6 +554,168 @@ export default function AlumniProfilePage() {
                       </div>
                     </div>
                   </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Accompaniment Section */}
+            <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
+              <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
+                      <ShieldCheck className="text-pink-600" size={22} />
+                      Accompaniment
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Details for event access card generation</CardDescription>
+                  </div>
+                  {editMode && (
+                    <div className="flex items-center gap-3">
+                      <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">
+                        {editForm?.withParent ? "Accompanied" : "Individual"}
+                      </Label>
+                      <Switch
+                        checked={editForm?.withParent || false}
+                        onCheckedChange={v => {
+                          updateField("withParent", v);
+                          if (v && (!editForm?.accompaniments || editForm.accompaniments.length === 0)) {
+                            updateField("accompaniments", [{ name: "", relation: "", gender: "Male" }]);
+                          }
+                        }}
+                        className="data-[state=checked]:bg-pink-600"
+                      />
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                {editMode ? (
+                  editForm?.withParent ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                      {editForm.accompaniments.map((acc, index) => (
+                        <div key={index} className="relative p-5 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-pink-600/70">Person {index + 1}</span>
+                            {editForm.accompaniments.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeAccompaniment(index)}
+                                className="h-7 w-7 p-0 text-slate-300 hover:text-destructive rounded-full"
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Name</Label>
+                              <Input
+                                value={acc.name}
+                                onChange={e => updateAccompaniment(index, "name", e.target.value.toUpperCase())}
+                                className="uppercase border-slate-100 bg-white"
+                                placeholder="Full Name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Relation</Label>
+                              <Input
+                                value={acc.relation}
+                                onChange={e => updateAccompaniment(index, "relation", e.target.value.toUpperCase())}
+                                className="uppercase border-slate-100 bg-white"
+                                placeholder="e.g. Father, Mother"
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Gender</Label>
+                              <div className="flex gap-4 py-2">
+                                {["Male","Female"].map(g => (
+                                  <label key={g} className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      value={g}
+                                      checked={acc.gender === g}
+                                      onChange={() => updateAccompaniment(index, "gender", g)}
+                                      className="w-4 h-4 text-pink-600"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">{g}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {editForm.accompaniments.length < 3 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addAccompaniment}
+                          className="w-full h-11 border-dashed border-slate-200 hover:border-pink-300 hover:bg-pink-50/30 text-slate-500 hover:text-pink-600 transition-all rounded-xl flex items-center justify-center gap-2"
+                        >
+                          <Plus size={16} />
+                          <span className="text-xs font-bold uppercase tracking-widest">Add Another Person</span>
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="py-6 flex flex-col items-center justify-center text-center">
+                      <div className="h-14 w-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-3">
+                        <User size={28} />
+                      </div>
+                      <p className="text-slate-400 text-sm">Toggle the switch above to add accompaniment details</p>
+                    </div>
+                  )
+                ) : (
+                  registration.withParent ? (
+                    <div className="space-y-8">
+                      {registration.accompaniments?.map((acc, idx) => (
+                        <div key={idx} className={`grid grid-cols-1 md:grid-cols-2 gap-10 ${idx > 0 ? 'pt-8 border-t border-slate-50' : ''}`}>
+                          <div className="space-y-6">
+                            <div className="flex items-start gap-4">
+                              <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                                <User size={24} />
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Name</div>
+                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{acc.name}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-4">
+                              <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                                <ShieldCheck size={24} />
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Relation</div>
+                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{acc.relation}</div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-6">
+                            <div className="flex items-start gap-4">
+                              <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0">
+                                <User size={24} />
+                              </div>
+                              <div>
+                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Gender</div>
+                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{acc.gender}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-8 flex flex-col items-center justify-center text-center">
+                      <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
+                        <User size={32} />
+                      </div>
+                      <h3 className="text-slate-900 font-normal mb-1">Individual Participation</h3>
+                      <p className="text-slate-400 text-sm max-w-xs">This alumni is registered as an individual and will not be accompanied.</p>
+                    </div>
+                  )
                 )}
               </CardContent>
             </Card>
