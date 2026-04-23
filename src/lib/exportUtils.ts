@@ -1,6 +1,8 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { locations } from "@/data/locations";
 import { 
   Registration, 
@@ -728,4 +730,72 @@ export async function generateBatchAccessPasses(
     await drawBadgeContent(doc, data[i], type, kalashFontLoaded);
   }
   triggerDownload(doc, filename);
+}
+
+/**
+ * Data + Photos ZIP Backup
+ */
+export async function generateZipBackup(data: any[], title: string, filename: string, onProgress?: (msg: string) => void) {
+  if (data.length === 0) {
+    alert("No records found to backup.");
+    return;
+  }
+  
+  if (onProgress) onProgress("Initializing ZIP...");
+  const zip = new JSZip();
+  const cleanName = sanitizeFilename(filename);
+  
+  // 1. JSON Backup
+  const cleanData = data.map(item => {
+    const copy = { ...item };
+    delete copy.tableData;
+    return copy;
+  });
+  zip.file(`${cleanName}_data.json`, JSON.stringify(cleanData, null, 2));
+
+  // 2. CSV Backup
+  if (data.length > 0) {
+    const headers = Object.keys(cleanData[0]).filter(k => k !== 'createdAt' && typeof cleanData[0][k] !== 'object');
+    const csvContent = [
+      headers.join(","),
+      ...cleanData.map(item => headers.map(h => `"${(item[h] || '').toString().replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+    zip.file(`${cleanName}_data.csv`, csvContent);
+  }
+
+  // 3. Download Photos
+  const photosFolder = zip.folder("photos");
+  if (photosFolder) {
+    let photoCount = 0;
+    for (let i = 0; i < data.length; i++) {
+      const rec = data[i];
+      if (rec.photoUrl) {
+        if (onProgress) onProgress(`Fetching photo ${i + 1} of ${data.length}...`);
+        try {
+          const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(rec.photoUrl)}`);
+          if (res.ok) {
+            const result = await res.json();
+            if (result.base64) {
+               const base64Data = result.base64.split(",")[1] || result.base64;
+               let ext = "jpg";
+               const match = result.base64.match(/data:image\/([a-zA-Z0-9]+);base64/);
+               if (match) ext = match[1];
+               
+               const personName = rec.studentName || rec.volunteerName || rec.name || `Record_${i+1}`;
+               const photoName = sanitizeFilename(`${i+1}_${personName}`);
+               photosFolder.file(`${photoName}.${ext}`, base64Data, { base64: true });
+               photoCount++;
+            }
+          }
+        } catch (e) {
+          console.error(`Failed to fetch photo for ${rec.id}`, e);
+        }
+      }
+    }
+  }
+
+  if (onProgress) onProgress("Generating ZIP file...");
+  const content = await zip.generateAsync({ type: "blob" });
+  saveAs(content, `${cleanName}_backup.zip`);
+  if (onProgress) onProgress("Done");
 }

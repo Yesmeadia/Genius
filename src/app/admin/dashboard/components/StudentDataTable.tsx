@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, FileText, UserCircle, RotateCcw, Filter, User, ExternalLink, Phone } from "lucide-react";
+import { Search, Download, FileText, UserCircle, RotateCcw, Filter, User, ExternalLink, Phone, FileArchive } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -29,6 +29,7 @@ export function StudentDataTable({
 }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isExportingZip, setIsExportingZip] = useState(false);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   
   useEffect(() => {
@@ -111,6 +112,31 @@ export function StudentDataTable({
               className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
             >
               <Download size={14} className="mr-2" /> Export PDF
+            </Button>
+            
+            <Button 
+              disabled={isExportingZip}
+              onClick={() => {
+                const parts: string[] = [];
+                if (filterZone && filterZone !== "all") parts.push(`Zone: ${filterZone}`);
+                if (filterSchool && filterSchool !== "all") parts.push(`School: ${getSchoolName(filterSchool)}`);
+                if (filterClass && filterClass !== "all") parts.push(`Class: ${filterClass}`);
+                if (filterGender && filterGender !== "all") parts.push(`Gender: ${filterGender}`);
+                if (filterAccompaniment && filterAccompaniment !== "all") parts.push(`Status: ${filterAccompaniment}`);
+                
+                const zipTitle = parts.length > 0 ? parts.join(" | ") : "All Students Data";
+                const zipFilename = isFiltered ? "student_data_filtered" : "all_students_data_master";
+                
+                setIsExportingZip(true);
+                import("@/lib/exportUtils").then(m => {
+                  m.generateZipBackup(filteredData, zipTitle, zipFilename)
+                    .finally(() => setIsExportingZip(false));
+                });
+              }}
+              className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-all rounded-xl shadow-sm"
+            >
+              <FileArchive size={14} className={`mr-2 ${isExportingZip ? 'animate-bounce' : ''}`} /> 
+              {isExportingZip ? "Zipping..." : "ZIP Backup"}
             </Button>
           </div>
         </div>

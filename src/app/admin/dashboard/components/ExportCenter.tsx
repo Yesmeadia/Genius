@@ -4,13 +4,14 @@ import {
   generateBatchAccessPasses,
   generateGuestExportPDF,
   generateYesianExportPDF,
-  generateLocalStaffExportPDF
+  generateLocalStaffExportPDF,
+  generateZipBackup
 } from "@/lib/exportUtils";
 import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap } from "lucide-react";
+import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap, FileArchive } from "lucide-react";
 import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "../types";
 
 interface ExportCenterProps {
@@ -24,6 +25,7 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
   const [selectedZone, setSelectedZone] = useState("all");
   const [selectedSchool, setSelectedSchool] = useState("all");
   const [selectedClass, setSelectedClass] = useState("all");
+  const [isZipping, setIsZipping] = useState(false);
 
   const filterOptions = useMemo(() => {
     const zones = Array.from(new Set(registrations.map(r => r.zone))).sort();
@@ -242,9 +244,23 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
             <h3 className="text-base font-black text-slate-900 mb-0.5">Master Dump</h3>
             <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Complete student registry.</p>
 
-            <Button onClick={() => handleGeneratePDF('all')} className="w-full h-9 mt-auto font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]">
-              <Download className="mr-2 h-3 w-3" /> Export Complete DB
-            </Button>
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button onClick={() => handleGeneratePDF('all')} className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]">
+                <Download className="mr-2 h-3 w-3" /> Export Complete DB
+              </Button>
+              <Button 
+                disabled={isZipping}
+                onClick={() => {
+                  setIsZipping(true);
+                  generateZipBackup(registrations, "Master Student Registry", "genius_jam_master_backup")
+                    .finally(() => setIsZipping(false));
+                }}
+                className="w-full h-9 font-black rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <FileArchive className={`mr-2 h-3 w-3 ${isZipping ? 'animate-bounce' : ''}`} /> 
+                {isZipping ? 'Zipping...' : 'Download ZIP Backup'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
