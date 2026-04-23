@@ -138,22 +138,6 @@ const registrationTypes = [
     cardBg: "rgba(255,255,255,0.45)",
     orbColor: "rgba(79,70,229,0.08)",
   },
-  {
-    id: "attendance",
-    title: "Attendance",
-    subtitle: "For Event Attendance",
-    description:
-      "Mark and verify attendance for all participants using name, mobile, or registration ID.",
-    href: "/attendance",
-    accentHex: "#ef4444", // Red
-    glow: "rgba(239,68,68,0.1)",
-    border: "rgba(239,68,68,0.12)",
-    badge: "Check-in",
-    badgeBg: "rgba(239,68,68,0.06)",
-    badgeText: "#ef4444",
-    cardBg: "rgba(255,255,255,0.45)",
-    orbColor: "rgba(239,68,68,0.08)",
-  },
 ];
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */
