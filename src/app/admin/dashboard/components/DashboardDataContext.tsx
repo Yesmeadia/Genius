@@ -13,6 +13,7 @@ import {
   VolunteerRegistration,
   DashboardStats,
   AwardeeRegistration,
+  QiraathRegistration,
   DriverStaffRegistration
 } from "../types";
 
@@ -24,6 +25,7 @@ interface DashboardDataContextType {
   alumniRegistrations: AlumniRegistration[];
   volunteerRegistrations: VolunteerRegistration[];
   awardeeRegistrations: AwardeeRegistration[];
+  qiraathRegistrations: QiraathRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
   stats: DashboardStats;
   loading: boolean;
@@ -55,6 +57,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   const [alumniRegistrations, setAlumniRegistrations] = useState<AlumniRegistration[]>([]);
   const [volunteerRegistrations, setVolunteerRegistrations] = useState<VolunteerRegistration[]>([]);
   const [awardeeRegistrations, setAwardeeRegistrations] = useState<AwardeeRegistration[]>([]);
+  const [qiraathRegistrations, setQiraathRegistrations] = useState<QiraathRegistration[]>([]);
   const [driverStaffRegistrations, setDriverStaffRegistrations] = useState<DriverStaffRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
@@ -106,6 +109,11 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       setAwardeeRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AwardeeRegistration[]);
     });
 
+    const qQiraath = query(collection(db, "qiraath_registrations"), orderBy("createdAt", "desc"));
+    const unsubQiraath = onSnapshot(qQiraath, (snap) => {
+      setQiraathRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as QiraathRegistration[]);
+    });
+
     const qDriverStaff = query(collection(db, "driver_staff_registrations"), orderBy("createdAt", "desc"));
     const unsubDriverStaff = onSnapshot(qDriverStaff, (snap) => {
       setDriverStaffRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as DriverStaffRegistration[]);
@@ -119,6 +127,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       unsubAlumni();
       unsubVolunteers();
       unsubAwardees();
+      unsubQiraath();
       unsubDriverStaff();
     };
   }, []);
@@ -150,7 +159,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
 
     const studentMales = registrations.filter(r => r.gender?.toLowerCase() === "male").length;
     const studentFemales = registrations.filter(r => r.gender?.toLowerCase() === "female").length;
-    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length + alumniRegistrations.length + volunteerRegistrations.length + awardeeRegistrations.length + driverStaffRegistrations.length;
+    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length + alumniRegistrations.length + volunteerRegistrations.length + awardeeRegistrations.length + qiraathRegistrations.length + driverStaffRegistrations.length;
 
     const trendMap = new Map();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -177,6 +186,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalAlumni: alumniRegistrations.length,
       totalVolunteers: volunteerRegistrations.length,
       totalAwardees: awardeeRegistrations.length,
+      totalQiraath: qiraathRegistrations.length,
       totalDriverStaff: driverStaffRegistrations.length,
       todayCount,
       totalParticipation,
@@ -185,8 +195,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalZones: new Set(registrations.map(r => r.zone)).size,
       availableSchoolsCount: locations.reduce((acc, z) => acc + z.schools.length, 0),
       availableZonesCount: locations.length,
-      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
-      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
+      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + qiraathRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
+      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + qiraathRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
       lastUpdated: lastSync,
       trendData,
       platformData: [
@@ -197,6 +207,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
         { name: 'Alumni', value: alumniRegistrations.length },
         { name: 'Volunteers', value: volunteerRegistrations.length },
         { name: 'Awardees', value: awardeeRegistrations.length },
+        { name: 'Qiraath', value: qiraathRegistrations.length },
         { name: 'Drivers/Staff', value: driverStaffRegistrations.length },
       ],
     };
@@ -224,6 +235,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     alumniRegistrations,
     volunteerRegistrations,
     awardeeRegistrations,
+    qiraathRegistrations,
     driverStaffRegistrations,
     stats,
     loading,

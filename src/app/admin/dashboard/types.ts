@@ -115,6 +115,24 @@ export interface AwardeeRegistration {
   accompaniments?: Accompaniment[];
 }
 
+export interface QiraathRegistration {
+  id: string;
+  name: string;
+  gender: string;
+  whatsappNumber: string;
+  zone: string;
+  school: string;
+  category: string;
+  className: string;
+  rank: string;
+  createdAt: any;
+  photoUrl?: string;
+  withParent?: boolean;
+  attendance?: boolean;
+  attendedAt?: any;
+  accompaniments?: Accompaniment[];
+}
+
 export interface DriverStaffRegistration {
   id: string;
   name: string;
@@ -138,6 +156,7 @@ export interface DashboardStats {
   totalAlumni: number;
   totalVolunteers: number;
   totalAwardees: number;
+  totalQiraath: number;
   totalDriverStaff: number;
   todayCount: number;
   totalParticipation: number;
@@ -161,6 +180,7 @@ export interface DashboardDataContextType {
   alumniRegistrations: AlumniRegistration[];
   volunteerRegistrations: VolunteerRegistration[];
   awardeeRegistrations: AwardeeRegistration[];
+  qiraathRegistrations: QiraathRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
   stats: DashboardStats;
   loading: boolean;

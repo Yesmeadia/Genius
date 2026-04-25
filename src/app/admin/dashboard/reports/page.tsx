@@ -8,7 +8,12 @@ export default function ReportsPage() {
     registrations, 
     guestRegistrations, 
     yesianRegistrations, 
-    localStaffRegistrations, 
+    localStaffRegistrations,
+    alumniRegistrations,
+    volunteerRegistrations,
+    awardeeRegistrations,
+    qiraathRegistrations,
+    driverStaffRegistrations,
     stats 
   } = useDashboardData();
 
@@ -19,6 +24,11 @@ export default function ReportsPage() {
         guestRegistrations={guestRegistrations}
         yesianRegistrations={yesianRegistrations}
         localStaffRegistrations={localStaffRegistrations}
+        alumniRegistrations={alumniRegistrations}
+        volunteerRegistrations={volunteerRegistrations}
+        awardeeRegistrations={awardeeRegistrations}
+        qiraathRegistrations={qiraathRegistrations}
+        driverStaffRegistrations={driverStaffRegistrations}
         stats={stats}
       />
     </div>

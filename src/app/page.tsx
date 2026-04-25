@@ -139,6 +139,22 @@ const registrationTypes = [
     cardBg: "rgba(255,255,255,0.45)",
     orbColor: "rgba(79,70,229,0.08)",
   },
+  {
+    id: "qiraath",
+    title: "QIRA'A",
+    subtitle: "Qira'ath Competition",
+    description:
+      "Register for the Qira'ath contest to showcase your recitation skills at Genius Jam 2026.",
+    href: "/register/qiraath",
+    accentHex: "#10b981", // Emerald/Teal
+    glow: "rgba(16,185,129,0.1)",
+    border: "rgba(16,185,129,0.12)",
+    badge: "Contest",
+    badgeBg: "rgba(16,185,129,0.06)",
+    badgeText: "#10b981",
+    cardBg: "rgba(255,255,255,0.45)",
+    orbColor: "rgba(16,185,129,0.08)",
+  },
 ];
 
 /* ─── Main Page ─────────────────────────────────────────────────────────── */

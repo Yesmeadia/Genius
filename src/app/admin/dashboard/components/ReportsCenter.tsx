@@ -12,7 +12,17 @@ import {
   Download, Filter, ArrowUpRight, ArrowDownRight,
   TrendingDown, Info, Check, X
 } from "lucide-react";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "../types";
+import { 
+  Registration, 
+  GuestRegistration, 
+  YesianRegistration, 
+  LocalStaffRegistration,
+  AlumniRegistration,
+  VolunteerRegistration,
+  AwardeeRegistration,
+  QiraathRegistration,
+  DriverStaffRegistration
+} from "../types";
 import { locations } from "@/data/locations";
 import { Button } from "@/components/ui/button";
 import { 
@@ -29,6 +39,11 @@ interface ReportsCenterProps {
   guestRegistrations: GuestRegistration[];
   yesianRegistrations: YesianRegistration[];
   localStaffRegistrations: LocalStaffRegistration[];
+  alumniRegistrations: AlumniRegistration[];
+  volunteerRegistrations: VolunteerRegistration[];
+  awardeeRegistrations: AwardeeRegistration[];
+  qiraathRegistrations: QiraathRegistration[];
+  driverStaffRegistrations: DriverStaffRegistration[];
   stats: any;
 }
 
@@ -39,6 +54,11 @@ export function ReportsCenter({
   guestRegistrations, 
   yesianRegistrations, 
   localStaffRegistrations,
+  alumniRegistrations,
+  volunteerRegistrations,
+  awardeeRegistrations,
+  qiraathRegistrations,
+  driverStaffRegistrations,
   stats 
 }: ReportsCenterProps) {
   const [selectedZone, setSelectedZone] = useState<string>("all");
@@ -58,29 +78,47 @@ export function ReportsCenter({
     let st = [...localStaffRegistrations];
     let g = [...guestRegistrations];
     let y = [...yesianRegistrations];
+    let a = [...alumniRegistrations];
+    let v = [...volunteerRegistrations];
+    let aw = [...awardeeRegistrations];
+    let q = [...qiraathRegistrations];
+    let d = [...driverStaffRegistrations];
 
     if (selectedZone !== "all") {
       s = s.filter(r => r.zone === selectedZone);
       st = st.filter(r => r.zone === selectedZone);
       y = y.filter(r => r.zone === selectedZone);
-      // Guests don't have zones usually, but filtering based on context if applicable
+      a = a.filter(r => r.zone === selectedZone);
+      v = v.filter(r => r.zone === selectedZone);
+      aw = aw.filter(r => r.zone === selectedZone);
+      q = q.filter(r => r.zone === selectedZone);
+      d = d.filter(r => r.zone === selectedZone);
     }
 
     if (selectedSchool !== "all") {
       s = s.filter(r => r.school === selectedSchool);
       st = st.filter(r => r.school === selectedSchool);
+      a = a.filter(r => r.school === selectedSchool);
+      v = v.filter(r => r.school === selectedSchool);
+      aw = aw.filter(r => r.school === selectedSchool);
+      q = q.filter(r => r.school === selectedSchool);
     }
 
-    return { s, st, g, y };
-  }, [selectedZone, selectedSchool, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations]);
+    return { s, st, g, y, a, v, aw, q, d };
+  }, [selectedZone, selectedSchool, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations]);
 
   const reportData = useMemo(() => {
-    const { s, st, g, y } = filteredData;
+    const { s, st, g, y, a, v, aw, q, d } = filteredData;
     const allPeople = [
       ...s.map(r => ({ ...r, type: 'Student' })),
       ...g.map(r => ({ ...r, type: 'Guest' })),
       ...y.map(r => ({ ...r, type: 'Yesian' })),
       ...st.map(r => ({ ...r, type: 'Staff' })),
+      ...a.map(r => ({ ...r, type: 'Alumni' })),
+      ...v.map(r => ({ ...r, type: 'Volunteer' })),
+      ...aw.map(r => ({ ...r, type: 'Awardee' })),
+      ...q.map(r => ({ ...r, type: 'Qiraath' })),
+      ...d.map(r => ({ ...r, type: 'Driver' })),
     ];
 
     // 1. Gender Distribution (Unified)
@@ -117,8 +155,8 @@ export function ReportsCenter({
       .map(name => ({ name, count: zoneMap[name] }))
       .sort((a, b) => b.count - a.count);
 
-    // 4. School Distribution (Students & Staff)
-    const schoolMap = [...s, ...st].reduce((acc: any, p) => {
+    // 4. Consolidated School Distribution (All types with school field)
+    const schoolMap = allPeople.reduce((acc: any, p: any) => {
       if (!p.school) return acc;
       const schoolName = getSchoolName(p.school);
       acc[schoolName] = (acc[schoolName] || 0) + 1;
@@ -127,10 +165,10 @@ export function ReportsCenter({
     const schoolStats = Object.keys(schoolMap)
       .map(name => ({ name, count: schoolMap[name] }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 15);
+      .slice(0, 20);
 
-    // 5. Gender by Zone (Students & Staff) - FOR STRATEGIC REPORTING
-    const zoneGenderMap = [...s, ...st].reduce((acc: any, p) => {
+    // 5. Gender by Zone (Consolidated)
+    const zoneGenderMap = allPeople.reduce((acc: any, p: any) => {
       const zone = p.zone || 'N/A';
       const gender = p.gender?.toLowerCase() === 'male' ? 'Male' : 
                      p.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
@@ -138,9 +176,9 @@ export function ReportsCenter({
       if (gender === 'Male' || gender === 'Female') acc[zone][gender]++;
       return acc;
     }, {});
-    const genderByZoneData = Object.values(zoneGenderMap).sort((a: any, b: any) => (b.Male + b.Female) - (a.Male + a.Female)).slice(0, 8);
+    const genderByZoneData = Object.values(zoneGenderMap).sort((a: any, b: any) => (b.Male + b.Female) - (a.Male + a.Female)).slice(0, 10);
 
-    // 6. Local Staff Insights
+    // 6. Local Staff Insights (Specific)
     const staffGenderMap = st.reduce((acc: any, p) => {
       const gender = p.gender?.toLowerCase() === 'male' ? 'Male' : 
                      p.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
@@ -160,6 +198,25 @@ export function ReportsCenter({
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
+    // 7. Application Type Distribution
+    const typeMap = allPeople.reduce((acc: any, p) => {
+      const type = p.type || 'Other';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+    const typeStats = Object.keys(typeMap).map(name => ({ name, value: typeMap[name] }));
+
+    // 8. Gender by Application Type
+    const typeGenderMap = allPeople.reduce((acc: any, p: any) => {
+      const type = p.type || 'Other';
+      const gender = p.gender?.toLowerCase() === 'male' ? 'Male' : 
+                     p.gender?.toLowerCase() === 'female' ? 'Female' : 'Other';
+      if (!acc[type]) acc[type] = { name: type, Male: 0, Female: 0 };
+      if (gender === 'Male' || gender === 'Female') acc[type][gender]++;
+      return acc;
+    }, {});
+    const genderByTypeData = Object.values(typeGenderMap).sort((a: any, b: any) => (b.Male + b.Female) - (a.Male + a.Female));
+
     return { 
       genderStats, 
       classStats, 
@@ -168,6 +225,8 @@ export function ReportsCenter({
       genderByZoneData,
       staffGenderStats,
       staffSchoolStats,
+      typeStats,
+      genderByTypeData,
       total: allPeople.length 
     };
   }, [filteredData]);
@@ -182,8 +241,8 @@ export function ReportsCenter({
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      const { s, st, y } = filteredData;
-      await generateStrategicReportPDF(s, st, y);
+      const { s, st, y, a, v, aw, q, d } = filteredData;
+      await generateStrategicReportPDF(s, st, y); // Note: Strategic PDF might need update for new types too
     } catch (e) {
       console.error(e);
       alert("Failed to generate PDF. Please try again.");
@@ -308,6 +367,41 @@ export function ReportsCenter({
           </CardContent>
         </Card>
 
+        {/* Application Type Distribution */}
+        <Card className="lg:col-span-4 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+              <Users className="text-emerald-500" size={18} />
+              Application Type Distribution
+            </CardTitle>
+            <CardDescription className="text-xs uppercase tracking-widest">Registrations by category</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[250px] mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={reportData.typeStats}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {reportData.typeStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Gender by Zone Distribution */}
         <Card className="lg:col-span-8 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
           <CardHeader>
@@ -327,6 +421,30 @@ export function ReportsCenter({
                 <Legend iconType="circle" />
                 <Bar dataKey="Male" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={24} />
                 <Bar dataKey="Female" stackId="a" fill="#ec4899" radius={[10, 10, 0, 0]} barSize={24} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Gender by Application Type */}
+        <Card className="lg:col-span-8 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+              <Users className="text-emerald-500" size={18} />
+              Gender Distribution by Application Type
+            </CardTitle>
+            <CardDescription className="text-xs uppercase tracking-widest">Gender split across categories</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px] mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={reportData.genderByTypeData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                <Legend iconType="circle" />
+                <Bar dataKey="Male" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={32} />
+                <Bar dataKey="Female" stackId="a" fill="#ec4899" radius={[10, 10, 0, 0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -386,14 +504,14 @@ export function ReportsCenter({
           </CardContent>
         </Card>
 
-        {/* Top Schools Report (Students) */}
+        {/* Campus-wise (School) Report - ALL CATEGORIES */}
         <Card className="lg:col-span-12 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-8">
           <CardHeader className="px-0 pt-0 pb-8">
             <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
               <School className="text-indigo-500" size={18} />
-              Academic Sources - Student Performance Matrix
+              Campus-wise Consolidated Distribution
             </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Primary enrollment institutions</CardDescription>
+            <CardDescription className="text-xs uppercase tracking-widest">Participation volume by institution (All Types)</CardDescription>
           </CardHeader>
           <CardContent className="px-0">
             <div className="h-[320px] w-full">

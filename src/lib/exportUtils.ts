@@ -12,6 +12,7 @@ import {
   AlumniRegistration, 
   VolunteerRegistration, 
   AwardeeRegistration, 
+  QiraathRegistration,
   DriverStaffRegistration 
 } from "@/app/admin/dashboard/types";
 
@@ -330,6 +331,38 @@ export async function generateAwardeeExportPDF(data: AwardeeRegistration[], titl
 }
 
 /**
+ * Qiraath Registration PDF
+ */
+export async function generateQiraathExportPDF(data: QiraathRegistration[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => [
+    index + 1,
+    reg.name,
+    reg.category,
+    reg.className,
+    reg.rank,
+    getSchoolName(reg.school),
+    reg.zone,
+    reg.withParent ? "Yes" : "No",
+    reg.whatsappNumber
+  ]);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Participant Name", "Category", "Class", "Rank", "School", "Zone", "Acc.", "WhatsApp"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
+}
+
+/**
  * Driver & Staff Registration PDF
  */
 export async function generateDriverStaffExportPDF(data: DriverStaffRegistration[], title: string, filename: string) {
@@ -596,7 +629,7 @@ function addFooter(doc: jsPDF, data: any) {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'driver-staff',
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff',
   kalashFontLoaded: boolean
 ) {
   const W = doc.internal.pageSize.width;   // 70mm
@@ -625,7 +658,7 @@ async function drawBadgeContent(
   const photoX = stripW + 1 + (photoAreaW - photoW) / 2;
   const photoY = 12;                // push down from top — adds space from header
 
-  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'driver-staff') ? data.photoUrl : null;
+  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) doc.addImage(photo, 'JPEG', photoX, photoY, photoW, photoH);
@@ -654,6 +687,7 @@ async function drawBadgeContent(
   else if (type === 'alumni-achiever') tc = [236, 72, 153]; // pink
   else if (type === 'volunteer') tc = [217, 119, 6]; // amber
   else if (type === 'awardee') tc = [124, 58, 237]; // violet
+  else if (type === 'qiraath') tc = [16, 185, 129]; // emerald
   else if (type === 'driver-staff') tc = [79, 70, 229]; // indigo
 
   doc.setFontSize(6.5);
@@ -675,6 +709,10 @@ async function drawBadgeContent(
     infoText = `${data.className || ''}\n${data.zone} | ${schoolName}`;
   }
   else if (type === 'awardee') {
+    const schoolName = getSchoolName(data.school);
+    infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${data.zone} | ${schoolName}`;
+  }
+  else if (type === 'qiraath') {
     const schoolName = getSchoolName(data.school);
     infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${data.zone} | ${schoolName}`;
   }
@@ -705,7 +743,7 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'driver-staff' = 'student'
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' = 'student'
 ) {
   if (data.length === 0) return alert("No records found.");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [70, 100] });

@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
 export interface FormSetting {
-  id: "student" | "guest" | "yesian" | "local-staff" | "alumni-achiever" | "volunteer" | "awardee" | "driver-staff";
+  id: "student" | "guest" | "yesian" | "local-staff" | "alumni-achiever" | "volunteer" | "awardee" | "driver-staff" | "qiraath";
   label: string;
   enabled: boolean;
   order: number;
@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS: FormSetting[] = [
   { id: "volunteer", label: "Volunteer Registration", enabled: true, order: 5, popupEnabled: false, popupMessage: "Volunteer Registration will close on", closingDate: "", closingTime: "", autoClose: true },
   { id: "awardee", label: "Awardee Registration", enabled: true, order: 6, popupEnabled: false, popupMessage: "Awardee Registration will close on", closingDate: "", closingTime: "", autoClose: true },
   { id: "driver-staff", label: "Driver & Staff Registration", enabled: true, order: 7, popupEnabled: false, popupMessage: "Driver & Staff Registration will close on", closingDate: "", closingTime: "", autoClose: true },
+  { id: "qiraath", label: "QIRA'A Registration", enabled: true, order: 8, popupEnabled: false, popupMessage: "Qira'ath Registration will close on", closingDate: "", closingTime: "", autoClose: true },
 ];
 
 const SETTINGS_DOC = doc(db, "settings", "registrationForms");

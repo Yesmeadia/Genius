@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap, Truck, Trash2, Plus } from "lucide-react";
+import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap, Truck, Trash2, Plus, Award } from "lucide-react";
 
 interface DashboardSidebarProps {
   sidebarOpen: boolean;
@@ -23,6 +23,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
     { id: "alumni-achievers", label: "Alumni Achievers", icon: <GraduationCap size={20} />, href: "/admin/dashboard/alumni-achievers" },
     { id: "volunteers", label: "Volunteers", icon: <ShieldCheck size={20} />, href: "/admin/dashboard/volunteers" },
     { id: "awardees", label: "Awardees", icon: <BarChart3 size={20} />, href: "/admin/dashboard/awardee" },
+    { id: "qiraath", label: "Qiraath Contest", icon: <Award size={20} />, href: "/admin/dashboard/qiraath" },
     { id: "driver-staff", label: "Drivers & Staff", icon: <Truck size={20} />, href: "/admin/dashboard/driver-staff" },
     { id: "pass", label: "Access Pass", icon: <CreditCard size={20} />, href: "/admin/dashboard/access-pass" },
     { id: "recycle-bin", label: "Recycle Bin", icon: <Trash2 size={20} />, href: "/admin/dashboard/recycle-bin" },

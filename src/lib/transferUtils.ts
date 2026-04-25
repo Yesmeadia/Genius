@@ -9,6 +9,7 @@ export type RegistrationType =
   | "alumni" 
   | "volunteer" 
   | "awardee" 
+  | "qiraath"
   | "driver-staff";
 
 export const REGISTRATION_TYPES: { id: RegistrationType; label: string; collection: string; path: string }[] = [
@@ -19,6 +20,7 @@ export const REGISTRATION_TYPES: { id: RegistrationType; label: string; collecti
   { id: "alumni", label: "Alumni", collection: "alumni_registrations", path: "/admin/dashboard/alumni-achievers" },
   { id: "volunteer", label: "Volunteer", collection: "volunteer_registrations", path: "/admin/dashboard/volunteers" },
   { id: "awardee", label: "Awardee", collection: "awardee_registrations", path: "/admin/dashboard/awardee" },
+  { id: "qiraath", label: "Qiraath", collection: "qiraath_registrations", path: "/admin/dashboard/qiraath" },
   { id: "driver-staff", label: "Driver Staff", collection: "driver_staff_registrations", path: "/admin/dashboard/driver-staff" },
 ];
 

@@ -83,6 +83,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const parts = pathname.split("/").filter(Boolean);
       return parts.length > 3 ? "Awardee Profile" : "Awardee Management";
     }
+
+    // Qiraath
+    if (pathname.startsWith("/admin/dashboard/qiraath")) {
+      const parts = pathname.split("/").filter(Boolean);
+      return parts.length > 3 ? "Qiraath Profile" : "Qiraath Contest Data";
+    }
     
     if (pathname.includes("/driver-staff")) return "Drivers & Staff Registry";
     if (pathname.includes("/access-pass")) return "Access Pass Center";
