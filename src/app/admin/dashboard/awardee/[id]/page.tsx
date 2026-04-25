@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import JsBarcode from "jsbarcode";
+import { TransferRegistration } from "../../components/TransferRegistration";
 
 interface AwardeeEditForm {
   name: string;
@@ -310,6 +311,11 @@ export default function AwardeeProfilePage() {
                 >
                   <Pencil className="mr-2 h-4 w-4" /> Edit Record
                 </Button>
+                <TransferRegistration 
+                  sourceId={id as string} 
+                  sourceType="awardee" 
+                  currentData={registration} 
+                />
                 <Button
                   variant="outline"
                   onClick={handleDelete}

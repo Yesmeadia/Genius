@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import JsBarcode from "jsbarcode";
+import { TransferRegistration } from "../../components/TransferRegistration";
 
 interface VolunteerEditForm {
   volunteerName: string;
@@ -267,6 +268,11 @@ export default function VolunteerProfilePage() {
                 >
                   <Pencil className="mr-2 h-4 w-4" /> Edit Record
                 </Button>
+                <TransferRegistration 
+                  sourceId={id as string} 
+                  sourceType="volunteer" 
+                  currentData={registration} 
+                />
                 <Button
                   variant="outline"
                   onClick={handleDelete}
@@ -458,7 +464,7 @@ export default function VolunteerProfilePage() {
                 {editMode ? (
                   <>
                     <div className="space-y-2">
-                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Parentage</Label>
+                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Father's / Mother's Name</Label>
                       <Input
                         value={editForm?.parentage || ""}
                         onChange={e => updateField("parentage", e.target.value.toUpperCase())}
@@ -552,11 +558,11 @@ export default function VolunteerProfilePage() {
                           <GraduationCap size={24} />
                         </div>
                         <div>
-                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Class & Parentage</div>
+                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Class & Detail</div>
                           <div className="text-base font-normal text-slate-800 leading-snug uppercase font-bold tracking-widest">
                             {registration.className || "N/A"}
                             <div className="text-[11px] text-slate-500 font-medium mt-1 uppercase tracking-tight">
-                              C/O {registration.parentage || "N/A"}
+                              {registration.parentage || "N/A"}
                             </div>
                           </div>
                         </div>

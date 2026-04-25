@@ -204,10 +204,10 @@ export default function VolunteerRegistrationForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="parentage" className={`text-xs font-normal uppercase tracking-wider ${errors.parentage ? "text-destructive" : "text-slate-500"}`}>Parentage</Label>
+                <Label htmlFor="parentage" className={`text-xs font-normal uppercase tracking-wider ${errors.parentage ? "text-destructive" : "text-slate-500"}`}>Father's / Mother's Name</Label>
                 <Input
                   {...register("parentage", {
-                    required: "Parentage is required",
+                    required: "Guardian's name is required",
                     onChange: (e) => e.target.value = e.target.value.toUpperCase()
                   })}
                   placeholder="FATHER'S / MOTHER'S NAME"
