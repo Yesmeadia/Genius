@@ -44,18 +44,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Determine active tab/page title based on pathname
   const getPageTitle = () => {
     if (pathname === "/admin/dashboard") return "Dashboard Overview";
-    if (pathname.includes("/students-data")) return "Student Management";
+    
+    // Students
+    if (pathname.startsWith("/admin/dashboard/students-data")) return "Student Management";
+    if (pathname.startsWith("/admin/dashboard/student/")) return "Student Profile";
+    
+    // Guardians
     if (pathname.includes("/guardian-data")) return "Guardian Database";
-    if (pathname.includes("/guest-registry")) return "Guest Registry";
-    if (pathname.includes("/yesian-network")) return "Yesian Network";
-    if (pathname.includes("/local-staff")) return "Local Staff Database";
-    if (pathname.includes("/alumni-achievers")) return "Alumni Achievers Data";
-    if (pathname.includes("/volunteers")) return "Volunteers Registration";
-    if (pathname.includes("/awardee")) return "Awardee Management";
+    
+    // Guests
+    if (pathname.startsWith("/admin/dashboard/guest-registry")) return "Guest Registry";
+    if (pathname.startsWith("/admin/dashboard/guest/")) return "Guest Profile";
+    
+    // Yesians
+    if (pathname.startsWith("/admin/dashboard/yesian-network")) return "Yesian Network";
+    if (pathname.startsWith("/admin/dashboard/yesian/")) return "Yesian Profile";
+    
+    // Local Staff
+    if (pathname.startsWith("/admin/dashboard/local-staff")) {
+      const parts = pathname.split("/").filter(Boolean);
+      return parts.length > 3 ? "Local Staff Profile" : "Local Staff Database";
+    }
+    
+    // Alumni
+    if (pathname.startsWith("/admin/dashboard/alumni-achievers")) {
+      const parts = pathname.split("/").filter(Boolean);
+      return parts.length > 3 ? "Alumni Profile" : "Alumni Achievers Data";
+    }
+    
+    // Volunteers
+    if (pathname.startsWith("/admin/dashboard/volunteers")) {
+      const parts = pathname.split("/").filter(Boolean);
+      return parts.length > 3 ? "Volunteer Profile" : "Volunteers Registration";
+    }
+    
+    // Awardees
+    if (pathname.startsWith("/admin/dashboard/awardee")) {
+      const parts = pathname.split("/").filter(Boolean);
+      return parts.length > 3 ? "Awardee Profile" : "Awardee Management";
+    }
+    
     if (pathname.includes("/driver-staff")) return "Drivers & Staff Registry";
     if (pathname.includes("/access-pass")) return "Access Pass Center";
     if (pathname.includes("/reports")) return "Analytics & Reports";
     if (pathname.includes("/master-export")) return "Master Export Center";
+    if (pathname.includes("/recycle-bin")) return "Recycle Bin";
     if (pathname.includes("/settings")) return "Portal Configuration";
     if (pathname.includes("/profile")) return "My Profile";
     return "Admin Dashboard";

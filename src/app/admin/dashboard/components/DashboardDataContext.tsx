@@ -124,11 +124,19 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   }, []);
 
   const filterOptions = useMemo(() => {
-    const zones = Array.from(new Set(registrations.map(r => r.zone))).sort();
-    const schools = Array.from(new Set(registrations.map(r => r.school))).sort();
-    const classes = Array.from(new Set(registrations.map(r => r.className))).sort();
+    const zones = Array.from(new Set(registrations.map(r => r.zone))).filter(Boolean).sort();
+    
+    let schools = [];
+    if (filterZone !== "all") {
+      schools = Array.from(new Set(registrations.filter(r => r.zone === filterZone).map(r => r.school))).filter(Boolean).sort();
+    } else {
+      schools = Array.from(new Set(registrations.map(r => r.school))).filter(Boolean).sort();
+    }
+    
+    const classes = Array.from(new Set(registrations.map(r => r.className))).filter(Boolean).sort();
+    
     return { zones, schools, classes };
-  }, [registrations]);
+  }, [registrations, filterZone]);
 
   const stats: DashboardStats = useMemo(() => {
     const today = new Date();
@@ -203,6 +211,11 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     setFilterAccompaniment("all");
   };
 
+  const handleSetFilterZone = (zone: string) => {
+    setFilterZone(zone);
+    setFilterSchool("all");
+  };
+
   const value = {
     registrations,
     guestRegistrations,
@@ -218,7 +231,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     searchTerm,
     setSearchTerm,
     filterZone,
-    setFilterZone,
+    setFilterZone: handleSetFilterZone,
     filterSchool,
     setFilterSchool,
     filterClass,
