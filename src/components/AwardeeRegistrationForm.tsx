@@ -443,7 +443,7 @@ export default function AwardeeRegistrationForm() {
                 <Controller
                   name="rank"
                   control={control}
-                  rules={{ required: "Rank is required" }}
+                  rules={{ required: selectedSelectionType === "State/UT Rank Holder" ? false : "Rank is required" }}
                   render={({ field }) => (
                     <Select
                       onValueChange={field.onChange}
