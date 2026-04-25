@@ -131,12 +131,12 @@ export default function RegistrationForm() {
       delete (finalData as any).photo;
 
       // 3. Save to Firestore
-      await addDoc(collection(db, "registrations"), {
+      const docRef = await addDoc(collection(db, "registrations"), {
         ...finalData,
         createdAt: serverTimestamp(),
       });
 
-      router.push("/success");
+      router.push(`/success?id=${docRef.id}&type=student`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");

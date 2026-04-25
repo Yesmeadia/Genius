@@ -55,14 +55,14 @@ export default function GuestRegistrationForm() {
   const onSubmit = async (data: GuestFormData) => {
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "guest_registrations"), {
+      const docRef = await addDoc(collection(db, "guest_registrations"), {
         ...data,
         name: data.name.toUpperCase(),
         address: data.address.toUpperCase(),
         registrationType: "guest",
         createdAt: serverTimestamp(),
       });
-      router.push("/success");
+      router.push(`/success?id=${docRef.id}&type=guest`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");

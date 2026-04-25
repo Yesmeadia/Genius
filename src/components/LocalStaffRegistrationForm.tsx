@@ -85,7 +85,7 @@ export default function LocalStaffRegistrationForm() {
       // Prepare final data to avoid Firestore error with FileList
       const { photo, ...restData } = data;
 
-      await addDoc(collection(db, "local_staff_registrations"), {
+      const docRef = await addDoc(collection(db, "local_staff_registrations"), {
         ...restData,
         photoUrl,
         name: data.name.toUpperCase(),
@@ -93,7 +93,7 @@ export default function LocalStaffRegistrationForm() {
         createdAt: serverTimestamp(),
       });
       
-      router.push("/success");
+      router.push(`/success?id=${docRef.id}&type=local-staff`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");

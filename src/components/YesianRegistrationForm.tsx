@@ -82,7 +82,7 @@ export default function YesianRegistrationForm() {
       // Prepare final data to avoid Firestore error with FileList
       const { photo, ...restData } = data;
 
-      await addDoc(collection(db, "yesian_registrations"), {
+      const docRef = await addDoc(collection(db, "yesian_registrations"), {
         ...restData,
         photoUrl,
         name: data.name.toUpperCase(),
@@ -90,7 +90,7 @@ export default function YesianRegistrationForm() {
         createdAt: serverTimestamp(),
       });
       // Remove FileList before any local state updates or logs if needed
-      router.push("/success");
+      router.push(`/success?id=${docRef.id}&type=yesian`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");

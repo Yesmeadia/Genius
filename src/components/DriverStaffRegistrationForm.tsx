@@ -103,8 +103,8 @@ export function DriverStaffRegistrationForm() {
       // remove FileList object before saving
       delete finalData.photo;
 
-      await addDoc(collection(db, "driver_staff_registrations"), finalData);
-      router.push("/success");
+      const docRef = await addDoc(collection(db, "driver_staff_registrations"), finalData);
+      router.push(`/success?id=${docRef.id}&type=driver-staff`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");

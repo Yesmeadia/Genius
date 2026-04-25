@@ -117,12 +117,12 @@ export default function VolunteerRegistrationForm() {
       // remove FileList object from finalData before saving
       delete (finalData as any).photo;
 
-      await addDoc(collection(db, "volunteer_registrations"), {
+      const docRef = await addDoc(collection(db, "volunteer_registrations"), {
         ...finalData,
         createdAt: serverTimestamp(),
       });
 
-      router.push("/success");
+      router.push(`/success?id=${docRef.id}&type=volunteer`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");

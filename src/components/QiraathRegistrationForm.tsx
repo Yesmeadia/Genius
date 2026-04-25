@@ -140,11 +140,11 @@ export default function QiraathRegistrationForm() {
       // remove FileList object before saving
       delete (finalData as any).photo;
 
-      await addDoc(collection(db, "qiraath_registrations"), {
+      const docRef = await addDoc(collection(db, "qiraath_registrations"), {
         ...finalData,
         createdAt: serverTimestamp(),
       });
-      router.push("/success");
+      router.push(`/success?id=${docRef.id}&type=qiraath`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");

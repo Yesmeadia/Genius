@@ -146,11 +146,11 @@ export default function AwardeeRegistrationForm() {
       // remove FileList object before saving
       delete (finalData as any).photo;
 
-      await addDoc(collection(db, "awardee_registrations"), {
+      const docRef = await addDoc(collection(db, "awardee_registrations"), {
         ...finalData,
         createdAt: serverTimestamp(),
       });
-      router.push("/success");
+      router.push(`/success?id=${docRef.id}&type=awardee`);
     } catch (error) {
       console.error("Error during submission: ", error);
       alert("Registration failed. Please check your connection and try again.");
