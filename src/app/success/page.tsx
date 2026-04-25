@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Home, UserPlus } from "lucide-react";
 import Footer from "@/components/Footer";
 import MathCanvas from "@/components/MathCanvas";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SuccessPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { user } = useAuth();
 
   useGSAP(() => {
     // Ambient Orbs
@@ -100,22 +102,44 @@ export default function SuccessPage() {
               </p>
 
               <div className="action-buttons flex flex-wrap justify-center gap-4 w-full">
-                <Button
-                  onClick={() => router.push("/")}
-                  className="h-14 px-8 rounded-full bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
-                >
-                  <Home className="w-4 h-4" />
-                  Return Home
-                </Button>
+                {user ? (
+                  <>
+                    <Button
+                      onClick={() => router.push("/admin/dashboard")}
+                      className="h-14 px-8 rounded-full bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                    >
+                      <Home className="w-4 h-4" />
+                      Dashboard
+                    </Button>
+                    <Button
+                      onClick={() => router.push("/admin/dashboard/registration")}
+                      variant="outline"
+                      className="h-14 px-8 rounded-full border-2 border-slate-100 bg-white/50 hover:bg-white text-slate-900 font-extrabold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                    >
+                      <UserPlus className="w-4 h-4 text-indigo-500" />
+                      New Registration
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      onClick={() => router.push("/")}
+                      className="h-14 px-8 rounded-full bg-slate-900 hover:bg-black text-white font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                    >
+                      <Home className="w-4 h-4" />
+                      Return Home
+                    </Button>
 
-                <Button
-                  onClick={() => router.push("/")}
-                  variant="outline"
-                  className="h-14 px-8 rounded-full border-2 border-slate-100 bg-white/50 hover:bg-white text-slate-900 font-extrabold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
-                >
-                  <UserPlus className="w-4 h-4 text-indigo-500" />
-                  New Registration
-                </Button>
+                    <Button
+                      onClick={() => router.push("/")}
+                      variant="outline"
+                      className="h-14 px-8 rounded-full border-2 border-slate-100 bg-white/50 hover:bg-white text-slate-900 font-extrabold uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3"
+                    >
+                      <UserPlus className="w-4 h-4 text-indigo-500" />
+                      New Registration
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
