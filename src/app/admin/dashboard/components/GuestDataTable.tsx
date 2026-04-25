@@ -185,7 +185,7 @@ export function GuestDataTable({
               {data.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs"
                   >
                     No matching records found

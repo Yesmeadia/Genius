@@ -92,8 +92,10 @@ export interface VolunteerRegistration {
   className: string;
   createdAt: any;
   photoUrl?: string;
+  withParent?: boolean;
   attendance?: boolean;
   attendedAt?: any;
+  accompaniments?: Accompaniment[];
 }
 
 export interface AwardeeRegistration {

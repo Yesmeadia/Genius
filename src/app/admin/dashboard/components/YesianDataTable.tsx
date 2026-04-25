@@ -178,7 +178,7 @@ export function YesianDataTable({
               {data.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs"
                   >
                     No matching records found

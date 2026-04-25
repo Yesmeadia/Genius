@@ -311,7 +311,7 @@ export function StudentDataTable({
               ))}
               {filteredData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
+                  <TableCell colSpan={7} className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
                     No matching records found
                   </TableCell>
                 </TableRow>

@@ -114,6 +114,9 @@ export function VolunteerDataTable({
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
                   Attendance
                 </TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">
+                  Accompaniment
+                </TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest text-right pr-6">
                   Actions
                 </TableHead>
@@ -183,6 +186,20 @@ export function VolunteerDataTable({
                       </Badge>
                     )}
                   </TableCell>
+                  <TableCell className="py-4">
+                    {reg.withParent ? (
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 uppercase">
+                          Accompanied {reg.accompaniments && reg.accompaniments.length > 1 ? `(${reg.accompaniments.length})` : ""}
+                        </div>
+                        <div className="text-[9px] text-slate-400 uppercase">
+                          {reg.accompaniments?.[0]?.name || "Guardian"}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[9px] text-slate-300 uppercase">Individual</span>
+                    )}
+                  </TableCell>
                   <TableCell className="py-4 text-right pr-6">
                     <Link href={`/admin/dashboard/volunteers/${reg.id}`}>
                       <Button 
@@ -199,7 +216,7 @@ export function VolunteerDataTable({
               {data.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={8}
                     className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs"
                   >
                     No matching records found

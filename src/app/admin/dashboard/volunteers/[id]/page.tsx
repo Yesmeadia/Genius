@@ -11,7 +11,8 @@ import { locations } from "@/data/locations";
 import {
   ArrowLeft, Calendar, User, ShieldCheck, Phone,
   Pencil, X, Check, Loader2, UploadCloud,
-  MapPin, GraduationCap, Download, Trash2, CheckCircle2
+  MapPin, GraduationCap, Download, Trash2, CheckCircle2,
+  Plus
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
@@ -38,6 +39,8 @@ interface VolunteerEditForm {
   school: string;
   className: string;
   attendance: boolean;
+  withParent: boolean;
+  accompaniments: { name: string; gender: string; relation: string; }[];
 }
 
 export default function VolunteerProfilePage() {
@@ -108,6 +111,8 @@ export default function VolunteerProfilePage() {
       school: registration.school || "",
       className: registration.className || "",
       attendance: registration.attendance || false,
+      withParent: registration.withParent || false,
+      accompaniments: registration.accompaniments || [],
     });
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -129,7 +134,42 @@ export default function VolunteerProfilePage() {
   };
 
   const updateField = (field: keyof VolunteerEditForm, value: any) => {
-    setEditForm(prev => (prev ? { ...prev, [field]: value } : prev));
+    setEditForm(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, [field]: value };
+      if (field === "zone") updated.school = "";
+      if (field === "withParent" && value === true && updated.accompaniments.length === 0) {
+        updated.accompaniments = [{ name: "", gender: "Male", relation: "" }];
+      }
+      return updated;
+    });
+  };
+
+  const updateAccompaniment = (index: number, field: string, value: string) => {
+    setEditForm(prev => {
+      if (!prev) return prev;
+      const newAccs = [...prev.accompaniments];
+      newAccs[index] = { ...newAccs[index], [field]: value };
+      return { ...prev, accompaniments: newAccs };
+    });
+  };
+
+  const addAccompaniment = () => {
+    setEditForm(prev => {
+      if (!prev || prev.accompaniments.length >= 3) return prev;
+      return {
+        ...prev,
+        accompaniments: [...prev.accompaniments, { name: "", gender: "Male", relation: "" }]
+      };
+    });
+  };
+
+  const removeAccompaniment = (index: number) => {
+    setEditForm(prev => {
+      if (!prev) return prev;
+      const newAccs = prev.accompaniments.filter((_, i) => i !== index);
+      return { ...prev, accompaniments: newAccs };
+    });
   };
 
   const handleSave = async () => {
@@ -138,7 +178,7 @@ export default function VolunteerProfilePage() {
     try {
       let photoUrl = registration?.photoUrl || "";
       if (photoFile) {
-        const storageRef = ref(storage, `photos/volunteers/${Date.now()}_${photoFile.name}`);
+        const storageRef = ref(storage, `photos/volunteer_${Date.now()}_${photoFile.name}`);
         const snapshot = await uploadBytes(storageRef, photoFile);
         photoUrl = await getDownloadURL(snapshot.ref);
       }
@@ -152,7 +192,13 @@ export default function VolunteerProfilePage() {
         className: editForm.className,
         photoUrl,
         attendance: editForm.attendance,
-        attendedAt: editForm.attendance && !registration?.attendance ? new Date() : (editForm.attendance ? registration?.attendedAt : null)
+        attendedAt: editForm.attendance && !registration?.attendance ? new Date() : (editForm.attendance ? registration?.attendedAt : null),
+        withParent: editForm.withParent,
+        accompaniments: editForm.withParent ? editForm.accompaniments.map(a => ({
+          name: a.name.toUpperCase(),
+          gender: a.gender,
+          relation: a.relation.toUpperCase()
+        })) : []
       };
       await updateDoc(doc(db, "volunteer_registrations", id as string), updateData);
       setRegistration(prev => (prev ? { ...prev, ...updateData } : prev));
@@ -580,6 +626,138 @@ export default function VolunteerProfilePage() {
                       </div>
                     </div>
                   </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Guardian Accompaniment */}
+            <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
+              <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
+                      <ShieldCheck className="text-emerald-600" size={22} />
+                      Accompaniment
+                    </CardTitle>
+                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Guardian details for access pass</CardDescription>
+                  </div>
+                  {editMode && (
+                    <div className="flex items-center gap-3">
+                      <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">
+                        {editForm?.withParent ? "Accompanied" : "Individual"}
+                      </Label>
+                      <Switch
+                        checked={editForm?.withParent || false}
+                        onCheckedChange={v => updateField("withParent", v)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                {editMode ? (
+                  editForm?.withParent ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                      {editForm.accompaniments.map((acc, index) => (
+                        <div key={index} className="relative p-5 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600/70">Person {index + 1}</span>
+                            {editForm.accompaniments.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeAccompaniment(index)}
+                                className="h-7 w-7 p-0 text-slate-300 hover:text-destructive rounded-full"
+                              >
+                                <Trash2 size={14} />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Name</Label>
+                              <Input
+                                value={acc.name}
+                                onChange={e => updateAccompaniment(index, "name", e.target.value.toUpperCase())}
+                                className="uppercase border-slate-100 bg-white"
+                                placeholder="Full Name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Relation</Label>
+                              <Input
+                                value={acc.relation}
+                                onChange={e => updateAccompaniment(index, "relation", e.target.value.toUpperCase())}
+                                className="uppercase border-slate-100 bg-white"
+                                placeholder="e.g. Father, Mother"
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Gender</Label>
+                              <div className="flex gap-4 py-2">
+                                {["Male","Female"].map(g => (
+                                  <label key={g} className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="radio"
+                                      value={g}
+                                      checked={acc.gender === g}
+                                      onChange={() => updateAccompaniment(index, "gender", g)}
+                                      className="w-4 h-4 text-amber-600"
+                                    />
+                                    <span className="text-sm font-medium text-slate-700">{g}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {editForm.accompaniments.length < 3 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addAccompaniment}
+                          className="w-full h-11 border-dashed border-slate-200 hover:border-amber-300 hover:bg-amber-50/30 text-slate-500 hover:text-amber-600 transition-all rounded-xl flex items-center justify-center gap-2"
+                        >
+                          <Plus size={16} />
+                          <span className="text-xs font-bold uppercase tracking-widest">Add Another Person</span>
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="py-6 flex flex-col items-center justify-center text-center">
+                      <div className="h-14 w-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-3">
+                        <User size={28} />
+                      </div>
+                      <p className="text-slate-400 text-sm font-normal">No accompaniments registered</p>
+                    </div>
+                  )
+                ) : (
+                  registration.withParent && registration.accompaniments && registration.accompaniments.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {registration.accompaniments.map((acc, idx) => (
+                        <div key={idx} className="p-5 rounded-2xl bg-slate-50/50 border border-slate-100 flex items-start gap-4">
+                          <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400 shrink-0">
+                            <User size={20} />
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold text-amber-600 uppercase tracking-[0.2em] mb-1">{acc.relation}</div>
+                            <div className="text-sm font-normal text-slate-800 leading-tight uppercase mb-1">{acc.name}</div>
+                            <div className="text-[10px] text-slate-400 uppercase tracking-widest">{acc.gender}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-6 flex flex-col items-center justify-center text-center">
+                      <div className="h-14 w-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-3">
+                        <User size={28} />
+                      </div>
+                      <p className="text-slate-400 text-sm font-normal">This volunteer is attending individually</p>
+                    </div>
+                  )
                 )}
               </CardContent>
             </Card>

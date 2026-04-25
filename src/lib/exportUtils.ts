@@ -275,19 +275,28 @@ export async function generateVolunteerExportPDF(data: VolunteerRegistration[], 
   const doc = new jsPDF({ orientation: "landscape" });
   await addHeader(doc, title);
 
-  const tableData = data.map((reg, index) => [
-    index + 1,
-    reg.volunteerName,
-    reg.parentage,
-    reg.className,
-    getSchoolName(reg.school),
-    reg.zone,
-    reg.whatsappNumber || reg.mobileNumber || "N/A"
-  ]);
+  const tableData = data.map((reg, index) => {
+    let guardianInfo = "-";
+    if (reg.accompaniments && reg.accompaniments.length > 0) {
+      guardianInfo = reg.accompaniments.map(a => `${a.name} (${a.relation})`).join(", ");
+    }
+
+    return [
+      index + 1,
+      reg.volunteerName,
+      reg.parentage,
+      reg.className,
+      getSchoolName(reg.school),
+      reg.zone,
+      reg.withParent ? "Yes" : "No",
+      guardianInfo,
+      reg.whatsappNumber || reg.mobileNumber || "N/A"
+    ];
+  });
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Volunteer Name", "Parentage", "Class", "School", "Zone", "Contact"]],
+    head: [["#", "Volunteer Name", "Parentage", "Class", "School", "Zone", "Acc.", "Guardian", "Contact"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontSize: 8 },
