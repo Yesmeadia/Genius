@@ -4,10 +4,15 @@ import { useMemo } from "react";
 import { useDashboardData } from "../components/DashboardDataContext";
 import { AccompanimentDataTable } from "../components/AccompanimentDataTable";
 import { locations } from "@/data/locations";
+import { Registration } from "../types";
 
 export default function GuardianDataPage() {
   const { 
     registrations, 
+    alumniRegistrations,
+    volunteerRegistrations,
+    awardeeRegistrations,
+    qiraathRegistrations,
     searchTerm, 
     setSearchTerm, 
     filterZone, 
@@ -32,7 +37,47 @@ export default function GuardianDataPage() {
     return schoolId;
   };
 
-  const filteredData = useMemo(() => registrations.map(r => ({
+  const allAccompaniments = useMemo(() => {
+    const studentData = registrations.map(r => ({
+      ...r,
+      type: "Student"
+    }));
+
+    const alumniData = alumniRegistrations.map(r => ({
+      ...r,
+      studentName: r.name,
+      parentage: "",
+      withParent: !!r.withParent,
+      type: "Alumni"
+    }));
+
+    const volunteerData = volunteerRegistrations.map(r => ({
+      ...r,
+      studentName: r.volunteerName,
+      withParent: !!r.withParent,
+      type: "Volunteer"
+    }));
+
+    const awardeeData = awardeeRegistrations.map(r => ({
+      ...r,
+      studentName: r.name,
+      parentage: "",
+      withParent: !!r.withParent,
+      type: "Awardee"
+    }));
+
+    const qiraathData = qiraathRegistrations.map(r => ({
+      ...r,
+      studentName: r.name,
+      parentage: "",
+      withParent: !!r.withParent,
+      type: "Qiraath"
+    }));
+
+    return [...studentData, ...alumniData, ...volunteerData, ...awardeeData, ...qiraathData];
+  }, [registrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations]);
+
+  const filteredData = useMemo(() => allAccompaniments.map(r => ({
     ...r,
     schoolName: getSchoolName(r.school)
   })).filter(r => {
@@ -51,7 +96,7 @@ export default function GuardianDataPage() {
     const matchesGender = filterGender === "all" || (r.gender && r.gender.toUpperCase() === filterGender.toUpperCase());
 
     return matchesSearch && matchesZone && matchesSchool && matchesClass && matchesGender && r.withParent === true;
-  }), [registrations, searchTerm, filterZone, filterSchool, filterClass, filterGender, filterAccompaniment]);
+  }) as Registration[], [allAccompaniments, searchTerm, filterZone, filterSchool, filterClass, filterGender, filterAccompaniment]);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">

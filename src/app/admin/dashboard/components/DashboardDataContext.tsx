@@ -136,19 +136,27 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   }, []);
 
   const filterOptions = useMemo(() => {
-    const zones = Array.from(new Set(registrations.map(r => r.zone))).filter(Boolean).sort();
+    const all = [
+      ...registrations, 
+      ...alumniRegistrations, 
+      ...volunteerRegistrations, 
+      ...awardeeRegistrations, 
+      ...qiraathRegistrations
+    ];
+    
+    const zones = Array.from(new Set(all.map(r => r.zone))).filter(Boolean).sort();
     
     let schools = [];
     if (filterZone !== "all") {
-      schools = Array.from(new Set(registrations.filter(r => r.zone === filterZone).map(r => r.school))).filter(Boolean).sort();
+      schools = Array.from(new Set(all.filter(r => r.zone === filterZone).map(r => r.school))).filter(Boolean).sort();
     } else {
-      schools = Array.from(new Set(registrations.map(r => r.school))).filter(Boolean).sort();
+      schools = Array.from(new Set(all.map(r => r.school))).filter(Boolean).sort();
     }
     
-    const classes = Array.from(new Set(registrations.map(r => r.className))).filter(Boolean).sort();
+    const classes = Array.from(new Set(all.map(r => r.className))).filter(Boolean).sort();
     
     return { zones, schools, classes };
-  }, [registrations, filterZone]);
+  }, [registrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, filterZone]);
 
   const stats: DashboardStats = useMemo(() => {
     const today = new Date();
@@ -181,6 +189,19 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
 
     const trendData = last7Days.map(date => ({ date, count: trendMap.get(date) }));
 
+    const countAccs = (regs: any[]) => regs.reduce((acc, r) => {
+      if (!r.withParent) return acc;
+      // If accompaniments array exists, count its length, otherwise count as 1 (legacy behavior)
+      const count = r.accompaniments && r.accompaniments.length > 0 ? r.accompaniments.length : 1;
+      return acc + count;
+    }, 0);
+
+    const totalAccompaniments = countAccs(registrations) + 
+                               countAccs(alumniRegistrations) + 
+                               countAccs(volunteerRegistrations) + 
+                               countAccs(awardeeRegistrations) + 
+                               countAccs(qiraathRegistrations);
+
     return {
       totalStudents: registrations.length,
       totalGuests: guestRegistrations.length,
@@ -194,6 +215,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       todayCount,
       totalParticipation,
       totalAccompanied: registrations.filter(r => r.withParent).length,
+      totalAccompaniments,
       totalSchools: new Set(registrations.map(r => r.school)).size,
       totalZones: new Set(registrations.map(r => r.zone)).size,
       availableSchoolsCount: locations.reduce((acc, z) => acc + z.schools.length, 0),

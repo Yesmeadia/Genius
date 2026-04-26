@@ -21,12 +21,13 @@ import { Registration, DataTableProps } from "../types";
 
 export function AccompanimentDataTable({ 
   filteredData, searchTerm, setSearchTerm, 
-  itemsPerPage, filterZone, setFilterZone, filterClass, setFilterClass, filterOptions,
+  itemsPerPage: initialItemsPerPage, filterZone, setFilterZone, filterClass, setFilterClass, filterOptions,
   filterGender, setFilterGender, filterAccompaniment, setFilterAccompaniment,
   filterSchool, setFilterSchool, resetFilters
 }: DataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMounted, setHasMounted] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   
   useEffect(() => {
@@ -176,6 +177,7 @@ export function AccompanimentDataTable({
             <TableHeader className="bg-slate-50/50">
               <TableRow className="border-slate-50">
                 <TableHead className="py-4 text-[10px] font-normal text-emerald-600 uppercase tracking-widest pl-6">Accompaniment Profile</TableHead>
+                <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Type</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Student Linked</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Institution Location</TableHead>
                 <TableHead className="py-4 text-[10px] font-normal text-slate-400 uppercase tracking-widest">Timestamp</TableHead>
@@ -216,6 +218,11 @@ export function AccompanimentDataTable({
                     )}
                   </TableCell>
                   <TableCell className="py-4">
+                    <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200 font-bold text-[9px] uppercase tracking-tighter px-1.5 h-5">
+                      {(reg as any).type || "Student"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-4">
                     <div className="font-normal text-[13px] text-slate-600">{reg.studentName}</div>
                     <div className="text-[10px] text-slate-400 font-normal uppercase tracking-wide">Grade {reg.className}</div>
                   </TableCell>
@@ -232,7 +239,7 @@ export function AccompanimentDataTable({
               ))}
               {filteredData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
+                  <TableCell colSpan={6} className="py-12 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
                     No matching records found
                   </TableCell>
                 </TableRow>
@@ -241,11 +248,35 @@ export function AccompanimentDataTable({
           </Table>
         </div>
       </CardContent>
-      {totalPages > 1 && (
-        <div className="bg-slate-50/20 p-4 border-t border-slate-50 flex justify-between items-center">
-            <div className="text-[10px] text-slate-400 font-normal uppercase tracking-widest px-2">
-                Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length}
+      {filteredData.length > 0 && (
+        <div className="bg-slate-50/20 p-4 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="text-[10px] text-slate-400 font-normal uppercase tracking-widest px-2">
+                  Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-slate-400 font-normal uppercase tracking-widest">Rows:</span>
+                <Select 
+                  value={itemsPerPage.toString()} 
+                  onValueChange={(val) => {
+                    setItemsPerPage(parseInt(val));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-[60px] text-[10px] border-slate-200 bg-white rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div className="flex items-center gap-2">
                 <Button 
                     variant="outline" 
@@ -256,12 +287,12 @@ export function AccompanimentDataTable({
                 >
                     Prev
                 </Button>
-                <div className="text-[10px] font-normal text-slate-600 px-2">{currentPage} / {totalPages}</div>
+                <div className="text-[10px] font-normal text-slate-600 px-2">{currentPage} / {totalPages || 1}</div>
                 <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages || totalPages === 0}
                     className="h-8 text-[10px] uppercase font-normal text-slate-500 rounded-xl"
                 >
                     Next

@@ -163,6 +163,7 @@ export interface DashboardStats {
   todayCount: number;
   totalParticipation: number;
   totalAccompanied: number;
+  totalAccompaniments: number;
   totalSchools: number;
   totalZones: number;
   availableSchoolsCount: number;

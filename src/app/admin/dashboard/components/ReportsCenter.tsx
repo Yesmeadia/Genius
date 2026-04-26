@@ -63,6 +63,9 @@ export function ReportsCenter({
 }: ReportsCenterProps) {
   const [selectedZone, setSelectedZone] = useState<string>("all");
   const [selectedSchool, setSelectedSchool] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedAccompaniment, setSelectedAccompaniment] = useState<string>("all");
+  const [selectedAwardeeType, setSelectedAwardeeType] = useState<string>("all");
   const [isExporting, setIsExporting] = useState(false);
 
   const getSchoolName = (schoolId: string) => {
@@ -104,8 +107,39 @@ export function ReportsCenter({
       q = q.filter(r => r.school === selectedSchool);
     }
 
+    if (selectedType !== "all") {
+      if (selectedType !== "Student") s = [];
+      if (selectedType !== "Staff") st = [];
+      if (selectedType !== "Guest") g = [];
+      if (selectedType !== "Yesian") y = [];
+      if (selectedType !== "Alumni") a = [];
+      if (selectedType !== "Volunteer") v = [];
+      if (selectedType !== "Awardee") aw = [];
+      if (selectedType !== "Qiraath") q = [];
+      if (selectedType !== "Driver") d = [];
+    }
+
+    if (selectedAccompaniment !== "all") {
+      const wantAcc = selectedAccompaniment === "with";
+      s = s.filter(r => !!r.withParent === wantAcc);
+      a = a.filter(r => !!r.withParent === wantAcc);
+      v = v.filter(r => !!r.withParent === wantAcc);
+      aw = aw.filter(r => !!r.withParent === wantAcc);
+      q = q.filter(r => !!r.withParent === wantAcc);
+      // Others don't have accompaniment, so clear them if we want with accompaniment
+      if (wantAcc) {
+        st = []; g = []; y = []; d = [];
+      }
+    }
+
+    if (selectedAwardeeType !== "all") {
+      aw = aw.filter(r => r.selectionType === selectedAwardeeType);
+      // Clear others as they are not awardees
+      s = []; st = []; g = []; y = []; a = []; v = []; q = []; d = [];
+    }
+
     return { s, st, g, y, a, v, aw, q, d };
-  }, [selectedZone, selectedSchool, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations]);
+  }, [selectedZone, selectedSchool, selectedType, selectedAccompaniment, selectedAwardeeType, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations]);
 
   const reportData = useMemo(() => {
     const { s, st, g, y, a, v, aw, q, d } = filteredData;
@@ -217,6 +251,14 @@ export function ReportsCenter({
     }, {});
     const genderByTypeData = Object.values(typeGenderMap).sort((a: any, b: any) => (b.Male + b.Female) - (a.Male + a.Female));
 
+    const countAccs = (regs: any[]) => regs.reduce((acc, r) => {
+      if (!r.withParent) return acc;
+      const count = r.accompaniments && r.accompaniments.length > 0 ? r.accompaniments.length : 1;
+      return acc + count;
+    }, 0);
+
+    const totalAccompaniments = countAccs(s) + countAccs(a) + countAccs(v) + countAccs(aw) + countAccs(q);
+
     return { 
       genderStats, 
       classStats, 
@@ -227,7 +269,8 @@ export function ReportsCenter({
       staffSchoolStats,
       typeStats,
       genderByTypeData,
-      total: allPeople.length 
+      total: allPeople.length,
+      totalAccompaniments
     };
   }, [filteredData]);
 
@@ -280,11 +323,60 @@ export function ReportsCenter({
             </SelectContent>
           </Select>
 
-          {(selectedZone !== "all" || selectedSchool !== "all") && (
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200 text-slate-600 font-normal">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-none shadow-xl">
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="Student">Students</SelectItem>
+              <SelectItem value="Staff">Local Staff</SelectItem>
+              <SelectItem value="Guest">Guests</SelectItem>
+              <SelectItem value="Yesian">Yesians</SelectItem>
+              <SelectItem value="Alumni">Alumni</SelectItem>
+              <SelectItem value="Volunteer">Volunteers</SelectItem>
+              <SelectItem value="Awardee">Awardees</SelectItem>
+              <SelectItem value="Qiraath">Qiraath</SelectItem>
+              <SelectItem value="Driver">Drivers/Support</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedAccompaniment} onValueChange={setSelectedAccompaniment}>
+            <SelectTrigger className="w-[140px] h-10 rounded-xl border-slate-200 text-slate-600 font-normal">
+              <SelectValue placeholder="Accompaniment" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-none shadow-xl">
+              <SelectItem value="all">All (Acc.)</SelectItem>
+              <SelectItem value="with">With Guardian</SelectItem>
+              <SelectItem value="without">Without Guardian</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {awardeeRegistrations.length > 0 && (
+            <Select value={selectedAwardeeType} onValueChange={setSelectedAwardeeType}>
+              <SelectTrigger className="w-[160px] h-10 rounded-xl border-slate-200 text-slate-600 font-normal">
+                <SelectValue placeholder="Awardee Type" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-none shadow-xl">
+                <SelectItem value="all">All Award Types</SelectItem>
+                {Array.from(new Set(awardeeRegistrations.map(r => r.selectionType))).filter(Boolean).map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {(selectedZone !== "all" || selectedSchool !== "all" || selectedType !== "all" || selectedAccompaniment !== "all" || selectedAwardeeType !== "all") && (
             <Button 
               variant="ghost" 
               className="h-10 px-3 text-slate-400 hover:text-red-500"
-              onClick={() => { setSelectedZone("all"); setSelectedSchool("all"); }}
+              onClick={() => { 
+                setSelectedZone("all"); 
+                setSelectedSchool("all"); 
+                setSelectedType("all");
+                setSelectedAccompaniment("all");
+                setSelectedAwardeeType("all");
+              }}
             >
               <X size={16} />
             </Button>
@@ -310,8 +402,8 @@ export function ReportsCenter({
         {[
           { label: "Total Participation", value: reportData.total, icon: <Users className="text-indigo-600" />, trend: "+12%", color: "indigo" },
           { label: "Student Volume", value: filteredData.s.length, icon: <GraduationCap className="text-emerald-600" />, trend: "+5%", color: "emerald" },
-          { label: "Staff & Yesians", value: filteredData.st.length + filteredData.y.length, icon: <UserCheck className="text-amber-600" />, trend: "+8%", color: "amber" },
-          { label: "Official Guests", value: filteredData.g.length, icon: <MapPin className="text-rose-600" />, trend: "-2%", color: "rose" },
+          { label: "Accompaniments", value: reportData.totalAccompaniments, icon: <Users className="text-amber-600" />, trend: "+10%", color: "amber" },
+          { label: "Staff & Yesians", value: filteredData.st.length + filteredData.y.length, icon: <UserCheck className="text-rose-600" />, trend: "+8%", color: "rose" },
         ].map((item, i) => (
           <Card key={i} className="border-none shadow-sm shadow-slate-200/50 rounded-[28px] overflow-hidden bg-white group hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500">
             <CardContent className="p-6">
@@ -332,200 +424,205 @@ export function ReportsCenter({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Gender Distribution */}
-        <Card className="lg:col-span-4 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
-              <PieIcon className="text-indigo-500" size={18} />
-              Gender Parity (Consolidated)
-            </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Across all types</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] mt-4">
+        {/* Left Column: Primary Analytics */}
+        <div className="lg:col-span-8 space-y-8">
+          {/* Gender by Zone Distribution */}
+          <Card className="border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <MapPin className="text-indigo-500" size={18} />
+                Gender Distribution by Zone
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Regional gender comparison</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={reportData.genderStats}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {reportData.genderStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
+                <BarChart data={reportData.genderByZoneData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                  <Legend iconType="circle" />
+                  <Bar dataKey="Male" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={24} />
+                  <Bar dataKey="Female" stackId="a" fill="#ec4899" radius={[10, 10, 0, 0]} barSize={24} />
+                </BarChart>
               </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Application Type Distribution */}
-        <Card className="lg:col-span-4 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
-              <Users className="text-emerald-500" size={18} />
-              Application Type Distribution
-            </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Registrations by category</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[250px] mt-4">
+          {/* Gender by Application Type */}
+          <Card className="border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <Users className="text-emerald-500" size={18} />
+                Gender Distribution by Application Type
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Gender split across categories</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={reportData.typeStats}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {reportData.typeStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
+                <BarChart data={reportData.genderByTypeData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                  <Legend iconType="circle" />
+                  <Bar dataKey="Male" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={32} />
+                  <Bar dataKey="Female" stackId="a" fill="#ec4899" radius={[10, 10, 0, 0]} barSize={32} />
+                </BarChart>
               </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Gender by Zone Distribution */}
-        <Card className="lg:col-span-8 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
-              <MapPin className="text-indigo-500" size={18} />
-              Gender Distribution by Zone
-            </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Regional gender comparison</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={reportData.genderByZoneData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
-                <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                <Legend iconType="circle" />
-                <Bar dataKey="Male" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={24} />
-                <Bar dataKey="Female" stackId="a" fill="#ec4899" radius={[10, 10, 0, 0]} barSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        {/* Right Column: Key Insights */}
+        <div className="lg:col-span-4 space-y-8">
+          {/* Gender Distribution */}
+          <Card className="border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <PieIcon className="text-indigo-500" size={18} />
+                Gender Parity
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Consolidated across all types</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[220px] mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={reportData.genderStats}
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {reportData.genderStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Gender by Application Type */}
-        <Card className="lg:col-span-8 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
-              <Users className="text-emerald-500" size={18} />
-              Gender Distribution by Application Type
-            </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Gender split across categories</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={reportData.genderByTypeData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
-                <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8' }} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                <Legend iconType="circle" />
-                <Bar dataKey="Male" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={32} />
-                <Bar dataKey="Female" stackId="a" fill="#ec4899" radius={[10, 10, 0, 0]} barSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          {/* Application Type Distribution */}
+          <Card className="border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <Users className="text-emerald-500" size={18} />
+                Application Types
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Category distribution</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[220px] mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={reportData.typeStats}
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {reportData.typeStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Local Staff Gender Distribution */}
-        <Card className="lg:col-span-4 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
-              <UserCheck className="text-sky-500" size={18} />
-              Local Staff Gender
-            </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Staff demographic split</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[220px] mt-4">
+          {/* Local Staff Gender Distribution */}
+          <Card className="border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <UserCheck className="text-sky-500" size={18} />
+                Local Staff Gender
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Staff demographic split</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px] mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={reportData.staffGenderStats}
+                      innerRadius={50}
+                      outerRadius={70}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {reportData.staffGenderStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#0ea5e9' : '#f43f5e'} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Full Width Section: Institutional Reports */}
+        <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Local Staff School Distribution */}
+          <Card className="lg:col-span-4 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader>
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <School className="text-sky-500" size={18} />
+                Staff by School
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Institutional staffing volume</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[300px] mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={reportData.staffGenderStats}
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {reportData.staffGenderStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#0ea5e9' : '#f43f5e'} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Local Staff School Distribution */}
-        <Card className="lg:col-span-8 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
-               <School className="text-sky-500" size={18} />
-               Local Staff by School
-            </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Institutional staffing volume</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[250px] mt-4">
-             <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={reportData.staffSchoolStats} layout="vertical">
-                   <XAxis type="number" hide />
-                   <YAxis dataKey="name" type="category" fontSize={9} width={120} axisLine={false} tickLine={false} />
-                   <Tooltip />
-                   <Bar dataKey="count" fill="#0ea5e9" radius={[0, 8, 8, 0]} barSize={16} />
-                </BarChart>
-             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Campus-wise (School) Report - ALL CATEGORIES */}
-        <Card className="lg:col-span-12 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-8">
-          <CardHeader className="px-0 pt-0 pb-8">
-            <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
-              <School className="text-indigo-500" size={18} />
-              Campus-wise Consolidated Distribution
-            </CardTitle>
-            <CardDescription className="text-xs uppercase tracking-widest">Participation volume by institution (All Types)</CardDescription>
-          </CardHeader>
-          <CardContent className="px-0">
-            <div className="h-[320px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={reportData.schoolStats} margin={{ bottom: 60 }}>
-                  <XAxis dataKey="name" fontSize={8} angle={-45} textAnchor="end" interval={0} axisLine={false} tickLine={false} height={80} />
-                  <YAxis fontSize={8} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                  <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={28} />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" fontSize={9} width={120} axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#0ea5e9" radius={[0, 8, 8, 0]} barSize={16} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Campus-wise (School) Report - ALL CATEGORIES */}
+          <Card className="lg:col-span-8 border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-8">
+            <CardHeader className="px-0 pt-0 pb-8">
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <School className="text-indigo-500" size={18} />
+                Campus-wise Consolidated Distribution
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Participation volume by institution (All Types)</CardDescription>
+            </CardHeader>
+            <CardContent className="px-0">
+              <div className="h-[320px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={reportData.schoolStats} margin={{ bottom: 60 }}>
+                    <XAxis dataKey="name" fontSize={8} angle={-45} textAnchor="end" interval={0} axisLine={false} tickLine={false} height={80} />
+                    <YAxis fontSize={8} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                    <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={28} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Footer Insight */}

@@ -129,6 +129,7 @@ export async function generateRegistrationPDF(
     return [
       index + 1,
       reg.studentName,
+      (reg as any).type || "Student",
       reg.gender,
       reg.parentage,
       reg.className,
@@ -142,7 +143,7 @@ export async function generateRegistrationPDF(
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Student Name", "Gender", "Parentage", "Class", "School Name", "Zone", "Acc.", "Guardian", "Mobile"]],
+    head: [["#", "Student Name", "Type", "Gender", "Parentage", "Class", "School Name", "Zone", "Acc.", "Guardian", "Mobile"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 8 },
