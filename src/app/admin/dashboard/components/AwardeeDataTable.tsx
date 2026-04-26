@@ -36,6 +36,8 @@ interface AwardeeDataTableProps {
   setFilterGender?: (val: string) => void;
   filterSchool?: string;
   setFilterSchool?: (val: string) => void;
+  filterAwardType?: string;
+  setFilterAwardType?: (val: string) => void;
   filterOptions?: { zones: string[]; schools: string[]; classes: string[] };
   resetFilters?: () => void;
 }
@@ -53,6 +55,8 @@ export function AwardeeDataTable({
   setFilterGender,
   filterSchool,
   setFilterSchool,
+  filterAwardType,
+  setFilterAwardType,
   filterOptions,
   resetFilters
 }: AwardeeDataTableProps) {
@@ -85,6 +89,7 @@ export function AwardeeDataTable({
     (filterZone && filterZone !== "all") ||
     (filterSchool && filterSchool !== "all") ||
     (filterClass && filterClass !== "all") ||
+    (filterAwardType && filterAwardType !== "all") ||
     (filterGender && filterGender !== "all");
 
   if (!hasMounted) {
@@ -186,6 +191,19 @@ export function AwardeeDataTable({
                   <SelectContent className="rounded-2xl border-none shadow-xl">
                     <SelectItem value="all">All Classes</SelectItem>
                     {filterOptions.classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {filterAwardType !== undefined && setFilterAwardType && (
+                <Select value={filterAwardType || "all"} onValueChange={setFilterAwardType}>
+                  <SelectTrigger className="w-full sm:w-[150px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
+                    <SelectValue placeholder="Award Type" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-xl">
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="State/UT Rank Holder">State/UT Rank Holder</SelectItem>
+                    <SelectItem value="YES Genius Rank Holder">YES Genius Rank Holder</SelectItem>
                   </SelectContent>
                 </Select>
               )}

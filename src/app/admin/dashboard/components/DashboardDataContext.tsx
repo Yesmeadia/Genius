@@ -43,6 +43,8 @@ interface DashboardDataContextType {
   setFilterGender: (gender: string) => void;
   filterAccompaniment: string;
   setFilterAccompaniment: (acc: string) => void;
+  filterAwardType: string;
+  setFilterAwardType: (type: string) => void;
   resetFilters: () => void;
   filterOptions: { zones: string[]; schools: string[]; classes: string[] };
 }
@@ -69,6 +71,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   const [filterClass, setFilterClass] = useState("all");
   const [filterGender, setFilterGender] = useState("all");
   const [filterAccompaniment, setFilterAccompaniment] = useState("all");
+  const [filterAwardType, setFilterAwardType] = useState("all");
 
   useEffect(() => {
     // Listeners
@@ -220,6 +223,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     setFilterClass("all");
     setFilterGender("all");
     setFilterAccompaniment("all");
+    setFilterAwardType("all");
   };
 
   const handleSetFilterZone = (zone: string) => {
@@ -252,6 +256,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     setFilterGender,
     filterAccompaniment,
     setFilterAccompaniment,
+    filterAwardType,
+    setFilterAwardType,
     resetFilters,
     filterOptions
   };

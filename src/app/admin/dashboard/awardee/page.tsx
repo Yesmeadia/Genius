@@ -12,6 +12,7 @@ export default function AwardeePage() {
     filterSchool, setFilterSchool,
     filterClass, setFilterClass,
     filterGender, setFilterGender,
+    filterAwardType, setFilterAwardType,
     resetFilters
   } = useDashboardData();
 
@@ -44,9 +45,10 @@ export default function AwardeePage() {
     const matchesSchool = filterSchool === "all" || r.school === filterSchool;
     const matchesClass = filterClass === "all" || r.className === filterClass;
     const matchesGender = filterGender === "all" || (r.gender && r.gender.toUpperCase() === filterGender.toUpperCase());
+    const matchesAwardType = filterAwardType === "all" || r.selectionType === filterAwardType;
 
-    return matchesSearch && matchesZone && matchesSchool && matchesClass && matchesGender;
-  }), [awardeeRegistrations, searchTerm, filterZone, filterSchool, filterClass, filterGender]);
+    return matchesSearch && matchesZone && matchesSchool && matchesClass && matchesGender && matchesAwardType;
+  }), [awardeeRegistrations, searchTerm, filterZone, filterSchool, filterClass, filterGender, filterAwardType]);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -63,6 +65,8 @@ export default function AwardeePage() {
         setFilterGender={setFilterGender}
         filterSchool={filterSchool}
         setFilterSchool={setFilterSchool}
+        filterAwardType={filterAwardType}
+        setFilterAwardType={setFilterAwardType}
         filterOptions={filterOptions}
         resetFilters={resetFilters}
       />
