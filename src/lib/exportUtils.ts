@@ -479,6 +479,9 @@ export async function generateStrategicReportPDF(
 
   let currentY = 55;
 
+  const countAcc = (list: any[]) => list.reduce((total, r) => total + (r.accompaniments?.length || (r.withParent ? 1 : 0)), 0);
+  const totalAcc = countAcc(registrations) + countAcc(alumni) + countAcc(volunteers) + countAcc(awardees) + countAcc(qiraath);
+
   // 1. CONSOLIDATED PARTICIPATION SUMMARY
   const summaryBody = [
     ["1. Students", registrations.length],
@@ -490,8 +493,9 @@ export async function generateStrategicReportPDF(
     ["7. Awardee Recognition", awardees.length],
     ["8. Qiraath Participants", qiraath.length],
     ["9. Drivers & Support Staff", drivers.length],
+    ["10. Accompaniments (Guardians)", totalAcc],
   ];
-  const totalPeople = summaryBody.reduce((acc, curr) => acc + (curr[1] as number), 0);
+  const totalPeople = registrations.length + localStaff.length + yesians.length + guests.length + alumni.length + volunteers.length + awardees.length + qiraath.length + drivers.length + totalAcc;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -504,7 +508,7 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [51, 65, 85], fontSize: 9 },
     styles: { fontSize: 8 },
-    foot: [["GRAND TOTAL", totalPeople]],
+    foot: [["GRAND TOTAL HEADCOUNT", totalPeople]],
     footStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" }
   });
 
@@ -645,7 +649,7 @@ export async function generateStrategicReportPDF(
   if (currentY > 230) { doc.addPage(); currentY = 20; }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("5. Top 25 Schools by Enrollment (Ranked)", 14, currentY);
+  doc.text("5. Top Schools by Enrollment (Ranked)", 14, currentY);
 
   autoTable(doc, {
     startY: currentY + 5,
@@ -721,6 +725,39 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [100, 116, 139], fontSize: 9 },
     styles: { fontSize: 8 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 8. ACCOMPANIMENT DISTRIBUTION BY ZONE
+  const accZoneMap: any = {};
+  [registrations, alumni, volunteers, awardees, qiraath].forEach(list => {
+    list.forEach((r: any) => {
+      const zone = r.zone || "N/A";
+      const count = r.accompaniments?.length || (r.withParent ? 1 : 0);
+      if (count > 0) {
+        accZoneMap[zone] = (accZoneMap[zone] || 0) + count;
+      }
+    });
+  });
+
+  const accZoneBody = Object.entries(accZoneMap).map(([zone, count]) => [zone, count]);
+
+  if (currentY > 230) { doc.addPage(); currentY = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("8. Accompaniment (Guardian) Distribution by Zone", 14, currentY);
+
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["Zone/Region", "Total Accompaniments"]],
+    body: accZoneBody as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [219, 39, 119], fontSize: 9 },
+    styles: { fontSize: 8 },
+    foot: [["TOTAL ACCOMPANIMENTS", totalAcc]],
+    footStyles: { fillColor: [253, 242, 248], textColor: [190, 24, 93], fontStyle: "bold" },
     didDrawPage: (data) => addFooter(doc, data)
   });
 
