@@ -167,25 +167,35 @@ export async function generateGuardianExportPDF(
   const doc = new jsPDF({ orientation: "landscape" });
   await addHeader(doc, title);
 
-  const tableData = data.map((reg, index) => {
-    let guardianName = reg.parentName || "-";
-    let relation = reg.relation || "-";
-    
-    if (reg.accompaniments && reg.accompaniments.length > 0) {
-      guardianName = reg.accompaniments.map(a => a.name).join(", ");
-      relation = reg.accompaniments.map(a => a.relation).join(", ");
-    }
+  const tableData: any[][] = [];
+  let rowCount = 1;
 
-    return [
-      index + 1,
-      guardianName,
-      relation,
-      reg.studentName,
-      reg.className,
-      getSchoolName(reg.school),
-      reg.zone,
-      reg.mobileNumber || (reg as any).whatsappNumber || "-"
-    ];
+  data.forEach((reg) => {
+    if (reg.accompaniments && reg.accompaniments.length > 0) {
+      reg.accompaniments.forEach((acc) => {
+        tableData.push([
+          rowCount++,
+          acc.name,
+          acc.relation,
+          reg.studentName,
+          reg.className,
+          getSchoolName(reg.school),
+          reg.zone,
+          reg.mobileNumber || (reg as any).whatsappNumber || "-"
+        ]);
+      });
+    } else {
+      tableData.push([
+        rowCount++,
+        reg.parentName || "Unknown",
+        reg.relation || "Parent",
+        reg.studentName,
+        reg.className,
+        getSchoolName(reg.school),
+        reg.zone,
+        reg.mobileNumber || (reg as any).whatsappNumber || "-"
+      ]);
+    }
   });
 
   autoTable(doc, {

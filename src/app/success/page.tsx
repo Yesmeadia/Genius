@@ -17,49 +17,14 @@ function SuccessContent() {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user } = useAuth(false);
   
   const id = searchParams.get("id");
   const type = searchParams.get("type");
   
-  const [regData, setRegData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    async function fetchRegData() {
-      if (!id || !type) return;
-      
-      setLoading(true);
-      try {
-        let collectionName = "";
-        switch (type) {
-          case "student": collectionName = "registrations"; break;
-          case "guest": collectionName = "guest_registrations"; break;
-          case "yesian": collectionName = "yesian_registrations"; break;
-          case "local-staff": collectionName = "local_staff_registrations"; break;
-          case "alumni-achiever": collectionName = "alumni_registrations"; break;
-          case "volunteer": collectionName = "volunteer_registrations"; break;
-          case "awardee": collectionName = "awardee_registrations"; break;
-          case "qiraath": collectionName = "qiraath_registrations"; break;
-          case "driver-staff": collectionName = "driver_staff_registrations"; break;
-          default: return;
-        }
-        
-        const docRef = doc(db, collectionName, id);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          setRegData({ id: docSnap.id, ...docSnap.data() });
-        }
-      } catch (error) {
-        console.error("Error fetching registration:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    fetchRegData();
-  }, [id, type]);
+
+
 
   useGSAP(() => {
     // Ambient Orbs
@@ -95,10 +60,7 @@ function SuccessContent() {
     });
   }, { scope: containerRef });
 
-  const handleDownloadPass = async () => {
-    if (!regData || !type) return;
-    await generateBatchAccessPasses([regData], `Access_Pass_${regData.id}`, type as any);
-  };
+
 
   return (
     <main
@@ -152,30 +114,7 @@ function SuccessContent() {
                 Your registration has been recorded successfully. We're excited to see you excel at the national talent series.
               </p>
 
-              {regData && (
-                <div className="w-full max-w-sm p-6 mb-10 rounded-3xl bg-white/40 border border-white/60 shadow-sm backdrop-blur-xl animate-in fade-in zoom-in-95 duration-700">
-                  <div className="flex items-center gap-4 text-left">
-                    <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
-                      <CreditCard className="w-6 h-6 text-indigo-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">
-                        {regData.studentName || regData.volunteerName || regData.name}
-                      </h3>
-                      <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">
-                        {type?.replace("-", " ")} Pass Ready
-                      </p>
-                    </div>
-                  </div>
-                  <Button 
-                    onClick={handleDownloadPass}
-                    className="w-full mt-6 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-indigo-200"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download Access Pass
-                  </Button>
-                </div>
-              )}
+
 
               <div className="action-buttons flex flex-wrap justify-center gap-4 w-full mt-4">
                 {user ? (
