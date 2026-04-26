@@ -257,7 +257,10 @@ export default function AwardeeProfilePage() {
 
   const currentPhoto = photoPreview || registration.photoUrl;
 
-  const classesForCategory = (cat: string) => {
+  const classesForCategory = (cat: string, type?: string) => {
+    if (type === "State/UT Rank Holder") {
+      return ["10th", "11th", "12th"];
+    }
     switch (cat) {
       case "Rainbow": return ["3rd", "4th", "5th"];
       case "Planets": return ["6th", "7th", "8th"];
@@ -568,13 +571,13 @@ export default function AwardeeProfilePage() {
                       <Select
                         value={editForm?.className || ""}
                         onValueChange={v => updateField("className", v)}
-                        disabled={!editForm?.category}
+                        disabled={!editForm?.category && editForm?.selectionType !== "State/UT Rank Holder"}
                       >
                         <SelectTrigger className="border-slate-100 bg-slate-50">
-                          <SelectValue placeholder={editForm?.category ? "Select Class" : "Select Category First"} />
+                          <SelectValue placeholder={(editForm?.category || editForm?.selectionType === "State/UT Rank Holder") ? "Select Class" : "Select Category First"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {classesForCategory(editForm?.category || "").map(cls => (
+                          {classesForCategory(editForm?.category || "", editForm?.selectionType).map(cls => (
                             <SelectItem key={cls} value={cls}>{cls}</SelectItem>
                           ))}
                         </SelectContent>

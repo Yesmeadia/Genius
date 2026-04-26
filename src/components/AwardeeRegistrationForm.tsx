@@ -93,7 +93,7 @@ export default function AwardeeRegistrationForm() {
 
   const classesForCategory = useMemo(() => {
     if (selectedSelectionType === "State/UT Rank Holder") {
-      return ["10th", "12th"];
+      return ["10th", "11th", "12th"];
     }
     switch (selectedCategory) {
       case "Rainbow":
