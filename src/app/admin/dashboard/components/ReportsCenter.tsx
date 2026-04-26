@@ -284,8 +284,8 @@ export function ReportsCenter({
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      const { s, st, y, a, v, aw, q, d } = filteredData;
-      await generateStrategicReportPDF(s, st, y); // Note: Strategic PDF might need update for new types too
+      const { s, st, g, y, a, v, aw, q, d } = filteredData;
+      await generateStrategicReportPDF(s, st, y, g, a, v, aw, q, d);
     } catch (e) {
       console.error(e);
       alert("Failed to generate PDF. Please try again.");
