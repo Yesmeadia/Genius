@@ -8,7 +8,8 @@ export default function MasterExportPage() {
     registrations, 
     guestRegistrations, 
     yesianRegistrations, 
-    localStaffRegistrations 
+    localStaffRegistrations,
+    awardeeRegistrations
   } = useDashboardData();
 
   return (
@@ -18,6 +19,7 @@ export default function MasterExportPage() {
         guestRegistrations={guestRegistrations}
         yesianRegistrations={yesianRegistrations}
         localStaffRegistrations={localStaffRegistrations}
+        awardeeRegistrations={awardeeRegistrations}
       />
     </div>
   );

@@ -92,6 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     
     if (pathname.includes("/driver-staff")) return "Drivers & Staff Registry";
     if (pathname.includes("/access-pass")) return "Access Pass Center";
+    if (pathname.includes("/certificates")) return "Certificate Center";
     if (pathname.includes("/reports")) return "Analytics & Reports";
     if (pathname.includes("/master-export")) return "Master Export Center";
     if (pathname.includes("/recycle-bin")) return "Recycle Bin";

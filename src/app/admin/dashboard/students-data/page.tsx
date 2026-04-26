@@ -24,6 +24,18 @@ export default function StudentsDataPage() {
     resetFilters 
   } = useDashboardData();
 
+  const localFilterOptions = useMemo(() => {
+    const zones = Array.from(new Set(registrations.map(r => r.zone))).filter(Boolean).sort();
+    let schools = [];
+    if (filterZone !== "all") {
+      schools = Array.from(new Set(registrations.filter(r => r.zone === filterZone).map(r => r.school))).filter(Boolean).sort();
+    } else {
+      schools = Array.from(new Set(registrations.map(r => r.school))).filter(Boolean).sort();
+    }
+    const classes = Array.from(new Set(registrations.map(r => r.className))).filter(Boolean).sort();
+    return { zones, schools, classes };
+  }, [registrations, filterZone]);
+
   const getSchoolName = (schoolId: string) => {
     for (const zone of locations) {
       const school = zone.schools.find(s => s.id === schoolId);
@@ -74,7 +86,7 @@ export default function StudentsDataPage() {
         setFilterGender={setFilterGender}
         filterAccompaniment={filterAccompaniment}
         setFilterAccompaniment={setFilterAccompaniment}
-        filterOptions={filterOptions}
+        filterOptions={localFilterOptions}
         resetFilters={resetFilters}
       />
     </div>

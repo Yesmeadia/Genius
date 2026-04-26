@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Filter } from "lucide-react";
 import { VolunteerRegistration } from "../types";
 import Link from "next/link";
 import { locations } from "@/data/locations";
@@ -24,6 +26,18 @@ interface VolunteerDataTableProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   itemsPerPage: number;
+  filterZone?: string;
+  setFilterZone?: (val: string) => void;
+  filterClass?: string;
+  setFilterClass?: (val: string) => void;
+  filterOptions?: { zones: string[]; schools: string[]; classes: string[] };
+  filterGender?: string;
+  setFilterGender?: (val: string) => void;
+  filterAccompaniment?: string;
+  setFilterAccompaniment?: (val: string) => void;
+  filterSchool?: string;
+  setFilterSchool?: (val: string) => void;
+  resetFilters?: () => void;
 }
 
 export function VolunteerDataTable({
@@ -31,6 +45,18 @@ export function VolunteerDataTable({
   searchTerm,
   setSearchTerm,
   itemsPerPage,
+  filterZone,
+  setFilterZone,
+  filterClass,
+  setFilterClass,
+  filterOptions,
+  filterGender,
+  setFilterGender,
+  filterAccompaniment,
+  setFilterAccompaniment,
+  filterSchool,
+  setFilterSchool,
+  resetFilters
 }: VolunteerDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMounted, setHasMounted] = useState(false);
@@ -40,6 +66,21 @@ export function VolunteerDataTable({
     setHasMounted(true);
   }, []);
 
+  const getSchoolName = (schoolId: string) => {
+    for (const zone of locations) {
+      const school = zone.schools.find((sc: any) => sc.id === schoolId);
+      if (school) return school.name;
+    }
+    return schoolId;
+  };
+
+  const isFiltered = searchTerm !== "" || 
+    (filterZone && filterZone !== "all") || 
+    (filterSchool && filterSchool !== "all") || 
+    (filterClass && filterClass !== "all") || 
+    (filterGender && filterGender !== "all") || 
+    (filterAccompaniment && filterAccompaniment !== "all");
+
   const displayData = data.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -47,7 +88,7 @@ export function VolunteerDataTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filterZone, filterClass, filterGender, filterAccompaniment, filterSchool]);
 
   return (
     <Card className="main-content border-none shadow-sm overflow-hidden">
@@ -65,30 +106,118 @@ export function VolunteerDataTable({
               className="pl-10 h-10 bg-slate-50 border-none shadow-none focus-visible:ring-1 focus-visible:ring-slate-200 w-full"
             />
           </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {isFiltered && (
+              <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-2xl shadow-sm border border-slate-800">
+                  <Filter size={12} className="opacity-70" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{data.length} Results</span>
+                </div>
+                
+                {resetFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={resetFilters}
+                    className="h-8 px-2 text-[10px] uppercase font-bold text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1.5"
+                  >
+                    <RotateCcw size={12} />
+                    Reset
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <Button 
+              onClick={() => {
+                const parts: string[] = [];
+                if (filterZone && filterZone !== "all") parts.push(`Zone: ${filterZone}`);
+                if (filterSchool && filterSchool !== "all") parts.push(`School: ${getSchoolName(filterSchool)}`);
+                if (filterClass && filterClass !== "all") parts.push(`Class: ${filterClass}`);
+                if (filterGender && filterGender !== "all") parts.push(`Gender: ${filterGender}`);
+                if (filterAccompaniment && filterAccompaniment !== "all") parts.push(`Status: ${filterAccompaniment}`);
+                
+                const pdfTitle = parts.length > 0 ? parts.join(" | ") : "Volunteer Registration Registry";
+                const pdfFilename = isFiltered ? "volunteer_data_filtered" : "volunteers_data_master";
+
+                import("@/lib/exportUtils").then(m => {
+                  m.generateVolunteerExportPDF(data, pdfTitle, pdfFilename);
+                });
+              }}
+              className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
+            >
+              <Download size={14} className="mr-2" /> Export PDF
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {searchTerm && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSearchTerm("")}
-              className="h-8 px-2 text-[10px] uppercase font-bold text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1.5"
-            >
-              <RotateCcw size={12} />
-              Reset
-            </Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto">
+          {filterOptions && setFilterClass && (
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              {filterZone !== undefined && setFilterZone && (
+                <Select value={filterZone || "all"} onValueChange={setFilterZone}>
+                  <SelectTrigger className="w-full sm:w-[130px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
+                    <SelectValue placeholder="All Zones" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-xl">
+                    <SelectItem value="all">All Zones</SelectItem>
+                    {filterOptions.zones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+
+              {filterSchool !== undefined && setFilterSchool && (
+                <Select value={filterSchool || "all"} onValueChange={setFilterSchool}>
+                  <SelectTrigger className="w-full sm:w-[160px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
+                    <SelectValue placeholder="All Schools" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-xl">
+                    <SelectItem value="all">All Schools</SelectItem>
+                    {filterOptions.schools.map(s => (
+                      <SelectItem key={s} value={s}>{getSchoolName(s)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <Select value={filterClass} onValueChange={setFilterClass}>
+                <SelectTrigger className="w-full sm:w-[120px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
+                  <SelectValue placeholder="All Classes" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-xl">
+                  <SelectItem value="all">All Classes</SelectItem>
+                  {filterOptions.classes.map(c => <SelectItem key={c} value={c}>Class {c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              
+              {filterGender !== undefined && setFilterGender && (
+                <Select value={filterGender || "all"} onValueChange={setFilterGender}>
+                  <SelectTrigger className="w-full sm:w-[120px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
+                    <SelectValue placeholder="Gender" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-xl">
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {filterAccompaniment !== undefined && setFilterAccompaniment && (
+                <Select value={filterAccompaniment || "all"} onValueChange={setFilterAccompaniment}>
+                  <SelectTrigger className="w-full sm:w-[140px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-xl">
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="accompanied">Accompanied</SelectItem>
+                    <SelectItem value="individual">Individual</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           )}
-          <Button 
-            onClick={() => {
-              import("@/lib/exportUtils").then(m => {
-                m.generateVolunteerExportPDF(data, "Volunteer Registration Registry", "volunteers_data");
-              });
-            }}
-            className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
-          >
-            <Download size={14} className="mr-2" /> Export
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="p-0">

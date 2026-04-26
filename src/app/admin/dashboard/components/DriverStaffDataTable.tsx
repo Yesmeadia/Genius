@@ -18,12 +18,19 @@ import { Badge } from "@/components/ui/badge";
 import { DriverStaffRegistration } from "../types";
 import Link from "next/link";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Filter } from "lucide-react";
+import { locations } from "@/data/locations";
 
 interface DriverStaffDataTableProps {
   data: DriverStaffRegistration[];
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   itemsPerPage: number;
+  filterZone?: string;
+  setFilterZone?: (val: string) => void;
+  filterOptions?: { zones: string[] };
+  resetFilters?: () => void;
 }
 
 export function DriverStaffDataTable({
@@ -31,6 +38,10 @@ export function DriverStaffDataTable({
   searchTerm,
   setSearchTerm,
   itemsPerPage,
+  filterZone,
+  setFilterZone,
+  filterOptions,
+  resetFilters
 }: DriverStaffDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMounted, setHasMounted] = useState(false);
@@ -40,6 +51,8 @@ export function DriverStaffDataTable({
     setHasMounted(true);
   }, []);
 
+  const isFiltered = searchTerm !== "" || (filterZone && filterZone !== "all");
+
   const displayData = data.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -47,7 +60,7 @@ export function DriverStaffDataTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [searchTerm, filterZone]);
 
   if (!hasMounted) {
     return null;
@@ -69,37 +82,71 @@ export function DriverStaffDataTable({
               className="pl-10 h-10 bg-slate-50 border-none shadow-none focus-visible:ring-1 focus-visible:ring-slate-200 w-full"
             />
           </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {isFiltered && (
+              <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-2xl shadow-sm border border-slate-800">
+                  <Filter size={12} className="opacity-70" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">{data.length} Results</span>
+                </div>
+                
+                {resetFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={resetFilters}
+                    className="h-8 px-2 text-[10px] uppercase font-bold text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1.5"
+                  >
+                    <RotateCcw size={12} />
+                    Reset
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <Button 
+              onClick={() => {
+                const parts: string[] = [];
+                if (filterZone && filterZone !== "all") parts.push(`Zone: ${filterZone}`);
+                
+                const pdfTitle = parts.length > 0 ? parts.join(" | ") : "Drivers & Staff Registry";
+                const pdfFilename = isFiltered ? "driver_staff_data_filtered" : "driver_staff_data_master";
+
+                import("@/lib/exportUtils").then(m => {
+                  m.generateDriverStaffExportPDF(data, pdfTitle, pdfFilename);
+                });
+              }}
+              className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
+            >
+              <Download size={14} className="mr-2" /> Export PDF
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => generateBatchAccessPasses(data, 'Driver_Staff_Access_Passes', 'driver-staff')}
+              className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold text-indigo-600 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-all rounded-xl shadow-sm"
+            >
+              <ShieldCheck size={14} className="mr-2" /> Batch Passes
+            </Button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {searchTerm && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSearchTerm("")}
-              className="h-8 px-2 text-[10px] uppercase font-bold text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1.5"
-            >
-              <RotateCcw size={12} />
-              Reset
-            </Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto">
+          {filterOptions && (
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              {filterZone !== undefined && setFilterZone && (
+                <Select value={filterZone || "all"} onValueChange={setFilterZone}>
+                  <SelectTrigger className="w-full sm:w-[130px] h-10 font-normal border-none bg-slate-50 shadow-sm rounded-2xl text-[12px]">
+                    <SelectValue placeholder="All Zones" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-xl">
+                    <SelectItem value="all">All Zones</SelectItem>
+                    {filterOptions.zones.map(z => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           )}
-          <Button 
-            onClick={() => {
-              import("@/lib/exportUtils").then(m => {
-                m.generateDriverStaffExportPDF(data, "Drivers & Staff Registry", "driver_staff_data");
-              });
-            }}
-            className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
-          >
-            <Download size={14} className="mr-2" /> Export PDF
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={() => generateBatchAccessPasses(data, 'Driver_Staff_Access_Passes', 'driver-staff')}
-            className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold text-indigo-600 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-all rounded-xl shadow-sm"
-          >
-            <ShieldCheck size={14} className="mr-2" /> Batch Passes
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="p-0">

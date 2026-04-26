@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap, Truck, Trash2, Plus, Award } from "lucide-react";
+import { LayoutDashboard, Users, Download, LogOut, ShieldCheck, CreditCard, User, Users2, BarChart3, GraduationCap, Truck, Trash2, Plus, Award, ScrollText } from "lucide-react";
 
 interface DashboardSidebarProps {
   sidebarOpen: boolean;
@@ -26,6 +26,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
     { id: "qiraath", label: "Qiraath Contest", icon: <Award size={20} />, href: "/admin/dashboard/qiraath" },
     { id: "driver-staff", label: "Drivers & Staff", icon: <Truck size={20} />, href: "/admin/dashboard/driver-staff" },
     { id: "pass", label: "Access Pass", icon: <CreditCard size={20} />, href: "/admin/dashboard/access-pass" },
+    { id: "certificates", label: "Certificates", icon: <ScrollText size={20} />, href: "/admin/dashboard/certificates" },
     { id: "recycle-bin", label: "Recycle Bin", icon: <Trash2 size={20} />, href: "/admin/dashboard/recycle-bin" },
     { id: "add-registration", label: "Add Registration", icon: <Plus size={20} />, href: "/admin/dashboard/registration" },
     { id: "reports", label: "Reports", icon: <BarChart3 size={20} />, href: "/admin/dashboard/reports" },

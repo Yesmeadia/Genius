@@ -7,25 +7,28 @@ import {
   generateLocalStaffExportPDF,
   generateZipBackup
 } from "@/lib/exportUtils";
+import { generateParticipationCertificate } from "@/lib/certificateUtils";
 import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap, FileArchive } from "lucide-react";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "../types";
+import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap, FileArchive, Award, ScrollText } from "lucide-react";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, AwardeeRegistration } from "../types";
 
 interface ExportCenterProps {
   registrations: Registration[];
   guestRegistrations: GuestRegistration[];
   yesianRegistrations: YesianRegistration[];
   localStaffRegistrations: LocalStaffRegistration[];
+  awardeeRegistrations: AwardeeRegistration[];
 }
 
-export function ExportCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations }: ExportCenterProps) {
+export function ExportCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, awardeeRegistrations }: ExportCenterProps) {
   const [selectedZone, setSelectedZone] = useState("all");
   const [selectedSchool, setSelectedSchool] = useState("all");
   const [selectedClass, setSelectedClass] = useState("all");
   const [isZipping, setIsZipping] = useState(false);
+  const [isCertifying, setIsCertifying] = useState(false);
 
   const filterOptions = useMemo(() => {
     const zones = Array.from(new Set(registrations.map(r => r.zone))).sort();
@@ -110,6 +113,34 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
     }
 
     await generateBatchAccessPasses(dataToExport, filenameSuffix);
+  };
+
+  const handleGenerateCertificates = async (scope: 'zone' | 'school' | 'class' | 'all-students' | 'all-awardees') => {
+    setIsCertifying(true);
+    try {
+      if (scope === 'all-awardees') {
+        await generateParticipationCertificate(awardeeRegistrations, 'Certificates_Awardees', 'awardee');
+        return;
+      }
+      let dataToExport = registrations;
+      let suffix = 'all_students';
+      if (scope === 'zone') {
+        if (!selectedZone || selectedZone === 'all') { alert('Please select a zone.'); return; }
+        dataToExport = registrations.filter(r => r.zone === selectedZone);
+        suffix = `zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+      } else if (scope === 'school') {
+        if (!selectedSchool || selectedSchool === 'all') { alert('Please select a school.'); return; }
+        dataToExport = registrations.filter(r => r.school === selectedSchool);
+        suffix = `school_${selectedSchool}`;
+      } else if (scope === 'class') {
+        if (!selectedClass || selectedClass === 'all') { alert('Please select a class.'); return; }
+        dataToExport = registrations.filter(r => r.className === selectedClass);
+        suffix = `class_${selectedClass}`;
+      }
+      await generateParticipationCertificate(dataToExport, `Certificates_Students_${suffix}`, 'student');
+    } finally {
+      setIsCertifying(false);
+    }
   };
 
   return (
@@ -361,6 +392,80 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
                 className="w-full h-9 font-black rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-100 transition-all uppercase tracking-widest text-[8px]"
               >
                 <CreditCard className="mr-2 h-3 w-3" /> Access Passes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Student Participation Certificates */}
+        <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-emerald-50/20 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
+          <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <ScrollText size={18} className="text-emerald-700" />
+              </div>
+              <div className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                Students
+              </div>
+            </div>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Participation Certs</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-2">Bulk-issue certificates by zone, school, or class.</p>
+
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button
+                disabled={isCertifying}
+                onClick={() => handleGenerateCertificates('zone')}
+                className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <MapPin className="mr-2 h-3 w-3" /> By Zone
+              </Button>
+              <Button
+                disabled={isCertifying}
+                onClick={() => handleGenerateCertificates('school')}
+                className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <School className="mr-2 h-3 w-3" /> By School
+              </Button>
+              <Button
+                disabled={isCertifying}
+                onClick={() => handleGenerateCertificates('class')}
+                className="w-full h-9 font-black rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <ScrollText className={`mr-2 h-3 w-3 ${isCertifying ? 'animate-pulse' : ''}`} />
+                {isCertifying ? 'Generating...' : 'By Class'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Awardee Participation Certificates */}
+        <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-violet-50/20 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-violet-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
+          <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <Award size={18} className="text-violet-700" />
+              </div>
+              <div className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                {awardeeRegistrations.length} Awardees
+              </div>
+            </div>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Awardee Certs</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-2">Issue participation certificates to all awardees at once.</p>
+
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button
+                disabled={isCertifying || awardeeRegistrations.length === 0}
+                onClick={() => handleGenerateCertificates('all-awardees')}
+                className="w-full h-9 font-black rounded-lg bg-violet-600 text-white hover:bg-violet-700 shadow-lg shadow-violet-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <Award className={`mr-2 h-3 w-3 ${isCertifying ? 'animate-pulse' : ''}`} />
+                {isCertifying ? 'Generating...' : 'Issue All Certificates'}
               </Button>
             </div>
           </CardContent>

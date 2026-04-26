@@ -214,7 +214,13 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalDriverStaff: driverStaffRegistrations.length,
       todayCount,
       totalParticipation,
-      totalAccompanied: registrations.filter(r => r.withParent).length,
+      totalAccompanied: [
+        ...registrations,
+        ...alumniRegistrations,
+        ...volunteerRegistrations,
+        ...awardeeRegistrations,
+        ...qiraathRegistrations
+      ].filter(r => r.withParent).length,
       totalAccompaniments,
       totalSchools: new Set(registrations.map(r => r.school)).size,
       totalZones: new Set(registrations.map(r => r.zone)).size,

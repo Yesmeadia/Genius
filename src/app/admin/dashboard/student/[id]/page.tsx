@@ -16,6 +16,7 @@ import {
   Moon, Bell, Plus, Trash2, CheckCircle2
 } from "lucide-react";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
+import { generateParticipationCertificate } from "@/lib/certificateUtils";
 import { moveToRecycleBin } from "@/lib/deleteUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -364,6 +365,12 @@ export default function StudentProfilePage() {
                   className="h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-100"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download ID
+                </Button>
+                <Button
+                  onClick={() => generateParticipationCertificate([registration], `Certificate_${registration.studentName.replace(/\s+/g, '_')}`, 'student')}
+                  className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
+                >
+                  <Download className="mr-2 h-4 w-4" /> Certificate
                 </Button>
               </>
             )}

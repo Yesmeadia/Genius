@@ -21,7 +21,7 @@ export function AnalyticsSummary({ stats }: AnalyticsSummaryProps) {
     { label: "Transport & Support", value: stats.totalDriverStaff, icon: <Truck />, color: "indigo", trend: "Active", href: "/admin/dashboard/driver-staff" },
     { label: "Schools", value: stats.totalSchools, icon: <School />, color: "cyan", trend: "Synced" },
     { label: "Zones", value: stats.totalZones, icon: <MapPin />, color: "rose", trend: "Active" },
-    { label: "Accompanied", value: stats.totalAccompanied, icon: <ShieldCheck />, color: "purple", trend: "Parents" },
+    { label: "Accompanied", value: stats.totalAccompaniments, icon: <ShieldCheck />, color: "purple", trend: `${stats.totalAccompanied} Reg`, href: "/admin/dashboard/accompaniment" },
     { label: "Total Data", value: stats.totalParticipation, icon: <Archive />, color: "slate", trend: "Global", href: "/admin/dashboard/reports" }
   ];
 
