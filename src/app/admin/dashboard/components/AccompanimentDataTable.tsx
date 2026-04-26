@@ -103,7 +103,7 @@ export function AccompanimentDataTable({
                 const pdfFilename = isFiltered ? "guardian_data_filtered" : "all_guardian_data_master";
                 
                 import("@/lib/exportUtils").then(m => {
-                  m.generateRegistrationPDF(filteredData, pdfTitle, pdfFilename);
+                  m.generateGuardianExportPDF(filteredData, pdfTitle, pdfFilename);
                 });
               }}
               className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"

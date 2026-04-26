@@ -154,6 +154,54 @@ export async function generateRegistrationPDF(
 }
 
 /**
+ * Guardian / Accompaniment Database PDF Export
+ * Prioritizes Guardian Name as requested
+ */
+export async function generateGuardianExportPDF(
+  data: Registration[],
+  title: string,
+  filename: string
+) {
+  if (data.length === 0) return alert("No records found.");
+
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => {
+    let guardianName = reg.parentName || "-";
+    let relation = reg.relation || "-";
+    
+    if (reg.accompaniments && reg.accompaniments.length > 0) {
+      guardianName = reg.accompaniments.map(a => a.name).join(", ");
+      relation = reg.accompaniments.map(a => a.relation).join(", ");
+    }
+
+    return [
+      index + 1,
+      guardianName,
+      relation,
+      reg.studentName,
+      reg.className,
+      getSchoolName(reg.school),
+      reg.zone,
+      reg.mobileNumber || (reg as any).whatsappNumber || "-"
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Guardian Name", "Relation", "Student Name", "Class", "School Name", "Zone", "Contact"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [5, 150, 105], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+
+  triggerDownload(doc, filename);
+}
+
+/**
  * Guest Registration PDF
  */
 export async function generateGuestExportPDF(data: GuestRegistration[], title: string, filename: string) {
@@ -219,6 +267,7 @@ export async function generateLocalStaffExportPDF(data: LocalStaffRegistration[]
   const tableData = data.map((reg, index) => [
     index + 1,
     reg.name,
+    reg.gender || "N/A",
     reg.role || "N/A",
     getSchoolName(reg.school),
     reg.zone,
@@ -227,7 +276,7 @@ export async function generateLocalStaffExportPDF(data: LocalStaffRegistration[]
 
   autoTable(doc, {
     startY: 50,
-    head: [["#", "Staff Name", "Role", "School", "Zone", "WhatsApp"]],
+    head: [["#", "Staff Name", "Gender", "Role", "School", "Zone", "WhatsApp"]],
     body: tableData,
     theme: "grid",
     headStyles: { fillColor: [14, 165, 233], textColor: [255, 255, 255], fontSize: 8 },
