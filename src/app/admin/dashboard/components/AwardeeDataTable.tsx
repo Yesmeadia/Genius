@@ -137,7 +137,41 @@ export function AwardeeDataTable({
             <Button
               onClick={() => {
                 import("@/lib/exportUtils").then(m => {
-                  m.generateAwardeeExportPDF(data, "Awardee Selection Registry", "awardee_registry_data");
+                  let pdfTitle = "Awardee Selection Registry";
+                  let pdfFilename = "awardee_registry";
+                  const activeFilters = [];
+                  const filenameFilters = [];
+
+                  if (filterZone && filterZone !== "all") {
+                    activeFilters.push(filterZone);
+                    filenameFilters.push(filterZone.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+                  }
+                  if (filterSchool && filterSchool !== "all") {
+                    const schoolName = getSchoolName(filterSchool);
+                    activeFilters.push(schoolName);
+                    filenameFilters.push(schoolName.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+                  }
+                  if (filterClass && filterClass !== "all") {
+                    activeFilters.push(`Class ${filterClass}`);
+                    filenameFilters.push(`class_${filterClass}`);
+                  }
+                  if (filterAwardType && filterAwardType !== "all") {
+                    activeFilters.push(filterAwardType);
+                    filenameFilters.push(filterAwardType.replace(/[^a-z0-9]/gi, '_').toLowerCase());
+                  }
+                  if (filterGender && filterGender !== "all") {
+                    activeFilters.push(filterGender);
+                    filenameFilters.push(filterGender.toLowerCase());
+                  }
+                  
+                  if (activeFilters.length > 0) {
+                    pdfTitle += ` (${activeFilters.join(", ")})`;
+                    pdfFilename += `_${filenameFilters.join("_")}`;
+                  } else {
+                    pdfFilename += "_all_data";
+                  }
+                  
+                  m.generateAwardeeExportPDF(data, pdfTitle, pdfFilename);
                 });
               }}
               className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
