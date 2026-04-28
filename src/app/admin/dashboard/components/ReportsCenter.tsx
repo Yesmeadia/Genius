@@ -21,7 +21,8 @@ import {
   VolunteerRegistration,
   AwardeeRegistration,
   QiraathRegistration,
-  DriverStaffRegistration
+  DriverStaffRegistration,
+  ScoutTeamRegistration
 } from "../types";
 import { locations } from "@/data/locations";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ interface ReportsCenterProps {
   awardeeRegistrations: AwardeeRegistration[];
   qiraathRegistrations: QiraathRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
+  scoutTeamRegistrations: ScoutTeamRegistration[];
   stats: any;
 }
 
@@ -59,6 +61,7 @@ export function ReportsCenter({
   awardeeRegistrations,
   qiraathRegistrations,
   driverStaffRegistrations,
+  scoutTeamRegistrations,
   stats 
 }: ReportsCenterProps) {
   const [selectedZone, setSelectedZone] = useState<string>("all");
@@ -86,6 +89,7 @@ export function ReportsCenter({
     let aw = [...awardeeRegistrations];
     let q = [...qiraathRegistrations];
     let d = [...driverStaffRegistrations];
+    let sc = [...scoutTeamRegistrations];
 
     if (selectedZone !== "all") {
       s = s.filter(r => r.zone === selectedZone);
@@ -96,6 +100,7 @@ export function ReportsCenter({
       aw = aw.filter(r => r.zone === selectedZone);
       q = q.filter(r => r.zone === selectedZone);
       d = d.filter(r => r.zone === selectedZone);
+      sc = sc.filter(r => r.zone === selectedZone);
     }
 
     if (selectedSchool !== "all") {
@@ -105,6 +110,7 @@ export function ReportsCenter({
       v = v.filter(r => r.school === selectedSchool);
       aw = aw.filter(r => r.school === selectedSchool);
       q = q.filter(r => r.school === selectedSchool);
+      sc = sc.filter(r => r.school === selectedSchool);
     }
 
     if (selectedType !== "all") {
@@ -117,6 +123,7 @@ export function ReportsCenter({
       if (selectedType !== "Awardee") aw = [];
       if (selectedType !== "Qiraath") q = [];
       if (selectedType !== "Driver") d = [];
+      if (selectedType !== "Scout") sc = [];
     }
 
     if (selectedAccompaniment !== "all") {
@@ -126,6 +133,7 @@ export function ReportsCenter({
       v = v.filter(r => !!r.withParent === wantAcc);
       aw = aw.filter(r => !!r.withParent === wantAcc);
       q = q.filter(r => !!r.withParent === wantAcc);
+      sc = sc.filter(r => !!r.withParent === wantAcc);
       // Others don't have accompaniment, so clear them if we want with accompaniment
       if (wantAcc) {
         st = []; g = []; y = []; d = [];
@@ -135,24 +143,25 @@ export function ReportsCenter({
     if (selectedAwardeeType !== "all") {
       aw = aw.filter(r => r.selectionType === selectedAwardeeType);
       // Clear others as they are not awardees
-      s = []; st = []; g = []; y = []; a = []; v = []; q = []; d = [];
+      s = []; st = []; g = []; y = []; a = []; v = []; q = []; d = []; sc = [];
     }
 
-    return { s, st, g, y, a, v, aw, q, d };
-  }, [selectedZone, selectedSchool, selectedType, selectedAccompaniment, selectedAwardeeType, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations]);
+    return { s, st, g, y, a, v, aw, q, d, sc };
+  }, [selectedZone, selectedSchool, selectedType, selectedAccompaniment, selectedAwardeeType, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations, scoutTeamRegistrations]);
 
   const reportData = useMemo(() => {
-    const { s, st, g, y, a, v, aw, q, d } = filteredData;
+    const { s, st, g, y, a, v, aw, q, d, sc } = filteredData;
     const allPeople = [
-      ...s.map(r => ({ ...r, type: 'Student' })),
-      ...g.map(r => ({ ...r, type: 'Guest' })),
-      ...y.map(r => ({ ...r, type: 'Yesian' })),
-      ...st.map(r => ({ ...r, type: 'Staff' })),
-      ...a.map(r => ({ ...r, type: 'Alumni' })),
-      ...v.map(r => ({ ...r, type: 'Volunteer' })),
-      ...aw.map(r => ({ ...r, type: 'Awardee' })),
-      ...q.map(r => ({ ...r, type: 'Qiraath' })),
-      ...d.map(r => ({ ...r, type: 'Driver' })),
+      ...s.map((r: any) => ({ ...r, type: 'Student' })),
+      ...g.map((r: any) => ({ ...r, type: 'Guest' })),
+      ...y.map((r: any) => ({ ...r, type: 'Yesian' })),
+      ...st.map((r: any) => ({ ...r, type: 'Staff' })),
+      ...a.map((r: any) => ({ ...r, type: 'Alumni' })),
+      ...v.map((r: any) => ({ ...r, type: 'Volunteer' })),
+      ...aw.map((r: any) => ({ ...r, type: 'Awardee' })),
+      ...q.map((r: any) => ({ ...r, type: 'Qiraath' })),
+      ...d.map((r: any) => ({ ...r, type: 'Driver' })),
+      ...sc.map((r: any) => ({ ...r, type: 'Scout' })),
     ];
 
     // 1. Gender Distribution (Unified)
@@ -257,7 +266,26 @@ export function ReportsCenter({
       return acc + count;
     }, 0);
 
-    const totalAccompaniments = countAccs(s) + countAccs(a) + countAccs(v) + countAccs(aw) + countAccs(q);
+    const totalAccompaniments = countAccs(s) + countAccs(a) + countAccs(v) + countAccs(aw) + countAccs(q) + countAccs(sc);
+
+    const accGenderMap = { Male: 0, Female: 0 };
+    [s, a, v, aw, q, sc].forEach((list: any[]) => {
+      list.forEach((r: any) => {
+        if (r.accompaniments && r.accompaniments.length > 0) {
+          r.accompaniments.forEach((acc: any) => {
+            const g = acc.gender?.toLowerCase() === 'male' ? 'Male' : 'Female';
+            accGenderMap[g]++;
+          });
+        } else if (r.withParent) {
+          const g = r.parentGender?.toLowerCase() === 'male' ? 'Male' : 'Female';
+          accGenderMap[g]++;
+        }
+      });
+    });
+    const accGenderStats = [
+      { name: 'Male', value: accGenderMap.Male },
+      { name: 'Female', value: accGenderMap.Female }
+    ];
 
     return { 
       genderStats, 
@@ -270,7 +298,12 @@ export function ReportsCenter({
       typeStats,
       genderByTypeData,
       total: allPeople.length,
-      totalAccompaniments
+      totalAccompaniments,
+      accGenderStats,
+      qiraathGenderStats: [
+        { name: 'Male', value: q.filter((r: any) => r.gender?.toLowerCase() === 'male').length },
+        { name: 'Female', value: q.filter((r: any) => r.gender?.toLowerCase() === 'female').length }
+      ]
     };
   }, [filteredData]);
 
@@ -284,8 +317,8 @@ export function ReportsCenter({
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      const { s, st, g, y, a, v, aw, q, d } = filteredData;
-      await generateStrategicReportPDF(s, st, y, g, a, v, aw, q, d);
+      const { s, st, g, y, a, v, aw, q, d, sc } = filteredData;
+      await generateStrategicReportPDF(s, st, y, g, a, v, aw, q, d, sc);
     } catch (e) {
       console.error(e);
       alert("Failed to generate PDF. Please try again.");
@@ -338,6 +371,7 @@ export function ReportsCenter({
               <SelectItem value="Awardee">Awardees</SelectItem>
               <SelectItem value="Qiraath">Qiraath</SelectItem>
               <SelectItem value="Driver">Drivers/Support</SelectItem>
+              <SelectItem value="Scout">Scout Team</SelectItem>
             </SelectContent>
           </Select>
 
@@ -403,7 +437,7 @@ export function ReportsCenter({
           { label: "Total Participation", value: reportData.total, icon: <Users className="text-indigo-600" />, trend: "+12%", color: "indigo" },
           { label: "Student Volume", value: filteredData.s.length, icon: <GraduationCap className="text-emerald-600" />, trend: "+5%", color: "emerald" },
           { label: "Accompaniments", value: reportData.totalAccompaniments, icon: <Users className="text-amber-600" />, trend: "+10%", color: "amber" },
-          { label: "Staff & Yesians", value: filteredData.st.length + filteredData.y.length, icon: <UserCheck className="text-rose-600" />, trend: "+8%", color: "rose" },
+          { label: "Crew & Staff", value: filteredData.st.length + filteredData.y.length + filteredData.sc.length, icon: <UserCheck className="text-rose-600" />, trend: "+8%", color: "rose" },
         ].map((item, i) => (
           <Card key={i} className="border-none shadow-sm shadow-slate-200/50 rounded-[28px] overflow-hidden bg-white group hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500">
             <CardContent className="p-6">
@@ -575,6 +609,70 @@ export function ReportsCenter({
               </div>
             </CardContent>
           </Card>
+          {/* Accompaniment Gender Distribution */}
+          <Card className="border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <Users className="text-amber-500" size={18} />
+                Guardian Gender
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Accompaniment demographic</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px] mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={reportData.accGenderStats}
+                      innerRadius={50}
+                      outerRadius={70}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {reportData.accGenderStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3b82f6' : '#ec4899'} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Qiraath Gender Distribution */}
+          <Card className="border-none shadow-sm shadow-slate-200/50 rounded-[32px] bg-white p-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-2">
+                <Users className="text-emerald-500" size={18} />
+                Qiraath Gender
+              </CardTitle>
+              <CardDescription className="text-xs uppercase tracking-widest">Participant demographic</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px] mt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={reportData.qiraathGenderStats}
+                      innerRadius={50}
+                      outerRadius={70}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {reportData.qiraathGenderStats.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#10b981' : '#f43f5e'} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Full Width Section: Institutional Reports */}
@@ -652,11 +750,11 @@ export function ReportsCenter({
                <div className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold">Student Ratio</div>
              </div>
              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center">
-               <div className="text-4xl font-normal text-white mb-2">{new Set([...filteredData.s, ...filteredData.st].map(p => p.zone)).size}</div>
+               <div className="text-4xl font-normal text-white mb-2">{new Set([...filteredData.s, ...filteredData.st, ...filteredData.sc].map((p: any) => p.zone)).size}</div>
                <div className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold">Zones Represented</div>
              </div>
              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center">
-               <div className="text-4xl font-normal text-white mb-2">{new Set([...filteredData.s, ...filteredData.st].map(p => p.school)).size}</div>
+               <div className="text-4xl font-normal text-white mb-2">{new Set([...filteredData.s, ...filteredData.st, ...filteredData.sc].map((p: any) => p.school)).size}</div>
                <div className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold">Schools Involved</div>
              </div>
              <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center flex flex-col items-center justify-center">

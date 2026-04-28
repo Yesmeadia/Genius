@@ -13,7 +13,8 @@ import {
   VolunteerRegistration,
   AwardeeRegistration,
   QiraathRegistration,
-  DriverStaffRegistration
+  DriverStaffRegistration,
+  ScoutTeamRegistration
 } from "@/app/admin/dashboard/types";
 
 /** Robust filename sanitization for cross-browser compatibility */
@@ -471,7 +472,8 @@ export async function generateStrategicReportPDF(
   volunteers: VolunteerRegistration[],
   awardees: AwardeeRegistration[],
   qiraath: QiraathRegistration[],
-  drivers: DriverStaffRegistration[]
+  drivers: DriverStaffRegistration[],
+  scoutTeam: ScoutTeamRegistration[]
 ) {
   const doc = new jsPDF({ orientation: "portrait" });
   const title = "STRATEGIC PARTICIPATION REPORT";
@@ -480,7 +482,7 @@ export async function generateStrategicReportPDF(
   let currentY = 55;
 
   const countAcc = (list: any[]) => list.reduce((total, r) => total + (r.accompaniments?.length || (r.withParent ? 1 : 0)), 0);
-  const totalAcc = countAcc(registrations) + countAcc(alumni) + countAcc(volunteers) + countAcc(awardees) + countAcc(qiraath);
+  const totalAcc = countAcc(registrations) + countAcc(alumni) + countAcc(volunteers) + countAcc(awardees) + countAcc(qiraath) + countAcc(scoutTeam);
 
   // 1. CONSOLIDATED PARTICIPATION SUMMARY
   const summaryBody = [
@@ -493,9 +495,10 @@ export async function generateStrategicReportPDF(
     ["7. Awardee Recognition", awardees.length],
     ["8. Qiraath Participants", qiraath.length],
     ["9. Drivers & Support Staff", drivers.length],
-    ["10. Accompaniments (Guardians)", totalAcc],
+    ["10. Scout Team Members", scoutTeam.length],
+    ["11. Accompaniments (Guardians)", totalAcc],
   ];
-  const totalPeople = registrations.length + localStaff.length + yesians.length + guests.length + alumni.length + volunteers.length + awardees.length + qiraath.length + drivers.length + totalAcc;
+  const totalPeople = registrations.length + localStaff.length + yesians.length + guests.length + alumni.length + volunteers.length + awardees.length + qiraath.length + drivers.length + scoutTeam.length + totalAcc;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
@@ -509,7 +512,8 @@ export async function generateStrategicReportPDF(
     headStyles: { fillColor: [51, 65, 85], fontSize: 9 },
     styles: { fontSize: 8 },
     foot: [["GRAND TOTAL HEADCOUNT", totalPeople]],
-    footStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" }
+    footStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
+    didDrawPage: (data) => addFooter(doc, data)
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -549,7 +553,8 @@ export async function generateStrategicReportPDF(
       Object.values(zoneGenderMap).reduce((a: number, b: any) => a + b.Female, 0),
       registrations.length
     ]],
-    footStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" }
+    footStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
+    didDrawPage: (data) => addFooter(doc, data)
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -589,7 +594,8 @@ export async function generateStrategicReportPDF(
       Object.values(staffSchoolMap).reduce((a: number, b: any) => a + b.Female, 0),
       localStaff.length
     ]],
-    footStyles: { fillColor: [240, 249, 255], textColor: [14, 165, 233], fontStyle: "bold" }
+    footStyles: { fillColor: [240, 249, 255], textColor: [14, 165, 233], fontStyle: "bold" },
+    didDrawPage: (data) => addFooter(doc, data)
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -629,7 +635,8 @@ export async function generateStrategicReportPDF(
       Object.values(schoolGenderMap).reduce((a: number, b: any) => a + b.Female, 0),
       registrations.length
     ]],
-    footStyles: { fillColor: [245, 243, 255], textColor: [79, 70, 229], fontStyle: "bold" }
+    footStyles: { fillColor: [245, 243, 255], textColor: [79, 70, 229], fontStyle: "bold" },
+    didDrawPage: (data) => addFooter(doc, data)
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -658,6 +665,7 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [16, 185, 129], fontSize: 9 },
     styles: { fontSize: 8 },
+    didDrawPage: (data) => addFooter(doc, data)
   });
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -703,7 +711,48 @@ export async function generateStrategicReportPDF(
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
 
-  // 7. OTHER CATEGORIES SUMMARY
+  // 7. QIRAATH PARTICIPANTS BY ZONE
+  const qiraathZoneMap = qiraath.reduce((acc: any, q) => {
+    const zone = q.zone || "N/A";
+    const gender = q.gender?.toLowerCase() === "male" ? "Male" :
+      q.gender?.toLowerCase() === "female" ? "Female" : "Other";
+    if (!acc[zone]) acc[zone] = { Male: 0, Female: 0, Total: 0 };
+    acc[zone][gender]++;
+    acc[zone].Total++;
+    return acc;
+  }, {});
+
+  const qiraathBody = Object.entries(qiraathZoneMap).map(([zone, counts]: [string, any]) => [
+    zone,
+    counts.Male,
+    counts.Female,
+    counts.Total
+  ]);
+
+  if (currentY > 230) { doc.addPage(); currentY = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("7. Qiraath Participant Distribution by Zone", 14, currentY);
+
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["Zone/Region", "Male Participants", "Female Participants", "Grand Total"]],
+    body: qiraathBody as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [16, 185, 129], fontSize: 9 },
+    styles: { fontSize: 8 },
+    foot: [["TOTAL",
+      Object.values(qiraathZoneMap).reduce((a: number, b: any) => a + b.Male, 0),
+      Object.values(qiraathZoneMap).reduce((a: number, b: any) => a + b.Female, 0),
+      qiraath.length
+    ]],
+    footStyles: { fillColor: [236, 253, 245], textColor: [5, 150, 105], fontStyle: "bold" },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 8. OTHER CATEGORIES SUMMARY
   const otherCategoriesBody = [
     ["Guests", guests.length],
     ["Alumni Achievers", alumni.length],
@@ -711,12 +760,13 @@ export async function generateStrategicReportPDF(
     ["Awardees", awardees.length],
     ["Qiraath Participants", qiraath.length],
     ["Drivers & Support Staff", drivers.length],
+    ["Scout Team", scoutTeam.length],
   ];
 
   if (currentY > 230) { doc.addPage(); currentY = 20; }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("7. Supplemental Categories Participation", 14, currentY);
+  doc.text("8. Supplemental Categories Participation", 14, currentY);
 
   autoTable(doc, {
     startY: currentY + 5,
@@ -730,33 +780,51 @@ export async function generateStrategicReportPDF(
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
 
-  // 8. ACCOMPANIMENT DISTRIBUTION BY ZONE
+  // 9. ACCOMPANIMENT DISTRIBUTION BY ZONE
   const accZoneMap: any = {};
-  [registrations, alumni, volunteers, awardees, qiraath].forEach(list => {
+  [registrations, alumni, volunteers, awardees, qiraath, scoutTeam].forEach(list => {
     list.forEach((r: any) => {
       const zone = r.zone || "N/A";
-      const count = r.accompaniments?.length || (r.withParent ? 1 : 0);
-      if (count > 0) {
-        accZoneMap[zone] = (accZoneMap[zone] || 0) + count;
+      if (!accZoneMap[zone]) accZoneMap[zone] = { Male: 0, Female: 0, Total: 0 };
+      
+      if (r.accompaniments && r.accompaniments.length > 0) {
+        r.accompaniments.forEach((acc: any) => {
+          const g = acc.gender?.toLowerCase() === "male" ? "Male" : "Female";
+          accZoneMap[zone][g]++;
+          accZoneMap[zone].Total++;
+        });
+      } else if (r.withParent) {
+        const g = r.parentGender?.toLowerCase() === "male" ? "Male" : "Female";
+        accZoneMap[zone][g]++;
+        accZoneMap[zone].Total++;
       }
     });
   });
 
-  const accZoneBody = Object.entries(accZoneMap).map(([zone, count]) => [zone, count]);
+  const accZoneBody = Object.entries(accZoneMap).map(([zone, counts]: [string, any]) => [
+    zone,
+    counts.Male,
+    counts.Female,
+    counts.Total
+  ]);
 
   if (currentY > 230) { doc.addPage(); currentY = 20; }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("8. Accompaniment (Guardian) Distribution by Zone", 14, currentY);
+  doc.text("9. Accompaniment (Guardian) Gender Distribution by Zone", 14, currentY);
 
   autoTable(doc, {
     startY: currentY + 5,
-    head: [["Zone/Region", "Total Accompaniments"]],
+    head: [["Zone/Region", "Male Guardians", "Female Guardians", "Grand Total"]],
     body: accZoneBody as any[][],
     theme: "striped",
     headStyles: { fillColor: [219, 39, 119], fontSize: 9 },
     styles: { fontSize: 8 },
-    foot: [["TOTAL ACCOMPANIMENTS", totalAcc]],
+    foot: [["TOTAL", 
+      Object.values(accZoneMap).reduce((a: number, b: any) => a + b.Male, 0),
+      Object.values(accZoneMap).reduce((a: number, b: any) => a + b.Female, 0),
+      totalAcc
+    ]],
     footStyles: { fillColor: [253, 242, 248], textColor: [190, 24, 93], fontStyle: "bold" },
     didDrawPage: (data) => addFooter(doc, data)
   });
@@ -788,9 +856,14 @@ function addFooter(doc: jsPDF, data: any) {
   doc.setFont("helvetica", "italic");
   doc.setTextColor(150, 150, 150);
   const footerStr = `Generated on: ${new Date().toLocaleString()}`;
-  doc.text(footerStr, data.settings.margin.left, doc.internal.pageSize.height - 10);
-  const pageStr = `Page ${data.pageNumber}`;
-  doc.text(pageStr, doc.internal.pageSize.width - data.settings.margin.left - 20, doc.internal.pageSize.height - 10);
+  const pageHeight = doc.internal.pageSize.height;
+  const pageWidth = doc.internal.pageSize.width;
+  const marginLeft = data?.settings?.margin?.left || 14;
+  
+  doc.text(footerStr, marginLeft, pageHeight - 10);
+  const currentPage = (doc as any).internal.getCurrentPageInfo().pageNumber;
+  const pageStr = `Page ${currentPage}`;
+  doc.text(pageStr, pageWidth - marginLeft - 20, pageHeight - 10);
 }
 
 function toTitleCase(str: string): string {
