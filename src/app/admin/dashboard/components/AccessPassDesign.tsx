@@ -24,9 +24,9 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
 
   // Background image per pass type
   const bgSrc =
-    passType === 'student' ? '/pass/delegates.png'
-    : passType === 'guest'  ? '/pass/guest.png'
-                             : '/pass/officials.png'; // officials.png used for yesian & local-staff
+    passType === 'student' ? '/pass/Delegate.jpeg'
+      : passType === 'guest' ? '/pass/guest.png'
+        : '/pass/Crew.jpeg'; // officials.png used for yesian & local-staff
 
   const getSchoolName = (schoolId: string) => {
     for (const zone of locations) {
@@ -36,19 +36,35 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
     return schoolId;
   };
 
+  function toTitleCase(str: string): string {
+    if (!str) return '';
+    return str.split(' ').map(word => {
+      if (word.toUpperCase() === 'YES') return 'YES';
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+  }
+
   // Name
-  const fullName = registration
+  const rawFullName = registration
     ? (passType === 'student' ? registration.studentName : registration.name) || ''
     : 'FULL NAME';
+  const fullName = passType === 'student' ? toTitleCase(rawFullName) : rawFullName;
 
   // Detail line
   let infoLine = '';
   if (registration) {
-    if (passType === 'student')     infoLine = `${registration.zone || ''} | ${getSchoolName(registration.school)}`;
-    else if (passType === 'guest')  infoLine = registration.address || '';
-    else                            infoLine = registration.designation ? `${registration.zone} | ${registration.designation}` : registration.zone || '';
+    if (passType === 'student') {
+      const sName = toTitleCase(getSchoolName(registration.school));
+      if (sName.includes('-')) {
+        infoLine = sName.split('-').map(p => p.trim()).join('\n');
+      } else {
+        infoLine = sName;
+      }
+    }
+    else if (passType === 'guest') infoLine = registration.address || '';
+    else infoLine = registration.designation ? `${registration.designation}` : registration.zone || '';
   } else {
-    infoLine = 'ZONE | SCHOOL NAME';
+    infoLine = 'SCHOOL NAME';
   }
 
   // Photo
@@ -67,7 +83,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
           margin: 0,
           background: 'transparent',
         });
-      } catch (_) {}
+      } catch (_) { }
     }
   }, [registration?.id]);
 
@@ -76,10 +92,10 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
       {/* Outer glow effect */}
       <div className="absolute -inset-6 bg-black/10 blur-2xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
-      {/* Card container — portrait 70:100 ratio */}
+      {/* Card container — portrait 85:120 ratio */}
       <div
         className="relative rounded-[20px] overflow-hidden shadow-2xl group-hover:-translate-y-1 transition-transform duration-500"
-        style={{ width: '100%', aspectRatio: '70/100' }}
+        style={{ width: '100%', aspectRatio: '85/120' }}
       >
         {/* ── FULL-CARD BACKGROUND IMAGE ── */}
         <img
@@ -88,16 +104,19 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
           className="absolute inset-0 w-full h-full object-fill"
         />
 
-        {/* ── PHOTO (right-aligned in upper black panel) ── */}
-        {/* The black panel takes top ~67% of card. Photo is right-pinned with top margin. */}
+        {/* ── PHOTO ── */}
         <div
-          className="absolute overflow-hidden"
-          style={{
-            top:    '16%',
-            // Center in the right photo area (strip ~23% wide, photo ~49%)
-            // left = 23% + (77% - 49%) / 2 = ~37%
-            left:   '37%',
-            width:  '49%',
+          className="absolute overflow-hidden object-cover"
+          style={passType === 'student' ? {
+            top: '42.64%', // 51.168mm / 120mm
+            left: '54.45%', // 46.289mm / 85mm
+            width: '34.3%', // 29.157mm / 85mm
+            height: '30.35%', // 36.425mm / 120mm
+            borderRadius: '24px' // Approximate for 7.69mm
+          } : {
+            top: '16%',
+            left: '37%',
+            width: '49%',
             height: '44%',
           }}
         >
@@ -106,47 +125,73 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
           ) : (
             <div className="w-full h-full bg-white/10 flex items-center justify-center text-white/30">
               <svg viewBox="0 0 24 24" className="w-10 h-10" fill="currentColor">
-                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
               </svg>
             </div>
           )}
         </div>
 
-        {/* ── CREAM BOTTOM DATA SECTION ── */}
-        {/* Positioned at ~68% down (corresponds to splitY=67 in 100mm) */}
+        {/* ── INFO SECTION ── */}
         <div
-          className="absolute flex flex-col justify-start"
-          style={{
-            top:    '68%',
-            left:   '5%',
-            right:  '10%',  // leave room for rotated URL text
+          className="absolute flex flex-col justify-start gap-0"
+          style={passType === 'student' ? {
+            top: '36.96%', // 44.354mm / 120mm
+            left: '13.83%', // 11.753mm / 85mm
+            right: '48%',  // leave room for photo
+          } : {
+            top: '68%',
+            left: '5%',
+            right: '10%',
             bottom: '2%',
           }}
         >
           {/* NAME */}
           <p
-            className="font-black text-slate-900 leading-tight uppercase tracking-tight truncate"
-            style={{ fontSize: 'clamp(10px, 3.8vw, 18px)' }}
+            className={`leading-tight tracking-tight truncate ${passType === 'student' ? 'text-white' : 'font-black uppercase text-slate-900'}`}
+            style={passType === 'student' ? {
+              fontFamily: 'Montserrat, sans-serif',
+              fontWeight: 600, // SemiBold
+              fontSize: fullName.length > 13 ? 'clamp(10px, 3.8vw, 15px)' : 'clamp(10px, 4.5vw, 20px)'
+            } : { fontSize: 'clamp(10px, 3.8vw, 18px)' }}
           >
             {fullName}
           </p>
 
-          {/* ZONE | SCHOOL */}
+          {/*SCHOOL */}
           <p
-            className="font-bold uppercase tracking-wide text-orange-600 leading-tight mt-0.5 truncate"
-            style={{ fontSize: 'clamp(6px, 2vw, 10px)', color: passType === 'guest' ? '#059669' : (passType === 'yesian' ? '#d97706' : (passType === 'local-staff' ? '#0ea5e9' : '#ea580c')) }}
+            className={`leading-tight truncate whitespace-pre-line ${passType === 'student' ? 'text-slate-200' : 'font-bold uppercase tracking-wide mt-0.5'}`}
+            style={passType === 'student' ? {
+              fontFamily: 'Montserrat, sans-serif',
+              fontWeight: 500, // Medium
+              fontSize: 'clamp(6px, 2.5vw, 12px)'
+            } : {
+              fontSize: 'clamp(6px, 2vw, 10px)',
+              color: passType === 'guest' ? '#059669' : (passType === 'yesian' ? '#d97706' : (passType === 'local-staff' ? '#0ea5e9' : '#ea580c'))
+            }}
           >
             {infoLine}
           </p>
 
-          {/* BARCODE */}
-          <div className="mt-auto flex flex-col items-center pt-1">
-            <svg ref={barcodeRef} className="w-[55%] max-w-[120px]" />
-            <p className="text-slate-500 font-mono tracking-widest mt-0.5" style={{ fontSize: 'clamp(5px, 1.5vw, 7px)' }}>
+          {/* BARCODE FOR NON-STUDENT */}
+          {passType !== 'student' && (
+            <div className="mt-auto flex flex-col items-center pt-1">
+              <svg ref={barcodeRef} className="w-[55%] max-w-[120px]" />
+              <p className="text-slate-500 font-mono tracking-widest mt-0.5" style={{ fontSize: 'clamp(5px, 1.5vw, 7px)' }}>
+                {registration?.id?.substring(0, 8).toUpperCase() || 'REF ID NUMBER'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* BARCODE FOR STUDENT */}
+        {passType === 'student' && (
+          <div className="absolute flex flex-col items-center" style={{ bottom: '8.88%', right: '9.68%', width: '30.58%' }}>
+            <svg ref={barcodeRef} className="w-full" />
+            <p className="text-black font-bold font-mono tracking-widest mt-[2px]" style={{ fontSize: 'clamp(5px, 1.5vw, 7px)' }}>
               {registration?.id?.substring(0, 8).toUpperCase() || 'REF ID NUMBER'}
             </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

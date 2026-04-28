@@ -162,8 +162,8 @@ async function drawCertificate(
   }
 
   const PT = 2.8346;
-  const x = 383.3418 / PT; // 135.24 mm
-  const nameY = 296.9094 / PT; // 104.75 mm
+  const x = 382.8079 / PT; 
+  const nameY = 288.7041 / PT; 
   const colWidth = 269.2648 / PT; // 95.05  mm
 
   // ── Student name — Montserrat SemiBold, #a51d46 ───────────────────────────
@@ -210,7 +210,7 @@ export async function generateParticipationCertificate(
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const [fonts, bgBase64] = await Promise.all([
     loadMontserratFonts(doc),
-    getBase64ImageFromUrl("/certificate/Gjamp.jpeg"),
+    getBase64ImageFromUrl("/certificate/GjamD.jpeg"),
   ]);
 
   for (let i = 0; i < records.length; i++) {
@@ -244,7 +244,7 @@ export async function generateBatchParticipationCertificates(
   const doc0 = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const [fonts, bgBase64] = await Promise.all([
     loadMontserratFonts(doc0),
-    getBase64ImageFromUrl("/certificate/Gjamp.jpeg"),
+    getBase64ImageFromUrl("/certificate/GjamD.jpeg"),
   ]);
 
   for (const rec of records) {

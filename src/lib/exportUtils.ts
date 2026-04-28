@@ -793,6 +793,14 @@ function addFooter(doc: jsPDF, data: any) {
   doc.text(pageStr, doc.internal.pageSize.width - data.settings.margin.left - 20, doc.internal.pageSize.height - 10);
 }
 
+function toTitleCase(str: string): string {
+  if (!str) return '';
+  return str.split(' ').map(word => {
+    if (word.toUpperCase() === 'YES') return 'YES';
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
+}
+
 /**
  * Access Pass Generation
  */
@@ -800,18 +808,19 @@ async function drawBadgeContent(
   doc: jsPDF,
   data: any,
   type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff',
-  kalashFontLoaded: boolean
+  fontsLoaded: { kalash: boolean; montserratSemiBold: boolean; montserratMedium: boolean }
 ) {
-  const W = doc.internal.pageSize.width;   // 70mm
-  const H = doc.internal.pageSize.height;  // 100mm
+  const W = doc.internal.pageSize.width;   // 85mm
+  const H = doc.internal.pageSize.height;  // 120mm
 
   // ── 1. FULL-CARD BACKGROUND IMAGE ─────────────────────────────
-  const bgPath = type === 'student' ? '/pass/delegates.png'
+  const bgPath = type === 'student' ? '/pass/Delegate.jpeg'
     : type === 'guest' ? '/pass/guest.png'
-      : '/pass/officials.png';
+      : '/pass/Crew.jpeg';
   const bg = await getBase64ImageFromUrl(bgPath);
   if (bg) {
-    doc.addImage(bg, 'PNG', 0, 0, W, H);
+    const bgFormat = bgPath.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
+    doc.addImage(bg, bgFormat, 0, 0, W, H);
   } else {
     // Fallback plain white if image fails to load
     doc.setFillColor(255, 255, 255);
@@ -820,18 +829,39 @@ async function drawBadgeContent(
 
   // ── 2. PHOTO (right-aligned, with top margin from header) ─────
   const splitY = 67;  // taller header gives more space before footer content
-  const stripW = 16;
-  const photoW = 34;    // reduced width
-  const photoH = 46;    // reduced height
-  // Center horizontally within the right photo area (stripW to W)
-  const photoAreaW = W - stripW - 1;
-  const photoX = stripW + 1 + (photoAreaW - photoW) / 2;
-  const photoY = 12;                // push down from top — adds space from header
+  let photoW = 34;
+  let photoH = 46;
+  let photoX = 20;
+  let photoY = 12;
+
+  if (type === 'student') {
+    photoW = 29.157;
+    photoH = 36.425;
+    photoX = 46.289;
+    photoY = 51.168;
+  } else {
+    const stripW = 16;
+    const photoAreaW = W - stripW - 1;
+    photoX = stripW + 1 + (photoAreaW - photoW) / 2;
+  }
 
   const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
-    if (photo) doc.addImage(photo, 'JPEG', photoX, photoY, photoW, photoH);
+    if (photo) {
+      if (type === 'student') {
+        const r = 7.69;
+        const d = doc as any;
+        // Robust PDF clipping using internal operators
+        d.internal.write('q');
+        d.roundedRect(photoX, photoY, photoW, photoH, r, r, null);
+        d.internal.write('W n'); // W = clip, n = no-op path termination
+        d.addImage(photo, 'JPEG', photoX, photoY, photoW, photoH);
+        d.internal.write('Q');
+      } else {
+        doc.addImage(photo, 'JPEG', photoX, photoY, photoW, photoH);
+      }
+    }
   }
 
 
@@ -843,10 +873,20 @@ async function drawBadgeContent(
     : fullName.length <= 15 ? 10
       : fullName.length <= 20 ? 8
         : 7;
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(10, 10, 10);
-  doc.setFontSize(nameFontSize);
-  doc.text(fullName, 4, splitY + 14, { maxWidth: W - 16 }); // +14 for more top space
+
+  if (type === 'student') {
+    doc.setFont(fontsLoaded.montserratSemiBold ? 'MontserratSemiBold' : 'helvetica', 'normal');
+    if (!fontsLoaded.montserratSemiBold) doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    const fontSize = fullName.length > 13 ? 12 : 15;
+    doc.setFontSize(fontSize);
+    doc.text(toTitleCase(fullName), 11.753, 44.354); // Moved down from 41.354
+  } else {
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(10, 10, 10);
+    doc.setFontSize(nameFontSize);
+    doc.text(fullName, 4, splitY + 14, { maxWidth: W - 16 });
+  }
 
   // ── 4. ZONE | SCHOOL / ADDRESS ─────────────────────────────────
   // Theme color per type
@@ -860,31 +900,28 @@ async function drawBadgeContent(
   else if (type === 'qiraath') tc = [16, 185, 129]; // emerald
   else if (type === 'driver-staff') tc = [79, 70, 229]; // indigo
 
-  doc.setFontSize(6.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(tc[0], tc[1], tc[2]);
   let infoText = '';
-  if (type === 'student') infoText = `${data.zone} | ${getSchoolName(data.school)}`;
+  if (type === 'student') infoText = ` ${getSchoolName(data.school)}`;
   else if (type === 'guest') infoText = data.address || '';
   else if (type === 'local-staff') {
     const schoolName = getSchoolName(data.school);
-    infoText = `${data.role || ''}\n${data.zone} | ${schoolName}`;
+    infoText = `${data.role || ''}\n${schoolName}`;
   }
   else if (type === 'alumni-achiever') {
     const schoolName = getSchoolName(data.school);
-    infoText = `${data.className || ''} ${data.category || ''}\n${data.zone} | ${schoolName}`;
+    infoText = `${data.className || ''} ${data.category || ''}\n${schoolName}`;
   }
   else if (type === 'volunteer') {
     const schoolName = getSchoolName(data.school);
-    infoText = `${data.className || ''}\n${data.zone} | ${schoolName}`;
+    infoText = `${data.className || ''}\n${schoolName}`;
   }
   else if (type === 'awardee') {
     const schoolName = getSchoolName(data.school);
-    infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${data.zone} | ${schoolName}`;
+    infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${schoolName}`;
   }
   else if (type === 'qiraath') {
     const schoolName = getSchoolName(data.school);
-    infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${data.zone} | ${schoolName}`;
+    infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${schoolName}`;
   }
   else if (type === 'driver-staff') {
     infoText = data.staffType === 'DRIVER'
@@ -892,20 +929,49 @@ async function drawBadgeContent(
       : `SUPPORT STAFF\nZONE: ${data.zone || ''}`;
   }
   else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
-  const infoY = splitY + 17;
-  doc.text(infoText.toUpperCase(), 4, infoY, { maxWidth: W - 16 });
+
+  if (type === 'student') {
+    doc.setFontSize(7);
+    doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
+    if (!fontsLoaded.montserratMedium) doc.setFont('helvetica', 'bold');
+    doc.setTextColor(226, 232, 240);
+    let schoolName = toTitleCase(getSchoolName(data.school));
+    if (schoolName.includes('-')) {
+      const parts = schoolName.split('-');
+      schoolName = parts.map(p => p.trim()).join('\n');
+    }
+    doc.text(schoolName, 11.753, 48.354);
+  } else {
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(tc[0], tc[1], tc[2]);
+    const infoY = splitY + 17;
+    doc.text(infoText.toUpperCase(), 4, infoY, { maxWidth: W - 16 });
+  }
 
   // ── 5. BARCODE + SHORT REF ID (centered) ─────────────────────
   const barcode = getBarcodeBase64(data.id);
-  const bcW = 36;               // further reduced width
-  const bcH = 6;                // further reduced height
-  const bcX = (W - bcW) / 2;   // centred
-  const bcY = H - 12;
-  if (barcode) doc.addImage(barcode, 'PNG', bcX, bcY, bcW, bcH);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(4.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text(data.id.substring(0, 8).toUpperCase(), W / 2, bcY + bcH + 1.5, { align: 'center' });
+  if (type === 'student') {
+    const bcW = 26;
+    const bcH = 6;
+    const bcX = W - bcW - 8.228; // right: 0.8228 cm
+    const bcY = H - bcH - 10.66; // down: 1.066 cm
+    if (barcode) doc.addImage(barcode, 'PNG', bcX, bcY, bcW, bcH);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(5);
+    doc.setTextColor(0, 0, 0);
+    doc.text(data.id.substring(0, 8).toUpperCase(), bcX + (bcW / 2), bcY + bcH + 2, { align: 'center' });
+  } else {
+    const bcW = 36;
+    const bcH = 6;
+    const bcX = (W - bcW) / 2;
+    const bcY = H - 12;
+    if (barcode) doc.addImage(barcode, 'PNG', bcX, bcY, bcW, bcH);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(4.5);
+    doc.setTextColor(80, 80, 80);
+    doc.text(data.id.substring(0, 8).toUpperCase(), W / 2, bcY + bcH + 1.5, { align: 'center' });
+  }
 }
 
 
@@ -916,26 +982,45 @@ export async function generateBatchAccessPasses(
   type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' = 'student'
 ) {
   if (data.length === 0) return alert("No records found.");
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [70, 100] });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [85, 120] });
   const yesLogo = await getBase64ImageFromUrl("/yeslogo.png");
   const geniusLogo = await getBase64ImageFromUrl("/Genius.png");
 
   // Load and register the custom Kalash font
-  let kalashFontLoaded = false;
+  let fontsLoaded = { kalash: false, montserratSemiBold: false, montserratMedium: false };
   const kalashBase64 = await getFontBase64('/fonts/KalashRegular.ttf');
   if (kalashBase64) {
     try {
       doc.addFileToVFS('KalashRegular.ttf', kalashBase64);
       doc.addFont('KalashRegular.ttf', 'KalashRegular', 'normal');
-      kalashFontLoaded = true;
+      fontsLoaded.kalash = true;
     } catch (e) {
       console.warn('Kalash font registration failed, falling back to Helvetica', e);
     }
   }
 
+  // Load Montserrat fonts
+  const montSemiB64 = await getFontBase64('/fonts/Montserrat-SemiBold.ttf');
+  if (montSemiB64) {
+    try {
+      doc.addFileToVFS('Montserrat-SemiBold.ttf', montSemiB64);
+      doc.addFont('Montserrat-SemiBold.ttf', 'MontserratSemiBold', 'normal');
+      fontsLoaded.montserratSemiBold = true;
+    } catch (e) { }
+  }
+
+  const montMediumB64 = await getFontBase64('/fonts/Montserrat-Medium.ttf');
+  if (montMediumB64) {
+    try {
+      doc.addFileToVFS('Montserrat-Medium.ttf', montMediumB64);
+      doc.addFont('Montserrat-Medium.ttf', 'MontserratMedium', 'normal');
+      fontsLoaded.montserratMedium = true;
+    } catch (e) { }
+  }
+
   for (let i = 0; i < data.length; i++) {
-    if (i > 0) doc.addPage([70, 100], "portrait");
-    await drawBadgeContent(doc, data[i], type, kalashFontLoaded);
+    if (i > 0) doc.addPage([85, 120], "portrait");
+    await drawBadgeContent(doc, data[i], type, fontsLoaded);
   }
   triggerDownload(doc, filename);
 }
