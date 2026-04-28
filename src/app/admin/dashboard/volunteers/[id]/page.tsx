@@ -12,11 +12,12 @@ import {
   ArrowLeft, Calendar, User, ShieldCheck, Phone,
   Pencil, X, Check, Loader2, UploadCloud,
   MapPin, GraduationCap, Download, Trash2, CheckCircle2,
-  Plus
+  Plus, MoreHorizontal
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
 import { moveToRecycleBin } from "@/lib/deleteUtils";
+import { generateVolunteerCertificate } from "@/lib/volunteerCertificateUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,7 @@ export default function VolunteerProfilePage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -79,6 +81,8 @@ export default function VolunteerProfilePage() {
     };
     fetchVolunteer();
   }, [id, user, router]);
+
+
 
   useGSAP(() => {
     if (!loading && registration) {
@@ -306,38 +310,65 @@ export default function VolunteerProfilePage() {
                 </Button>
               </>
             ) : (
-              <>
+              !showActions ? (
                 <Button
-                  variant="outline"
-                  onClick={enterEditMode}
-                  className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  onClick={() => setShowActions(true)}
+                  className="h-10 rounded-xl bg-slate-900 text-white font-normal uppercase text-[10px] tracking-widest hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
                 >
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  <MoreHorizontal className="mr-2 h-4 w-4" /> Actions
                 </Button>
-                <TransferRegistration 
-                  sourceId={id as string} 
-                  sourceType="volunteer" 
-                  currentData={registration} 
-                />
-                <Button
-                  variant="outline"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
-                >
-                  {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
-                  ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.volunteerName.replace(/\s+/g, '_')}`, 'volunteer')}
-                  className="h-10 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-amber-100"
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download ID
-                </Button>
-              </>
+              ) : (
+                <div className="flex items-center gap-3 animate-in slide-in-from-right-4 duration-300">
+                  <Button
+                    variant="outline"
+                    onClick={enterEditMode}
+                    className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  </Button>
+
+                  <TransferRegistration 
+                    sourceId={id as string} 
+                    sourceType="volunteer" 
+                    currentData={registration} 
+                  />
+
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
+                  >
+                    {isDeleting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    ) : (
+                      <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.volunteerName.replace(/\s+/g, '_')}`, 'volunteer')}
+                    className="h-10 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-amber-100"
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download ID
+                  </Button>
+
+                  <Button
+                    onClick={() => generateVolunteerCertificate([registration], `Certificate_${registration.volunteerName.replace(/\s+/g, '_')}`)}
+                    className="h-10 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-rose-100"
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Certificate
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowActions(false)}
+                    className="h-10 w-10 p-0 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                  >
+                    <X size={18} />
+                  </Button>
+                </div>
+              )
             )}
           </div>
         </div>

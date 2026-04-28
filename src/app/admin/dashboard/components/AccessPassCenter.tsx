@@ -6,9 +6,9 @@ import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, User, Zap, School, Archive, ArrowRight } from "lucide-react";
+import { Users, User, Zap, School, Archive, ArrowRight, ShieldCheck, Trophy } from "lucide-react";
 import { AccessPassDesign } from "./AccessPassDesign";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration } from "../types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration } from "../types";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -17,18 +17,29 @@ interface AccessPassCenterProps {
     guestRegistrations: GuestRegistration[];
     yesianRegistrations: YesianRegistration[];
     localStaffRegistrations: LocalStaffRegistration[];
+    scoutTeamRegistrations: ScoutTeamRegistration[];
+    awardeeRegistrations: AwardeeRegistration[];
 }
 
-type PassType = 'student' | 'guest' | 'yesian' | 'local-staff';
+type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'scout-team' | 'awardee';
 
 const PASS_META: Record<PassType, { label: string; plural: string; color: string; bg: string; icon: React.ReactNode }> = {
     student:     { label: 'Delegate',  plural: 'Delegates',  color: 'text-orange-600', bg: 'bg-orange-600', icon: <Users size={16} /> },
     guest:       { label: 'Guest',     plural: 'Guests',     color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <User size={16} /> },
     yesian:      { label: 'Official',  plural: 'Officials',  color: 'text-amber-600',  bg: 'bg-amber-600',  icon: <Zap size={16} /> },
     'local-staff': { label: 'Staff',     plural: 'Staff',      color: 'text-sky-600',    bg: 'bg-sky-600',    icon: <User size={16} /> },
+    'scout-team': { label: 'Scout',     plural: 'Scout Team', color: 'text-blue-600',   bg: 'bg-blue-600',   icon: <ShieldCheck size={16} /> },
+    'awardee':    { label: 'Awardee',   plural: 'Awardees',   color: 'text-violet-600', bg: 'bg-violet-600', icon: <Trophy size={16} /> },
 };
 
-export default function AccessPassCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations }: AccessPassCenterProps) {
+export default function AccessPassCenter({ 
+    registrations, 
+    guestRegistrations, 
+    yesianRegistrations, 
+    localStaffRegistrations,
+    scoutTeamRegistrations,
+    awardeeRegistrations
+}: AccessPassCenterProps) {
     const [passType, setPassType] = useState<PassType>('student');
     const [selectedZone, setSelectedZone]   = useState("all");
     const [selectedSchool, setSelectedSchool] = useState("all");
@@ -39,8 +50,10 @@ export default function AccessPassCenter({ registrations, guestRegistrations, ye
         if (passType === 'student') return registrations;
         if (passType === 'guest')   return guestRegistrations;
         if (passType === 'yesian')  return yesianRegistrations;
-        return localStaffRegistrations;
-    }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations]);
+        if (passType === 'local-staff') return localStaffRegistrations;
+        if (passType === 'awardee') return awardeeRegistrations;
+        return scoutTeamRegistrations;
+    }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, scoutTeamRegistrations, awardeeRegistrations]);
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];

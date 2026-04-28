@@ -11,7 +11,7 @@ import { locations } from "@/data/locations";
 import {
   ArrowLeft, Calendar, User, ShieldCheck, Phone,
   Pencil, X, Check, Loader2, UploadCloud,
-  MapPin, Award, Download, GraduationCap, Plus, Trash2, CheckCircle2
+  MapPin, Award, Download, GraduationCap, Plus, Trash2, CheckCircle2, MoreHorizontal
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
@@ -60,6 +60,7 @@ export default function AwardeeProfilePage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -81,6 +82,8 @@ export default function AwardeeProfilePage() {
     };
     fetchAwardee();
   }, [id, user, router]);
+
+
 
   useGSAP(() => {
     if (!loading && registration) {
@@ -307,44 +310,65 @@ export default function AwardeeProfilePage() {
                 </Button>
               </>
             ) : (
-              <>
+              !showActions ? (
                 <Button
-                  variant="outline"
-                  onClick={enterEditMode}
-                  className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  onClick={() => setShowActions(true)}
+                  className="h-10 rounded-xl bg-slate-900 text-white font-normal uppercase text-[10px] tracking-widest hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
                 >
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  <MoreHorizontal className="mr-2 h-4 w-4" /> Actions
                 </Button>
-                <TransferRegistration 
-                  sourceId={id as string} 
-                  sourceType="awardee" 
-                  currentData={registration} 
-                />
-                <Button
-                  variant="outline"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
-                >
-                  {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
-                  ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'awardee')}
-                  className="h-10 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-violet-100"
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download ID
-                </Button>
-                <Button
-                  onClick={() => generateParticipationCertificate([registration as any], `Certificate_${registration.name.replace(/\s+/g, '_')}`, 'awardee')}
-                  className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
-                >
-                  <Download className="mr-2 h-4 w-4" /> Certificate
-                </Button>
-              </>
+              ) : (
+                <div className="flex items-center gap-3 animate-in slide-in-from-right-4 duration-300">
+                  <Button
+                    variant="outline"
+                    onClick={enterEditMode}
+                    className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  </Button>
+
+                  <TransferRegistration 
+                    sourceId={id as string} 
+                    sourceType="awardee" 
+                    currentData={registration} 
+                  />
+
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
+                  >
+                    {isDeleting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    ) : (
+                      <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'awardee')}
+                    className="h-10 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-violet-100"
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download ID
+                  </Button>
+
+                  <Button
+                    onClick={() => generateParticipationCertificate([registration as any], `Certificate_${registration.name.replace(/\s+/g, '_')}`, 'awardee')}
+                    className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Certificate
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowActions(false)}
+                    className="h-10 w-10 p-0 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                  >
+                    <X size={18} />
+                  </Button>
+                </div>
+              )
             )}
           </div>
         </div>

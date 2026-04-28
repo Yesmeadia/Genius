@@ -31,13 +31,15 @@ interface TransferRegistrationProps {
   sourceType: RegistrationType;
   currentData: any;
   onTransferStart?: () => void;
+  isDropdown?: boolean;
 }
 
 export function TransferRegistration({ 
   sourceId, 
   sourceType, 
   currentData,
-  onTransferStart 
+  onTransferStart,
+  isDropdown = false
 }: TransferRegistrationProps) {
   const [targetType, setTargetType] = useState<RegistrationType | "">("");
   const [isTransferring, setIsTransferring] = useState(false);
@@ -68,12 +70,18 @@ export function TransferRegistration({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
-        >
-          <ArrowRightLeft className="mr-2 h-4 w-4" /> Transfer Type
-        </Button>
+        {isDropdown ? (
+          <button className="w-full px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-slate-600 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-3 transition-colors">
+            <ArrowRightLeft size={14} className="text-slate-400" /> Transfer Type
+          </button>
+        ) : (
+          <Button
+            variant="outline"
+            className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+          >
+            <ArrowRightLeft className="mr-2 h-4 w-4" /> Transfer Type
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

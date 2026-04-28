@@ -9,9 +9,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { AlumniRegistration, Accompaniment } from "../../types";
 import { locations } from "@/data/locations";
 import {
-  ArrowLeft, Calendar, User, ShieldCheck, Phone,
-  Pencil, X, Check, Loader2, UploadCloud,
-  MapPin, GraduationCap, Download, Plus, Trash2, CheckCircle2
+  MapPin, GraduationCap, Download, Plus, Trash2, CheckCircle2, MoreHorizontal, X, Pencil, UploadCloud, Loader2, Check, User,
+  ArrowLeft, Calendar, Phone, ShieldCheck
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
@@ -57,6 +56,7 @@ export default function AlumniProfilePage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -78,6 +78,8 @@ export default function AlumniProfilePage() {
     };
     fetchAlumni();
   }, [id, user, router]);
+
+
 
   useGSAP(() => {
     if (!loading && registration) {
@@ -197,7 +199,7 @@ export default function AlumniProfilePage() {
 
   const handleDelete = async () => {
     if (!id || !registration) return;
-    
+
     const confirmDelete = window.confirm(`Are you sure you want to delete the record for ${registration.name}? This record will be moved to the Recycle Bin.`);
     if (!confirmDelete) return;
 
@@ -296,38 +298,58 @@ export default function AlumniProfilePage() {
                 </Button>
               </>
             ) : (
-              <>
+              !showActions ? (
                 <Button
-                  variant="outline"
-                  onClick={enterEditMode}
-                  className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  onClick={() => setShowActions(true)}
+                  className="h-10 rounded-xl bg-slate-900 text-white font-normal uppercase text-[10px] tracking-widest hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
                 >
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  <MoreHorizontal className="mr-2 h-4 w-4" /> Actions
                 </Button>
-                <TransferRegistration 
-                  sourceId={id as string} 
-                  sourceType="alumni" 
-                  currentData={registration} 
-                />
-                <Button
-                  variant="outline"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
-                >
-                  {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
-                  ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'alumni-achiever')}
-                  className="h-10 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-pink-100"
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download ID
-                </Button>
-              </>
+              ) : (
+                <div className="flex items-center gap-3 animate-in slide-in-from-right-4 duration-300">
+                  <Button
+                    variant="outline"
+                    onClick={enterEditMode}
+                    className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  </Button>
+
+                  <TransferRegistration
+                    sourceId={id as string}
+                    sourceType="alumni"
+                    currentData={registration}
+                  />
+
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
+                  >
+                    {isDeleting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    ) : (
+                      <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'alumni-achiever')}
+                    className="h-10 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-pink-100"
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download ID
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowActions(false)}
+                    className="h-10 w-10 p-0 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                  >
+                    <X size={18} />
+                  </Button>
+                </div>
+              )
             )}
           </div>
         </div>
@@ -535,7 +557,7 @@ export default function AlumniProfilePage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Category</Label>
                       <Select
@@ -682,7 +704,7 @@ export default function AlumniProfilePage() {
                               </Button>
                             )}
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                               <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Name</Label>
@@ -705,7 +727,7 @@ export default function AlumniProfilePage() {
                             <div className="space-y-2 md:col-span-2">
                               <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Gender</Label>
                               <div className="flex gap-4 py-2">
-                                {["Male","Female"].map(g => (
+                                {["Male", "Female"].map(g => (
                                   <label key={g} className="flex items-center gap-2 cursor-pointer">
                                     <input
                                       type="radio"

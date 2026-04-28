@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import { locations } from "@/data/locations";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers (Duplicated from certificateUtils for standalone nature) ─────────────
 
 const getSchoolName = (schoolId: string): string => {
   for (const zone of locations) {
@@ -29,7 +29,7 @@ const getBase64ImageFromUrl = async (url: string): Promise<string | null> => {
       reader.readAsDataURL(blob);
     });
   } catch (e) {
-    console.error("Certificate: image load error", e);
+    console.error("Volunteer Certificate: image load error", e);
     return null;
   }
 };
@@ -48,7 +48,7 @@ const getFontBase64 = async (path: string): Promise<string | null> => {
     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
     return btoa(binary);
   } catch (e) {
-    console.error("Certificate: font load error", e);
+    console.error("Volunteer Certificate: font load error", e);
     return null;
   }
 };
@@ -66,11 +66,9 @@ const triggerDownload = (doc: jsPDF, filename: string) => {
   setTimeout(() => URL.revokeObjectURL(url), 100);
 };
 
-// ─── Font names used inside jsPDF after registration ─────────────────────────
 const FONT_SEMIBOLD = "MontserratSemiBold";
 const FONT_MEDIUM = "MontserratMedium";
 
-/** Load and register Montserrat fonts into a jsPDF instance. */
 async function loadMontserratFonts(doc: jsPDF): Promise<{ semiBold: boolean; medium: boolean }> {
   const [semiBoldB64, mediumB64] = await Promise.all([
     getFontBase64("/fonts/Montserrat-SemiBold.ttf"),
@@ -85,9 +83,7 @@ async function loadMontserratFonts(doc: jsPDF): Promise<{ semiBold: boolean; med
       doc.addFileToVFS("Montserrat-SemiBold.ttf", semiBoldB64);
       doc.addFont("Montserrat-SemiBold.ttf", FONT_SEMIBOLD, "normal");
       semiBold = true;
-    } catch (e) {
-      console.warn("Montserrat SemiBold registration failed, falling back to helvetica bold", e);
-    }
+    } catch (e) { }
   }
 
   if (mediumB64) {
@@ -95,62 +91,26 @@ async function loadMontserratFonts(doc: jsPDF): Promise<{ semiBold: boolean; med
       doc.addFileToVFS("Montserrat-Medium.ttf", mediumB64);
       doc.addFont("Montserrat-Medium.ttf", FONT_MEDIUM, "normal");
       medium = true;
-    } catch (e) {
-      console.warn("Montserrat Medium registration failed, falling back to helvetica normal", e);
-    }
+    } catch (e) { }
   }
 
   return { semiBold, medium };
 }
 
-// ─── Text helpers ─────────────────────────────────────────────────────────────
-
-/** "ANFAS KALOOR" → "Anfas Kaloor" */
 function toTitleCase(str: string): string {
   return str.toLowerCase()
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .replace(/\bYes\b/g, "YES");
 }
 
-/**
- * Shrinks the active font size (step 0.5 pt) until the text fits within maxWidthMm.
- * Returns the final size that was set on the doc.
- */
-function fitFontSize(
-  doc: jsPDF,
-  text: string,
-  maxWidthMm: number,
-  maxSize: number,
-  minSize = 6
-): number {
-  let size = maxSize;
-  doc.setFontSize(size);
-  while (doc.getTextWidth(text) > maxWidthMm && size > minSize) {
-    size -= 0.5;
-    doc.setFontSize(size);
-  }
-  return size;
-}
+// ─── Drawing logic ────────────────────────────────────────────────────────────
 
-// ─── Core drawing function ────────────────────────────────────────────────────
-
-// Certificate is A4 Landscape: 297 × 210 mm
-// Coordinates from design spec (pt → mm, 1 pt = 1/2.8346 mm):
-//   left_bound  = 383.3418 pt → 135.24 mm  (text column left edge)
-//   top         = 296.9094 pt → 104.75 mm  (name baseline Y)
-//   width       = 269.2648 pt →  95.05 mm  (text column width — hard limit)
-
-interface FontLoaded {
-  semiBold: boolean;
-  medium: boolean;
-}
-
-async function drawCertificate(
+async function drawVolunteerCertificate(
   doc: jsPDF,
   name: string,
   schoolName: string,
   bgBase64: string | null,
-  fonts: FontLoaded
+  fonts: { semiBold: boolean; medium: boolean }
 ) {
   const W = 297;
   const H = 210;
@@ -163,104 +123,57 @@ async function drawCertificate(
     doc.rect(0, 0, W, H, "F");
   }
 
+  // Positioning matches Scout Team for now, but background is GjamV.jpeg
   const PT = 2.8346;
   const x = 382.8079 / PT;
-  const nameY = 288.7041 / PT;
-  const colWidth = 269.2648 / PT; // 95.05  mm
+  const nameY = 248.7041 / PT;
 
-  // ── Student name — Montserrat SemiBold, #a51d46 ───────────────────────────
+  // Name
   const nameText = toTitleCase(name);
-
   doc.setFont(fonts.semiBold ? FONT_SEMIBOLD : "helvetica", fonts.semiBold ? "normal" : "bold");
   const nameFontSize = nameText.length > 13 ? 20 : 23;
   doc.setFontSize(nameFontSize);
-  doc.setTextColor(165, 29, 70);   // #a51d46
-
+  doc.setTextColor(165, 29, 70); // #a51d46
   doc.text(nameText, x, nameY, { align: "left" });
 
-  // ── School name — Montserrat Medium, #283272 ──────────────────────────────
+  // School
   const schoolText = toTitleCase(schoolName);
   const nameLineH = (nameFontSize / PT) * 0.55;
   const schoolY = nameY + nameLineH + 1.5;
 
   doc.setFont(fonts.medium ? FONT_MEDIUM : "helvetica", "normal");
   doc.setFontSize(13);
-  doc.setTextColor(40, 50, 114);   // #283272
-
+  doc.setTextColor(40, 50, 114); // #283272
   doc.text(schoolText, x, schoolY, { align: "left" });
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Generates and downloads a Participation Certificate PDF (one page per record).
- *
- * @param records  Student or awardee registration objects
- * @param filename Output filename (no extension)
- * @param type     `'student'` → uses rec.studentName; `'awardee'` → uses rec.name
+ * Generates and downloads a Volunteer Participation Certificate PDF.
  */
-export async function generateParticipationCertificate(
+export async function generateVolunteerCertificate(
   records: any[],
-  filename: string,
-  type: "student" | "awardee" = "student"
+  filename: string
 ) {
-  if (records.length === 0) {
-    alert("No records to generate a certificate for.");
-    return;
-  }
+  if (records.length === 0) return alert("No records.");
 
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const [fonts, bgBase64] = await Promise.all([
     loadMontserratFonts(doc),
-    getBase64ImageFromUrl("/certificate/GjamD.jpeg"),
+    getBase64ImageFromUrl("/certificate/GjamV.jpeg"), // Requested Volunteer Background
   ]);
 
   for (let i = 0; i < records.length; i++) {
     if (i > 0) doc.addPage("a4", "landscape");
 
     const rec = records[i];
-    const name = type === "student" ? (rec.studentName || rec.name || "") : (rec.name || "");
+    const name = rec.volunteerName || rec.name || "";
     const rawSchool = rec.school || "";
     const schoolName = getSchoolName(rawSchool) || rawSchool;
 
-    await drawCertificate(doc, name, schoolName, bgBase64, fonts);
+    await drawVolunteerCertificate(doc, name, schoolName, bgBase64, fonts);
   }
 
   triggerDownload(doc, filename);
-}
-
-/**
- * Generates and downloads one certificate PDF per record (separate files).
- * Useful for bulk individual issuance workflows.
- */
-export async function generateBatchParticipationCertificates(
-  records: any[],
-  type: "student" | "awardee" = "student"
-) {
-  if (records.length === 0) {
-    alert("No records to generate certificates for.");
-    return;
-  }
-
-  // Load shared assets once
-  const doc0 = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  const [fonts, bgBase64] = await Promise.all([
-    loadMontserratFonts(doc0),
-    getBase64ImageFromUrl("/certificate/GjamD.jpeg"),
-  ]);
-
-  for (const rec of records) {
-    const name = type === "student" ? (rec.studentName || rec.name || "Unknown") : (rec.name || "Unknown");
-    const rawSchool = rec.school || "";
-    const schoolName = getSchoolName(rawSchool) || rawSchool;
-    const outFile = `Certificate_${name.replace(/\s+/g, "_")}`;
-
-    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    // Re-register fonts on each new doc instance
-    await loadMontserratFonts(doc);
-    await drawCertificate(doc, name, schoolName, bgBase64, fonts);
-    triggerDownload(doc, outFile);
-
-    await new Promise((r) => setTimeout(r, 400));
-  }
 }

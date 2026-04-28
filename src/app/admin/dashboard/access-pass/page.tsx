@@ -8,7 +8,9 @@ export default function AccessPassPage() {
     registrations, 
     guestRegistrations, 
     yesianRegistrations, 
-    localStaffRegistrations 
+    localStaffRegistrations,
+    scoutTeamRegistrations,
+    awardeeRegistrations
   } = useDashboardData();
 
   return (
@@ -18,6 +20,8 @@ export default function AccessPassPage() {
         guestRegistrations={guestRegistrations}
         yesianRegistrations={yesianRegistrations}
         localStaffRegistrations={localStaffRegistrations}
+        scoutTeamRegistrations={scoutTeamRegistrations}
+        awardeeRegistrations={awardeeRegistrations}
       />
     </div>
   );

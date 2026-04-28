@@ -150,6 +150,22 @@ export interface DriverStaffRegistration {
   attendedAt?: any;
 }
 
+export interface ScoutTeamRegistration {
+  id: string;
+  name: string;
+  gender: string;
+  whatsappNumber: string;
+  zone: string;
+  school: string;
+  className: string;
+  createdAt: any;
+  photoUrl?: string;
+  withParent?: boolean;
+  attendance?: boolean;
+  attendedAt?: any;
+  accompaniments?: Accompaniment[];
+}
+
 export interface DashboardStats {
   totalStudents: number;
   totalGuests: number;
@@ -160,6 +176,7 @@ export interface DashboardStats {
   totalAwardees: number;
   totalQiraath: number;
   totalDriverStaff: number;
+  totalScoutTeam: number;
   todayCount: number;
   totalParticipation: number;
   totalAccompanied: number;
@@ -185,10 +202,26 @@ export interface DashboardDataContextType {
   awardeeRegistrations: AwardeeRegistration[];
   qiraathRegistrations: QiraathRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
+  scoutTeamRegistrations: ScoutTeamRegistration[];
   stats: DashboardStats;
   loading: boolean;
+  lastSync: string;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  filterZone: string;
+  setFilterZone: (zone: string) => void;
+  filterSchool: string;
+  setFilterSchool: (school: string) => void;
+  filterClass: string;
+  setFilterClass: (cls: string) => void;
+  filterGender: string;
+  setFilterGender: (gender: string) => void;
+  filterAccompaniment: string;
+  setFilterAccompaniment: (acc: string) => void;
+  filterAwardType: string;
+  setFilterAwardType: (type: string) => void;
+  resetFilters: () => void;
+  filterOptions: { zones: string[]; schools: string[]; classes: string[] };
 }
 
 export interface DataTableProps {

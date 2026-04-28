@@ -2,28 +2,45 @@
 
 import { useState, useMemo, useRef } from "react";
 import { generateParticipationCertificate } from "@/lib/certificateUtils";
+import { generateScoutCertificate } from "@/lib/scoutCertificateUtils";
+import { generateVolunteerCertificate } from "@/lib/volunteerCertificateUtils";
 import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Award, School, Archive, ArrowRight, Loader2 } from "lucide-react";
-import { Registration, AwardeeRegistration } from "../types";
+import { Users, Award, School, Archive, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { Registration, AwardeeRegistration, ScoutTeamRegistration, VolunteerRegistration } from "../types";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+
+const toTitleCase = (str: string) => {
+    return str.toLowerCase()
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .replace(/\bYes\b/g, "YES");
+};
 
 interface CertificateCenterProps {
     registrations: Registration[];
     awardeeRegistrations: AwardeeRegistration[];
+    scoutTeamRegistrations: ScoutTeamRegistration[];
+    volunteerRegistrations: VolunteerRegistration[];
 }
 
-type CertType = 'student' | 'awardee';
+type CertType = 'student' | 'awardee' | 'scout-team' | 'volunteer';
 
 const CERT_META: Record<CertType, { label: string; plural: string; color: string; bg: string; icon: React.ReactNode }> = {
     student: { label: 'Delegate',  plural: 'Delegates',  color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <Users size={16} /> },
     awardee: { label: 'Awardee',   plural: 'Awardees',   color: 'text-violet-600',  bg: 'bg-violet-600',  icon: <Award size={16} /> },
+    'scout-team': { label: 'Scout',     plural: 'Scout Team', color: 'text-blue-600',    bg: 'bg-blue-600',    icon: <ShieldCheck size={16} /> },
+    volunteer: { label: 'Volunteer', plural: 'Volunteers', color: 'text-rose-600', bg: 'bg-rose-600', icon: <Users size={16} /> },
 };
 
-export default function CertificateCenter({ registrations, awardeeRegistrations }: CertificateCenterProps) {
+export default function CertificateCenter({ 
+    registrations, 
+    awardeeRegistrations,
+    scoutTeamRegistrations,
+    volunteerRegistrations
+}: CertificateCenterProps) {
     const [certType, setCertType] = useState<CertType>('student');
     const [selectedZone, setSelectedZone]   = useState("all");
     const [selectedSchool, setSelectedSchool] = useState("all");
@@ -33,13 +50,15 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
 
     const activeData = useMemo(() => {
         if (certType === 'student') return registrations;
-        return awardeeRegistrations;
-    }, [certType, registrations, awardeeRegistrations]);
+        if (certType === 'awardee') return awardeeRegistrations;
+        if (certType === 'scout-team') return scoutTeamRegistrations;
+        return volunteerRegistrations;
+    }, [certType, registrations, awardeeRegistrations, scoutTeamRegistrations, volunteerRegistrations]);
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];
         if (selectedZone   !== 'all') d = d.filter(r => r.zone === selectedZone);
-        if (certType === 'student') {
+        if (certType === 'student' || certType === 'volunteer' || certType === 'scout-team') {
             if (selectedSchool !== 'all') d = d.filter(r => r.school === selectedSchool);
             if (selectedClass  !== 'all') d = d.filter(r => r.className === selectedClass);
         }
@@ -70,19 +89,25 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
             if (selectedZone === 'all') return alert("Please select a zone.");
             data = (activeData as any[]).filter(r => r.zone === selectedZone);
             filename = `genius_certificates_${certType}_zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
-        } else if (scope === 'school' && certType === 'student') {
+        } else if (scope === 'school' && (certType === 'student' || certType === 'volunteer' || certType === 'scout-team')) {
             if (selectedSchool === 'all') return alert("Please select a school.");
-            data = registrations.filter(r => r.school === selectedSchool);
-            filename = `genius_certificates_school_${selectedSchool}`;
-        } else if (scope === 'class' && certType === 'student') {
+            data = (activeData as any[]).filter(r => r.school === selectedSchool);
+            filename = `genius_certificates_${certType}_school_${selectedSchool}`;
+        } else if (scope === 'class' && (certType === 'student' || certType === 'volunteer' || certType === 'scout-team')) {
             if (selectedClass === 'all') return alert("Please select a class.");
-            data = registrations.filter(r => r.className === selectedClass);
-            filename = `genius_certificates_class_${selectedClass}`;
+            data = (activeData as any[]).filter(r => r.className === selectedClass);
+            filename = `genius_certificates_${certType}_class_${selectedClass}`;
         }
 
         setIsGenerating(true);
         try {
-            await generateParticipationCertificate(data, filename, certType);
+            if (certType === 'scout-team') {
+                await generateScoutCertificate(data, filename);
+            } else if (certType === 'volunteer') {
+                await generateVolunteerCertificate(data, filename);
+            } else {
+                await generateParticipationCertificate(data, filename, certType);
+            }
         } finally {
             setIsGenerating(false);
         }
@@ -175,8 +200,8 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
                             </Button>
                         </Card>
 
-                        {/* School filter — students only */}
-                        {certType === 'student' && (
+                        {/* School filter — students, volunteers, scouts */}
+                        {(certType === 'student' || certType === 'volunteer' || certType === 'scout-team') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -193,7 +218,7 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl shadow-xl">
                                         <SelectItem value="all">All Schools</SelectItem>
-                                        {Array.from(new Set(registrations.map(r => r.school))).sort().map(s => (
+                                        {Array.from(new Set((activeData as any[]).map(r => r.school))).sort().map(s => (
                                             <SelectItem key={s} value={s}>
                                                 <div className="whitespace-normal break-words text-xs leading-snug py-0.5">{getSchoolName(s)}</div>
                                             </SelectItem>
@@ -206,8 +231,8 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
                             </Card>
                         )}
 
-                        {/* Class filter — students only */}
-                        {certType === 'student' && (
+                        {/* Class filter — students, volunteers, scouts */}
+                        {(certType === 'student' || certType === 'volunteer' || certType === 'scout-team') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
@@ -225,7 +250,7 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
                                     <SelectContent className="rounded-2xl shadow-xl">
                                         <SelectItem value="all">All Grades</SelectItem>
                                         {["3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"].filter(c =>
-                                            registrations.some(r => r.className === c)
+                                            (activeData as any[]).some(r => r.className === c)
                                         ).map(c => (
                                             <SelectItem key={c} value={c}>Grade {c}</SelectItem>
                                         ))}
@@ -253,14 +278,26 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
 
                         {/* Glowing halo behind the pass card */}
                         <div className="relative w-full overflow-hidden rounded-md border border-slate-800 bg-white">
-                            <img src="/certificate/Gjamp.jpeg" alt="Certificate Background" className="w-full h-auto object-cover opacity-90" />
+                            <img 
+                                src={
+                                    certType === 'scout-team' ? "/certificate/GjamS.jpeg" : 
+                                    certType === 'volunteer' ? "/certificate/GjamV.jpeg" : 
+                                    "/certificate/Gjamp.jpeg"
+                                } 
+                                alt="Certificate Background" 
+                                className="w-full h-auto object-cover opacity-90" 
+                            />
                             {previewReg && (
-                                <div className="absolute inset-0 z-10 flex flex-col justify-center" style={{ left: '45.5%', width: '31%', top: '5%' }}>
+                                <div className="absolute inset-0 z-10 flex flex-col justify-center" style={{ left: '45.5%', width: '31%', top: (certType === 'scout-team' || certType === 'volunteer') ? '1.5%' : '5%' }}>
                                     <div className="text-[#a51d46] font-bold" style={{ fontSize: '1.4vw', lineHeight: 1.1 }}>
-                                        {(certType === 'student' ? previewReg.studentName : (previewReg as any).name)?.toUpperCase() || "NAME OF PARTICIPANT"}
+                                        {toTitleCase(
+                                            (certType === 'student' ? previewReg.studentName : 
+                                             certType === 'volunteer' ? (previewReg as any).volunteerName :
+                                             (previewReg as any).name) || "NAME OF PARTICIPANT"
+                                        )}
                                     </div>
                                     <div className="text-[#283272] mt-1" style={{ fontSize: '0.7vw', lineHeight: 1.2 }}>
-                                        {getSchoolName(previewReg.school || "School ID").toUpperCase()}
+                                        {toTitleCase(getSchoolName(previewReg.school || "School ID"))}
                                     </div>
                                 </div>
                             )}
@@ -269,7 +306,9 @@ export default function CertificateCenter({ registrations, awardeeRegistrations 
                         <div className="text-center space-y-1">
                             <p className="text-slate-500 text-[10px] font-semibold">
                                 Showing {previewReg
-                                    ? (certType === 'student' ? previewReg.studentName : (previewReg as any).name)
+                                    ? (certType === 'student' ? previewReg.studentName : 
+                                       certType === 'volunteer' ? (previewReg as any).volunteerName :
+                                       (previewReg as any).name)
                                     : 'no data yet'}
                             </p>
                             <p className="text-slate-600 text-[9px] uppercase tracking-widest">

@@ -6,16 +6,16 @@ import { useParams, useRouter } from "next/navigation";
 import { db, storage } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { QiraathRegistration, Accompaniment } from "../../types";
+import { ScoutTeamRegistration } from "../../types";
 import { locations } from "@/data/locations";
 import {
   ArrowLeft, Calendar, User, ShieldCheck, Phone,
   Pencil, X, Check, Loader2, UploadCloud,
-  MapPin, Award, Download, GraduationCap, Plus, Trash2, CheckCircle2, MoreHorizontal
+  MapPin, GraduationCap, Download, Trash2, CheckCircle2, Award, MoreHorizontal
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
+import { generateScoutCertificate } from "@/lib/scoutCertificateUtils";
 import { moveToRecycleBin } from "@/lib/deleteUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,33 +28,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import JsBarcode from "jsbarcode";
+import { TransferRegistration } from "../../components/TransferRegistration";
 
-interface QiraathEditForm {
+interface ScoutTeamEditForm {
   name: string;
   gender: string;
   whatsappNumber: string;
   zone: string;
   school: string;
-  category: string;
   className: string;
-  rank: string;
-  withParent: boolean;
-  accompaniments: Accompaniment[];
   attendance: boolean;
 }
 
-export default function QiraathProfilePage() {
+export default function ScoutTeamProfilePage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth(true);
-  const [registration, setRegistration] = useState<QiraathRegistration | null>(null);
+  const [registration, setRegistration] = useState<ScoutTeamRegistration | null>(null);
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editForm, setEditForm] = useState<QiraathEditForm | null>(null);
+  const [editForm, setEditForm] = useState<ScoutTeamEditForm | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -63,22 +60,22 @@ export default function QiraathProfilePage() {
 
   useEffect(() => {
     if (!id || !user) return;
-    const fetchQiraath = async () => {
+    const fetchScoutMember = async () => {
       try {
-        const docRef = doc(db, "qiraath_registrations", id as string);
+        const docRef = doc(db, "scout_team_registrations", id as string);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setRegistration({ id: docSnap.id, ...docSnap.data() } as QiraathRegistration);
+          setRegistration({ id: docSnap.id, ...docSnap.data() } as ScoutTeamRegistration);
         } else {
-          router.push("/admin/dashboard/qiraath");
+          router.push("/admin/dashboard/scout-team");
         }
       } catch (error) {
-        console.error("Error fetching qiraath:", error);
+        console.error("Error fetching scout member:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchQiraath();
+    fetchScoutMember();
   }, [id, user, router]);
 
 
@@ -111,11 +108,7 @@ export default function QiraathProfilePage() {
       whatsappNumber: registration.whatsappNumber || "",
       zone: registration.zone || "",
       school: registration.school || "",
-      category: registration.category || "",
       className: registration.className || "",
-      rank: registration.rank || "",
-      withParent: registration.withParent || false,
-      accompaniments: registration.accompaniments || [],
       attendance: registration.attendance || false,
     });
     setPhotoFile(null);
@@ -137,29 +130,13 @@ export default function QiraathProfilePage() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const updateField = (field: keyof QiraathEditForm, value: any) => {
-    setEditForm(prev => (prev ? { ...prev, [field]: value } : prev));
-  };
-
-  const addAccompaniment = () => {
-    if (!editForm) return;
-    const current = editForm.accompaniments || [];
-    if (current.length >= 3) return;
-    updateField("accompaniments", [...current, { name: "", relation: "", gender: "Male" }]);
-  };
-
-  const removeAccompaniment = (index: number) => {
-    if (!editForm) return;
-    const current = [...editForm.accompaniments];
-    current.splice(index, 1);
-    updateField("accompaniments", current);
-  };
-
-  const updateAccompaniment = (index: number, field: keyof Accompaniment, value: string) => {
-    if (!editForm) return;
-    const current = [...editForm.accompaniments];
-    current[index] = { ...current[index], [field]: value };
-    updateField("accompaniments", current);
+  const updateField = (field: keyof ScoutTeamEditForm, value: any) => {
+    setEditForm(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, [field]: value };
+      if (field === "zone") updated.school = "";
+      return updated;
+    });
   };
 
   const handleSave = async () => {
@@ -168,7 +145,7 @@ export default function QiraathProfilePage() {
     try {
       let photoUrl = registration?.photoUrl || "";
       if (photoFile) {
-        const storageRef = ref(storage, `photos/qiraath_${Date.now()}_${photoFile.name}`);
+        const storageRef = ref(storage, `photos/scout_${Date.now()}_${photoFile.name}`);
         const snapshot = await uploadBytes(storageRef, photoFile);
         photoUrl = await getDownloadURL(snapshot.ref);
       }
@@ -178,16 +155,12 @@ export default function QiraathProfilePage() {
         whatsappNumber: editForm.whatsappNumber,
         zone: editForm.zone,
         school: editForm.school,
-        category: editForm.category,
         className: editForm.className,
-        rank: editForm.rank,
-        withParent: editForm.withParent,
-        accompaniments: editForm.accompaniments,
         photoUrl,
         attendance: editForm.attendance,
-        attendedAt: editForm.attendance && !registration?.attendance ? new Date() : (editForm.attendance ? registration?.attendedAt : null)
+        attendedAt: editForm.attendance && !registration?.attendance ? new Date() : (editForm.attendance ? registration?.attendedAt : null),
       };
-      await updateDoc(doc(db, "qiraath_registrations", id as string), updateData);
+      await updateDoc(doc(db, "scout_team_registrations", id as string), updateData);
       setRegistration(prev => (prev ? { ...prev, ...updateData } : prev));
       setEditMode(false);
       setEditForm(null);
@@ -203,7 +176,7 @@ export default function QiraathProfilePage() {
 
   const handleDelete = async () => {
     if (!id || !registration) return;
-
+    
     const confirmDelete = window.confirm(`Are you sure you want to delete the record for ${registration.name}? This record will be moved to the Recycle Bin.`);
     if (!confirmDelete) return;
 
@@ -211,11 +184,11 @@ export default function QiraathProfilePage() {
     try {
       await moveToRecycleBin(
         id as string,
-        "qiraath_registrations",
+        "scout_team_registrations",
         registration,
-        "Qiraath"
+        "Scout Team"
       );
-      router.push("/admin/dashboard/qiraath");
+      router.push("/admin/dashboard/scout-team");
     } catch (error) {
       console.error("Error deleting record:", error);
       alert("Failed to delete record. Please try again.");
@@ -256,15 +229,6 @@ export default function QiraathProfilePage() {
 
   const currentPhoto = photoPreview || registration.photoUrl;
 
-  const classesForCategory = (cat: string) => {
-    switch (cat) {
-      case "Rainbow": return ["3rd", "4th", "5th"];
-      case "Planets": return ["6th", "7th", "8th"];
-      case "Galaxy": return ["9th", "10th", "11th", "12th"];
-      default: return [];
-    }
-  };
-
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div ref={containerRef} className="max-w-6xl mx-auto space-y-8">
@@ -292,7 +256,7 @@ export default function QiraathProfilePage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
+                  className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-blue-100"
                 >
                   {saving ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
@@ -319,6 +283,12 @@ export default function QiraathProfilePage() {
                     <Pencil className="mr-2 h-4 w-4" /> Edit Record
                   </Button>
 
+                  <TransferRegistration 
+                    sourceId={id as string} 
+                    sourceType="scout-team" 
+                    currentData={registration} 
+                  />
+
                   <Button
                     variant="outline"
                     onClick={handleDelete}
@@ -333,10 +303,17 @@ export default function QiraathProfilePage() {
                   </Button>
 
                   <Button
-                    onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'qiraath')}
-                    className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
+                    onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'scout-team')}
+                    className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-blue-100"
                   >
                     <Download className="mr-2 h-4 w-4" /> Download ID
+                  </Button>
+
+                  <Button
+                    onClick={() => generateScoutCertificate([registration], `Certificate_${registration.name.replace(/\s+/g, '_')}`)}
+                    className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
+                  >
+                    <Award className="mr-2 h-4 w-4" /> Certificate
                   </Button>
 
                   <Button
@@ -351,15 +328,6 @@ export default function QiraathProfilePage() {
             )}
           </div>
         </div>
-
-        {editMode && (
-          <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-5 py-3">
-            <Pencil size={14} className="text-emerald-500 shrink-0" />
-            <p className="text-[11px] font-normal text-emerald-700 uppercase tracking-widest">
-              Edit Mode Active — Update participant details below
-            </p>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Profile Photo */}
@@ -408,43 +376,28 @@ export default function QiraathProfilePage() {
                     <div className="space-y-1.5">
                       <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Gender</Label>
                       <div className="flex gap-4 py-1">
-                        {["MALE", "FEMALE"].map(g => (
+                        {["Male", "Female"].map(g => (
                           <label key={g} className="flex items-center gap-2 cursor-pointer">
                             <input
                               type="radio"
                               value={g}
                               checked={editForm?.gender === g}
                               onChange={() => updateField("gender", g)}
-                              className="w-4 h-4 text-emerald-600"
+                              className="w-4 h-4 text-blue-600"
                             />
                             <span className="text-sm font-medium text-slate-700 capitalize">{g.toLowerCase()}</span>
                           </label>
                         ))}
                       </div>
                     </div>
-                    <div className="pt-4 border-t border-slate-50">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">Attendance</Label>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-bold uppercase ${editForm?.attendance ? 'text-emerald-500' : 'text-slate-400'}`}>
-                            {editForm?.attendance ? 'Present' : 'Absent'}
-                          </span>
-                          <Switch
-                            checked={editForm?.attendance || false}
-                            onCheckedChange={v => updateField("attendance", v)}
-                            className="data-[state=checked]:bg-emerald-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 ) : (
                   <>
-                    <h2 className="text-2xl font-normal text-slate-900 leading-tight mb-2 tracking-tight">
+                    <h2 className="text-2xl font-normal text-slate-900 leading-tight mb-2 tracking-tight uppercase">
                       {registration.name}
                     </h2>
-                    <p className="text-sm font-normal text-emerald-600 uppercase tracking-[0.2em] mb-6">
-                      QIRA'A PARTICIPANT
+                    <p className="text-sm font-normal text-blue-600 uppercase tracking-[0.2em] mb-6">
+                      SCOUT TEAM
                     </p>
                     <div className="flex flex-col items-center gap-1.5 pt-4 border-t border-slate-50">
                       <canvas
@@ -506,19 +459,36 @@ export default function QiraathProfilePage() {
             </Card>
           </div>
 
-          {/* Details */}
+          {/* Personal Details */}
           <div className="lg:col-span-9 space-y-8">
             <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
               <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
                 <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
-                  <Award className="text-emerald-600" size={22} />
-                  Contest & Contact Details
+                  <GraduationCap className="text-blue-600" size={22} />
+                  Academic & Contact Details
                 </CardTitle>
-                <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Participant Information</CardDescription>
+                <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Member Information</CardDescription>
               </CardHeader>
               <CardContent className="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
                 {editMode ? (
                   <>
+                    <div className="space-y-2">
+                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Class</Label>
+                      <Select
+                        value={editForm?.className || ""}
+                        onValueChange={v => updateField("className", v)}
+                      >
+                        <SelectTrigger className="border-slate-100 bg-slate-50">
+                          <SelectValue placeholder="Select Class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["6th", "7th", "8th", "9th", "10th", "11th", "12th", "UG", "PG"].map(cls => (
+                            <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="space-y-2">
                       <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Zone Assignment</Label>
                       <Select
@@ -533,7 +503,7 @@ export default function QiraathProfilePage() {
                         </SelectTrigger>
                         <SelectContent>
                           {locations.map(z => (
-                            <SelectItem key={z.id} value={z.name}>{z.name}</SelectItem>
+                            <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -549,64 +519,9 @@ export default function QiraathProfilePage() {
                           <SelectValue placeholder={editForm?.zone ? "Select School" : "Select Zone First"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {locations.find(z => z.name === editForm?.zone)?.schools.map(s => (
-                            <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                          {locations.find(z => z.id === editForm?.zone)?.schools.map(s => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Category</Label>
-                      <Select
-                        value={editForm?.category || ""}
-                        onValueChange={v => {
-                          updateField("category", v);
-                          updateField("className", "");
-                        }}
-                      >
-                        <SelectTrigger className="border-slate-100 bg-slate-50">
-                          <SelectValue placeholder="Select Category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Rainbow">Rainbow</SelectItem>
-                          <SelectItem value="Planets">Planets</SelectItem>
-                          <SelectItem value="Galaxy">Galaxy</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Class</Label>
-                      <Select
-                        value={editForm?.className || ""}
-                        onValueChange={v => updateField("className", v)}
-                        disabled={!editForm?.category}
-                      >
-                        <SelectTrigger className="border-slate-100 bg-slate-50">
-                          <SelectValue placeholder={editForm?.category ? "Select Class" : "Select Category First"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {classesForCategory(editForm?.category || "").map(cls => (
-                            <SelectItem key={cls} value={cls}>{cls}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Rank</Label>
-                      <Select
-                        value={editForm?.rank || ""}
-                        onValueChange={v => updateField("rank", v)}
-                      >
-                        <SelectTrigger className="border-slate-100 bg-slate-50">
-                          <SelectValue placeholder="Select Rank" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="FIRST">FIRST</SelectItem>
-                          <SelectItem value="SECOND">SECOND</SelectItem>
-                          <SelectItem value="THIRD">THIRD</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -626,7 +541,7 @@ export default function QiraathProfilePage() {
                   <>
                     <div className="space-y-8">
                       <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                        <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
                           <MapPin size={24} />
                         </div>
                         <div>
@@ -644,28 +559,14 @@ export default function QiraathProfilePage() {
                           <GraduationCap size={24} />
                         </div>
                         <div>
-                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Class & Category</div>
+                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Class</div>
                           <div className="text-base font-normal text-slate-800 leading-snug uppercase font-bold tracking-widest">
                             {registration.className || "N/A"}
-                            <div className="text-[11px] text-emerald-600 font-medium mt-1 uppercase tracking-tight">
-                              {registration.category || "N/A"}
-                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="space-y-8">
-                      <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                          <Award size={24} />
-                        </div>
-                        <div>
-                          <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Rank</div>
-                          <div className="text-base font-normal text-slate-800 leading-snug uppercase font-bold tracking-widest">
-                            {registration.rank || "N/A"}
-                          </div>
-                        </div>
-                      </div>
                       <div className="flex items-start gap-4">
                         <div className="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
                           <Phone size={24} />
@@ -677,152 +578,6 @@ export default function QiraathProfilePage() {
                       </div>
                     </div>
                   </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Accompaniment Section */}
-            <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
-              <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
-                      <ShieldCheck className="text-emerald-600" size={22} />
-                      Accompaniment
-                    </CardTitle>
-                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Details for event access card generation</CardDescription>
-                  </div>
-                  {editMode && (
-                    <div className="flex items-center gap-3">
-                      <Label className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">
-                        {editForm?.withParent ? "Accompanied" : "Individual"}
-                      </Label>
-                      <Switch
-                        checked={editForm?.withParent || false}
-                        onCheckedChange={v => {
-                          updateField("withParent", v);
-                          if (v && (!editForm?.accompaniments || editForm.accompaniments.length === 0)) {
-                            updateField("accompaniments", [{ name: "", relation: "", gender: "Male" }]);
-                          }
-                        }}
-                        className="data-[state=checked]:bg-emerald-600"
-                      />
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="p-8">
-                {editMode ? (
-                  editForm?.withParent ? (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                      {editForm.accompaniments.map((acc, index) => (
-                        <div key={index} className="relative p-5 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600/70">Person {index + 1}</span>
-                            {editForm.accompaniments.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeAccompaniment(index)}
-                                className="h-7 w-7 p-0 text-slate-300 hover:text-destructive rounded-full"
-                              >
-                                <Trash2 size={14} />
-                              </Button>
-                            )}
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Name</Label>
-                              <Input
-                                value={acc.name}
-                                onChange={e => updateAccompaniment(index, "name", e.target.value.toUpperCase())}
-                                className="uppercase border-slate-100 bg-white"
-                                placeholder="Full Name"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Relation</Label>
-                              <Input
-                                value={acc.relation}
-                                onChange={e => updateAccompaniment(index, "relation", e.target.value.toUpperCase())}
-                                className="uppercase border-slate-100 bg-white"
-                                placeholder="e.g. Father, Mother"
-                              />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                              <Label className="text-[11px] font-normal text-slate-400 uppercase tracking-[0.2em]">Gender</Label>
-                              <div className="flex gap-4 py-2">
-                                {["Male", "Female"].map(g => (
-                                  <label key={g} className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                      type="radio"
-                                      value={g}
-                                      checked={acc.gender === g}
-                                      onChange={() => updateAccompaniment(index, "gender", g)}
-                                      className="w-4 h-4 text-emerald-600"
-                                    />
-                                    <span className="text-sm font-medium text-slate-700">{g}</span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
-                      {editForm.accompaniments.length < 3 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={addAccompaniment}
-                          className="w-full h-11 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/30 text-slate-500 hover:text-emerald-600 transition-all rounded-xl flex items-center justify-center gap-2"
-                        >
-                          <Plus size={16} />
-                          <span className="text-xs font-bold uppercase tracking-widest">Add Another Person</span>
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="py-6 flex flex-col items-center justify-center text-center">
-                      <div className="h-14 w-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-3">
-                        <User size={28} />
-                      </div>
-                      <p className="text-slate-400 text-sm">Toggle the switch above to add accompaniment details</p>
-                    </div>
-                  )
-                ) : (
-                  registration.withParent && registration.accompaniments && registration.accompaniments.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {registration.accompaniments.map((acc, idx) => (
-                        <div key={idx} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-3 relative overflow-hidden group hover:bg-white transition-all duration-300">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
-                              <User size={20} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mb-0.5">Guest {idx + 1}</div>
-                              <div className="text-sm font-normal text-slate-800 uppercase line-clamp-1">{acc.name}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                            <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">{acc.relation}</div>
-                            <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-wider bg-white border-slate-100 text-slate-500">
-                              {acc.gender}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="py-10 flex flex-col items-center justify-center text-center">
-                      <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 mb-4">
-                        <User size={32} strokeWidth={1.5} />
-                      </div>
-                      <h4 className="text-sm font-normal text-slate-900 uppercase tracking-widest mb-1">No Accompaniment</h4>
-                      <p className="text-xs text-slate-400">This participant is attending the event individually.</p>
-                    </div>
-                  )
                 )}
               </CardContent>
             </Card>

@@ -10,18 +10,20 @@ export type RegistrationType =
   | "volunteer" 
   | "awardee" 
   | "qiraath"
-  | "driver-staff";
+  | "driver-staff"
+  | "scout-team";
 
 export const REGISTRATION_TYPES: { id: RegistrationType; label: string; collection: string; path: string }[] = [
   { id: "student", label: "Student", collection: "registrations", path: "/admin/dashboard/student" },
-  { id: "guest", label: "Guest", collection: "guest_registrations", path: "/admin/dashboard/guest-registry" },
-  { id: "yesian", label: "Yesian", collection: "yesian_registrations", path: "/admin/dashboard/yesian-network" },
+  { id: "guest", label: "Guest", collection: "guest_registrations", path: "/admin/dashboard/guest" },
+  { id: "yesian", label: "Yesian", collection: "yesian_registrations", path: "/admin/dashboard/yesian" },
   { id: "local-staff", label: "Local Staff", collection: "local_staff_registrations", path: "/admin/dashboard/local-staff" },
   { id: "alumni", label: "Alumni", collection: "alumni_registrations", path: "/admin/dashboard/alumni-achievers" },
   { id: "volunteer", label: "Volunteer", collection: "volunteer_registrations", path: "/admin/dashboard/volunteers" },
   { id: "awardee", label: "Awardee", collection: "awardee_registrations", path: "/admin/dashboard/awardee" },
   { id: "qiraath", label: "Qiraath", collection: "qiraath_registrations", path: "/admin/dashboard/qiraath" },
   { id: "driver-staff", label: "Driver Staff", collection: "driver_staff_registrations", path: "/admin/dashboard/driver-staff" },
+  { id: "scout-team", label: "Scout Team", collection: "scout_team_registrations", path: "/admin/dashboard/scout-team" },
 ];
 
 export async function transferRegistration(

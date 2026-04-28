@@ -6,7 +6,9 @@ import CertificateCenter from "../components/CertificateCenter";
 export default function CertificatesPage() {
   const { 
     registrations, 
-    awardeeRegistrations 
+    awardeeRegistrations,
+    scoutTeamRegistrations,
+    volunteerRegistrations
   } = useDashboardData();
 
   return (
@@ -14,6 +16,8 @@ export default function CertificatesPage() {
       <CertificateCenter
         registrations={registrations}
         awardeeRegistrations={awardeeRegistrations}
+        scoutTeamRegistrations={scoutTeamRegistrations}
+        volunteerRegistrations={volunteerRegistrations}
       />
     </div>
   );

@@ -807,7 +807,7 @@ function toTitleCase(str: string): string {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff',
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'scout-team',
   fontsLoaded: { kalash: boolean; montserratSemiBold: boolean; montserratMedium: boolean }
 ) {
   const W = doc.internal.pageSize.width;   // 85mm
@@ -815,8 +815,11 @@ async function drawBadgeContent(
 
   // ── 1. FULL-CARD BACKGROUND IMAGE ─────────────────────────────
   const bgPath = type === 'student' ? '/pass/Delegate.jpeg'
+    : type === 'local-staff' ? '/pass/Mentor.jpeg'
+    : type === 'awardee' ? '/pass/Awardee.jpeg'
+    : type === 'yesian' ? '/pass/Crew.jpeg'
     : type === 'guest' ? '/pass/guest.png'
-      : '/pass/Crew.jpeg';
+    : '/pass/Crew.jpeg';
   const bg = await getBase64ImageFromUrl(bgPath);
   if (bg) {
     const bgFormat = bgPath.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
@@ -834,7 +837,7 @@ async function drawBadgeContent(
   let photoX = 20;
   let photoY = 12;
 
-  if (type === 'student') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
     photoW = 29.157;
     photoH = 36.425;
     photoX = 46.289;
@@ -845,11 +848,11 @@ async function drawBadgeContent(
     photoX = stripW + 1 + (photoAreaW - photoW) / 2;
   }
 
-  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff') ? data.photoUrl : null;
+  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff' || type === 'scout-team') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) {
-      if (type === 'student') {
+      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
         const r = 7.69;
         const d = doc as any;
         // Robust PDF clipping using internal operators
@@ -874,7 +877,7 @@ async function drawBadgeContent(
       : fullName.length <= 20 ? 8
         : 7;
 
-  if (type === 'student') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
     doc.setFont(fontsLoaded.montserratSemiBold ? 'MontserratSemiBold' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratSemiBold) doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
@@ -899,6 +902,7 @@ async function drawBadgeContent(
   else if (type === 'awardee') tc = [124, 58, 237]; // violet
   else if (type === 'qiraath') tc = [16, 185, 129]; // emerald
   else if (type === 'driver-staff') tc = [79, 70, 229]; // indigo
+  else if (type === 'scout-team') tc = [37, 99, 235]; // blue
 
   let infoText = '';
   if (type === 'student') infoText = ` ${getSchoolName(data.school)}`;
@@ -928,19 +932,36 @@ async function drawBadgeContent(
       ? `DRIVER | ${data.vehicleType || ''}\n${data.vehicleNumber || ''}\nZONE: ${data.zone || ''}`
       : `SUPPORT STAFF\nZONE: ${data.zone || ''}`;
   }
+  else if (type === 'scout-team') {
+    const schoolName = getSchoolName(data.school);
+    infoText = `SCOUT TEAM\n${schoolName}`;
+  }
   else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
 
-  if (type === 'student') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
     doc.setFontSize(7);
     doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratMedium) doc.setFont('helvetica', 'bold');
     doc.setTextColor(226, 232, 240);
-    let schoolName = toTitleCase(getSchoolName(data.school));
-    if (schoolName.includes('-')) {
-      const parts = schoolName.split('-');
-      schoolName = parts.map(p => p.trim()).join('\n');
+    
+    let displayInfo = "";
+    if (type === 'student') {
+      displayInfo = toTitleCase(getSchoolName(data.school));
+    } else if (type === 'local-staff') {
+      const schoolName = toTitleCase(getSchoolName(data.school));
+      displayInfo = `${(data.role || '').toUpperCase()} | ${schoolName}`;
+    } else if (type === 'yesian') {
+      displayInfo = `${(data.designation || '').toUpperCase()} | ${(data.zone || '').toUpperCase()}`;
+    } else {
+      // Awardee (removed rank and class per user request)
+      displayInfo = toTitleCase(getSchoolName(data.school));
     }
-    doc.text(schoolName, 11.753, 48.354);
+
+    if (displayInfo.includes('-')) {
+      const parts = displayInfo.split('-');
+      displayInfo = parts.map(p => p.trim()).join('\n');
+    }
+    doc.text(displayInfo, 11.753, 48.354);
   } else {
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
@@ -951,7 +972,7 @@ async function drawBadgeContent(
 
   // ── 5. BARCODE + SHORT REF ID (centered) ─────────────────────
   const barcode = getBarcodeBase64(data.id);
-  if (type === 'student') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
     const bcW = 26;
     const bcH = 6;
     const bcX = W - bcW - 8.228; // right: 0.8228 cm
@@ -979,7 +1000,7 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' = 'student'
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'scout-team' = 'student'
 ) {
   if (data.length === 0) return alert("No records found.");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [85, 120] });
