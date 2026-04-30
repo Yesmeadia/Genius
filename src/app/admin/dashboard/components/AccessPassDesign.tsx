@@ -4,7 +4,7 @@ import { locations } from "@/data/locations";
 import JsBarcode from "jsbarcode";
 import { useRef, useEffect } from "react";
 
-export type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'scout-team' | 'awardee';
+export type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian';
 
 export interface AccessPassTheme {
   primary: string;
@@ -28,6 +28,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
       : passType === 'local-staff' ? '/pass/Mentor.jpeg'
       : passType === 'awardee' ? '/pass/Awardee.jpeg'
       : passType === 'yesian' ? '/pass/Crew.jpeg'
+      : passType === 'guardian' ? '/pass/Guardian.jpeg'
       : passType === 'guest' ? '/pass/guest.png'
       : '/pass/Crew.jpeg'; // officials.png used for yesian & local-staff
 
@@ -49,14 +50,14 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
 
   // Name
   const rawFullName = registration
-    ? (passType === 'student' ? registration.studentName : registration.name) || ''
+    ? (passType === 'student' ? registration.studentName : passType === 'guardian' ? registration.guardianName : registration.name) || ''
     : 'FULL NAME';
-  const fullName = (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') ? toTitleCase(rawFullName) : rawFullName;
+  const fullName = (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') ? toTitleCase(rawFullName) : rawFullName;
 
   // Detail line
   let infoLine = '';
   if (registration) {
-    if (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') {
+    if (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') {
       let combined = '';
       if (passType === 'student' || passType === 'awardee') {
         combined = toTitleCase(getSchoolName(registration.school));
@@ -65,9 +66,11 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         combined = `${(registration.role || '').toUpperCase()} | ${sName}`;
       } else if (passType === 'yesian') {
         combined = `${(registration.designation || '').toUpperCase()} | ${(registration.zone || '').toUpperCase()}`;
+      } else if (passType === 'guardian') {
+        combined = `STUDENT: ${registration.studentName || ''}`;
       }
       
-      if (combined.includes('-')) {
+      if (combined.includes('-') && passType !== 'guardian') {
         infoLine = combined.split('-').map(p => p.trim()).join('\n');
       } else {
         infoLine = combined;
@@ -80,7 +83,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
   }
 
   // Photo
-  const photoUrl = (passType === 'student' || passType === 'yesian' || passType === 'local-staff' || passType === 'awardee' || passType === 'scout-team') ? registration?.photoUrl : null;
+  const photoUrl = (passType === 'student' || passType === 'yesian' || passType === 'local-staff' || passType === 'awardee' || passType === 'guardian') ? registration?.photoUrl : null;
 
   // Barcode
   useEffect(() => {
@@ -119,7 +122,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         {/* ── PHOTO ── */}
         <div
           className="absolute overflow-hidden object-cover"
-          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') ? {
+          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') ? {
             top: '42.64%', // 51.168mm / 120mm
             left: '54.45%', // 46.289mm / 85mm
             width: '34.3%', // 29.157mm / 85mm
@@ -146,7 +149,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         {/* ── INFO SECTION ── */}
         <div
           className="absolute flex flex-col justify-start gap-0"
-          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') ? {
+          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') ? {
             top: '36.96%', // 44.354mm / 120mm
             left: '13.83%', // 11.753mm / 85mm
             right: '48%',  // leave room for photo
@@ -159,8 +162,8 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         >
           {/* NAME */}
           <p
-            className={`leading-tight tracking-tight truncate ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') ? 'text-white' : 'font-black uppercase text-slate-900'}`}
-            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') ? {
+            className={`leading-tight tracking-tight truncate ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') ? 'text-white' : 'font-black uppercase text-slate-900'}`}
+            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') ? {
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 600, // SemiBold
               fontSize: fullName.length > 13 ? 'clamp(10px, 3.8vw, 15px)' : 'clamp(10px, 4.5vw, 20px)'
@@ -171,21 +174,21 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
 
           {/*SCHOOL */}
           <p
-            className={`leading-tight truncate whitespace-pre-line ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') ? 'text-slate-200' : 'font-bold uppercase tracking-wide mt-0.5'}`}
-            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') ? {
+            className={`leading-tight truncate whitespace-pre-line ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') ? 'text-slate-200' : 'font-bold uppercase tracking-wide mt-0.5'}`}
+            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') ? {
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 500, // Medium
               fontSize: 'clamp(6px, 2.5vw, 12px)'
             } : {
               fontSize: 'clamp(6px, 2vw, 10px)',
-              color: passType === 'guest' ? '#059669' : (passType === 'scout-team' ? '#2563eb' : '#ea580c')
+              color: passType === 'guest' ? '#059669' : '#ea580c'
             }}
           >
             {infoLine}
           </p>
 
           {/* BARCODE FOR NON-STUDENT/STAFF/AWARDEE/OFFICIAL */}
-          {(passType !== 'student' && passType !== 'local-staff' && passType !== 'awardee' && passType !== 'yesian') && (
+          {(passType !== 'student' && passType !== 'local-staff' && passType !== 'awardee' && passType !== 'yesian' && passType !== 'guardian') && (
             <div className="mt-auto flex flex-col items-center pt-1">
               <svg ref={barcodeRef} className="w-[55%] max-w-[120px]" />
               <p className="text-slate-500 font-mono tracking-widest mt-0.5" style={{ fontSize: 'clamp(5px, 1.5vw, 7px)' }}>
@@ -196,7 +199,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         </div>
 
         {/* BARCODE FOR STUDENT/STAFF/AWARDEE/OFFICIAL */}
-        {(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian') && (
+        {(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian') && (
           <div className="absolute flex flex-col items-center" style={{ bottom: '8.88%', right: '9.68%', width: '30.58%' }}>
             <svg ref={barcodeRef} className="w-full" />
             <p className="text-black font-bold font-mono tracking-widest mt-[2px]" style={{ fontSize: 'clamp(5px, 1.5vw, 7px)' }}>

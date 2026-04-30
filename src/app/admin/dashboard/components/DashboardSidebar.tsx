@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Download, LogOut, ShieldCheck,
   CreditCard, User, Users2, BarChart3, GraduationCap,
   Truck, Trash2, Plus, Award, ScrollText, ChevronDown, ChevronRight,
-  ClipboardList, Settings, Briefcase, Box
+  ClipboardList, Settings, Briefcase, Box, CheckCircle, Scan
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -30,7 +30,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
     const categoryMapping = [
       { id: "management", hrefs: ["/admin/dashboard/students-data", "/admin/dashboard/guardian-data", "/admin/dashboard/guest-registry", "/admin/dashboard/yesian-network", "/admin/dashboard/alumni-achievers", "/admin/dashboard/awardee", "/admin/dashboard/qiraath"] },
       { id: "personnel", hrefs: ["/admin/dashboard/local-staff", "/admin/dashboard/volunteers", "/admin/dashboard/scout-team", "/admin/dashboard/driver-staff"] },
-      { id: "utilities", hrefs: ["/admin/dashboard/access-pass", "/admin/dashboard/certificates", "/admin/dashboard/registration", "/admin/dashboard/reports", "/admin/dashboard/master-export"] },
+      { id: "utilities", hrefs: ["/admin/dashboard/access-pass", "/admin/dashboard/certificates", "/admin/dashboard/reports", "/admin/dashboard/master-export", "/admin/dashboard/attendance-track"] },
       { id: "system", hrefs: ["/admin/dashboard/recycle-bin"] }
     ];
 
@@ -99,6 +99,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
         { id: "pass", label: "Access Pass", icon: <CreditCard size={18} />, href: "/admin/dashboard/access-pass" },
         { id: "certificates", label: "Certificates", icon: <ScrollText size={18} />, href: "/admin/dashboard/certificates" },
         { id: "reports", label: "Reports", icon: <BarChart3 size={18} />, href: "/admin/dashboard/reports" },
+        { id: "attendance", label: "Attendance Log", icon: <CheckCircle size={18} />, href: "/admin/dashboard/attendance-track" },
         { id: "export", label: "Export Center", icon: <Download size={18} />, href: "/admin/dashboard/master-export" },
         { id: "add-registration", label: "New Entry", icon: <Plus size={18} />, href: "/admin/dashboard/registration", prominent: true },
       ]
@@ -201,18 +202,18 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
               {/* Sub-items */}
               {isExpanded && sidebarOpen && (
                 <div className="mt-1 ml-4 pl-4 border-l border-slate-100 space-y-1 animate-in slide-in-from-top-1 duration-200">
-                  {category.items.map((item) => {
+                  {category.items.map((item: any) => {
                     const isActive = pathname === item.href;
-                    // @ts-ignore
                     const isProminent = item.prominent;
-                    
+
                     return (
                       <Link
                         key={item.id}
                         href={item.href}
+                        target={item.external ? "_blank" : undefined}
                         className={`w-full flex items-center rounded-xl transition-all duration-200 group px-4 py-2 ${isActive
                           ? `${getColorClass(category.color, 'text')} ${getColorClass(category.color, 'hoverBg')} font-semibold`
-                          : isProminent 
+                          : isProminent
                             ? 'text-indigo-600 bg-indigo-50/50 hover:bg-indigo-50 font-medium'
                             : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
                           }`}
@@ -221,7 +222,10 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
                           {item.label}
                         </span>
                         {isProminent && sidebarOpen && (
-                           <Plus size={12} className="ml-auto text-indigo-400" />
+                          <Plus size={12} className="ml-auto text-indigo-400" />
+                        )}
+                        {item.external && sidebarOpen && (
+                          <ChevronRight size={12} className="ml-auto text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                       </Link>
                     );

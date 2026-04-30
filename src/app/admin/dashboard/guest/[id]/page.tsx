@@ -10,7 +10,7 @@ import { GuestRegistration } from "../../types";
 import {
   ArrowLeft, Calendar, User, Phone, MapPin,
   Pencil, X, Check, Loader2, ShieldCheck, Briefcase,
-  Moon, Bell, Download, Trash2, CheckCircle2
+  Moon, Bell, Download, Trash2, CheckCircle2, MoreHorizontal
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
@@ -47,6 +47,7 @@ export default function GuestProfilePage() {
   const [saving, setSaving] = useState(false);
   const [editForm, setEditForm] = useState<GuestEditForm | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   useEffect(() => {
     if (!id || !user) return;
@@ -211,38 +212,54 @@ export default function GuestProfilePage() {
                 </Button>
               </>
             ) : (
-              <>
+              !showActions ? (
                 <Button
-                  variant="outline"
-                  onClick={enterEditMode}
-                  className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  onClick={() => setShowActions(true)}
+                  className="h-10 rounded-xl bg-slate-900 text-white font-normal uppercase text-[10px] tracking-widest hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
                 >
-                  <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  <MoreHorizontal className="mr-2 h-4 w-4" /> Actions
                 </Button>
-                <TransferRegistration 
-                  sourceId={id as string} 
-                  sourceType="guest" 
-                  currentData={registration} 
-                />
-                <Button
-                  variant="outline"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
-                >
-                  {isDeleting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
-                  ) : (
-                    <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => generateBatchAccessPasses([registration], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'guest')}
-                  className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download ID
-                </Button>
-              </>
+              ) : (
+                <div className="flex items-center gap-3 animate-in slide-in-from-right-4 duration-300">
+                  <Button
+                    variant="outline"
+                    onClick={enterEditMode}
+                    className="h-10 rounded-xl border-slate-200 text-slate-600 font-normal uppercase text-[10px] tracking-widest hover:bg-slate-50"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" /> Edit Record
+                  </Button>
+                  <TransferRegistration 
+                    sourceId={id as string} 
+                    sourceType="guest" 
+                    currentData={registration} 
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="h-10 rounded-xl border-red-100 text-red-500 font-normal uppercase text-[10px] tracking-widest hover:bg-red-50 hover:border-red-200 transition-colors"
+                  >
+                    {isDeleting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                    ) : (
+                      <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => generateBatchAccessPasses([registration], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'guest')}
+                    className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-100"
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download ID
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowActions(false)}
+                    className="h-10 w-10 p-0 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                  >
+                    <X size={18} />
+                  </Button>
+                </div>
+              )
             )}
           </div>
         </div>
@@ -261,9 +278,13 @@ export default function GuestProfilePage() {
           <div className="lg:col-span-3 space-y-6">
             <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden bg-white">
               <div className="aspect-[3/4] relative overflow-hidden bg-slate-100">
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                  <User size={64} strokeWidth={1} />
-                </div>
+                {registration.photoUrl ? (
+                  <img src={registration.photoUrl} alt={registration.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                    <User size={64} strokeWidth={1} />
+                  </div>
+                )}
               </div>
 
               <CardContent className="p-8 text-center">

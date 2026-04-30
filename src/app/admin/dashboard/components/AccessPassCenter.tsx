@@ -6,7 +6,7 @@ import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, User, Zap, School, Archive, ArrowRight, ShieldCheck, Trophy } from "lucide-react";
+import { Users, User, Zap, School, Archive, ArrowRight, ShieldCheck, Trophy, MoreHorizontal, X } from "lucide-react";
 import { AccessPassDesign } from "./AccessPassDesign";
 import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration } from "../types";
 import gsap from "gsap";
@@ -21,53 +21,83 @@ interface AccessPassCenterProps {
     awardeeRegistrations: AwardeeRegistration[];
 }
 
-type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'scout-team' | 'awardee';
+type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian';
 
-const PASS_META: Record<PassType, { label: string; plural: string; color: string; bg: string; icon: React.ReactNode }> = {
-    student:     { label: 'Delegate',  plural: 'Delegates',  color: 'text-orange-600', bg: 'bg-orange-600', icon: <Users size={16} /> },
-    guest:       { label: 'Guest',     plural: 'Guests',     color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <User size={16} /> },
-    yesian:      { label: 'Official',  plural: 'Officials',  color: 'text-amber-600',  bg: 'bg-amber-600',  icon: <Zap size={16} /> },
-    'local-staff': { label: 'Staff',     plural: 'Staff',      color: 'text-sky-600',    bg: 'bg-sky-600',    icon: <User size={16} /> },
-    'scout-team': { label: 'Scout',     plural: 'Scout Team', color: 'text-blue-600',   bg: 'bg-blue-600',   icon: <ShieldCheck size={16} /> },
-    'awardee':    { label: 'Awardee',   plural: 'Awardees',   color: 'text-violet-600', bg: 'bg-violet-600', icon: <Trophy size={16} /> },
+const PASS_META: Record<PassType, { label: string; plural: string; color: string; bg: string; }> = {
+    student: { label: 'Delegate', plural: 'Delegates', color: 'text-orange-600', bg: 'bg-orange-600' },
+    guest: { label: 'Guest', plural: 'Guests', color: 'text-emerald-600', bg: 'bg-emerald-600' },
+    yesian: { label: 'Official', plural: 'Officials', color: 'text-amber-600', bg: 'bg-amber-600' },
+    'local-staff': { label: 'Staff', plural: 'Staff', color: 'text-sky-600', bg: 'bg-sky-600' },
+    'awardee': { label: 'Awardee', plural: 'Awardees', color: 'text-violet-600', bg: 'bg-violet-600' },
+    'guardian': { label: 'Guardian', plural: 'Guardians', color: 'text-pink-600', bg: 'bg-pink-600' },
 };
 
-export default function AccessPassCenter({ 
-    registrations, 
-    guestRegistrations, 
-    yesianRegistrations, 
+export default function AccessPassCenter({
+    registrations,
+    guestRegistrations,
+    yesianRegistrations,
     localStaffRegistrations,
     scoutTeamRegistrations,
     awardeeRegistrations
 }: AccessPassCenterProps) {
     const [passType, setPassType] = useState<PassType>('student');
-    const [selectedZone, setSelectedZone]   = useState("all");
+    const [selectedZone, setSelectedZone] = useState("all");
     const [selectedSchool, setSelectedSchool] = useState("all");
-    const [selectedClass, setSelectedClass]  = useState("all");
+    const [selectedClass, setSelectedClass] = useState("all");
+    const [showSwitcher, setShowSwitcher] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const activeData = useMemo(() => {
         if (passType === 'student') return registrations;
-        if (passType === 'guest')   return guestRegistrations;
-        if (passType === 'yesian')  return yesianRegistrations;
+        if (passType === 'guest') return guestRegistrations;
+        if (passType === 'yesian') return yesianRegistrations;
         if (passType === 'local-staff') return localStaffRegistrations;
         if (passType === 'awardee') return awardeeRegistrations;
-        return scoutTeamRegistrations;
+        if (passType === 'guardian') {
+            const guardians: any[] = [];
+            registrations.forEach(reg => {
+                if (reg.accompaniments && reg.accompaniments.length > 0) {
+                    reg.accompaniments.forEach((acc, i) => {
+                        guardians.push({
+                            id: `${reg.id}-G${i}`,
+                            guardianName: acc.name,
+                            studentName: reg.studentName,
+                            school: reg.school,
+                            className: reg.className,
+                            zone: reg.zone,
+                            photoUrl: reg.photoUrl
+                        });
+                    });
+                } else if (reg.parentName || reg.withParent) {
+                    guardians.push({
+                        id: `${reg.id}-G`,
+                        guardianName: reg.parentName || "Parent/Guardian",
+                        studentName: reg.studentName,
+                        school: reg.school,
+                        className: reg.className,
+                        zone: reg.zone,
+                        photoUrl: reg.photoUrl
+                    });
+                }
+            });
+            return guardians;
+        }
+        return registrations;
     }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, scoutTeamRegistrations, awardeeRegistrations]);
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];
-        if (selectedZone   !== 'all') d = d.filter(r => r.zone === selectedZone);
-        if (passType === 'student') {
+        if (selectedZone !== 'all') d = d.filter(r => r.zone === selectedZone);
+        if (passType === 'student' || passType === 'guardian') {
             if (selectedSchool !== 'all') d = d.filter(r => r.school === selectedSchool);
-            if (selectedClass  !== 'all') d = d.filter(r => r.className === selectedClass);
+            if (selectedClass !== 'all') d = d.filter(r => r.className === selectedClass);
         }
         return d;
     }, [activeData, selectedZone, selectedSchool, selectedClass, passType]);
 
     const previewReg = useMemo(() =>
         filteredData.length > 0 ? filteredData[0] : null,
-    [filteredData]);
+        [filteredData]);
 
     useGSAP(() => {
         gsap.from(".apc-card", { opacity: 0, y: 24, stagger: 0.08, duration: 0.7, ease: "power3.out" });
@@ -89,14 +119,14 @@ export default function AccessPassCenter({
             if (selectedZone === 'all') return alert("Please select a zone.");
             data = (activeData as any[]).filter(r => r.zone === selectedZone);
             filename = `genius_passes_${passType}_zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
-        } else if (scope === 'school' && passType === 'student') {
+        } else if (scope === 'school' && (passType === 'student' || passType === 'guardian')) {
             if (selectedSchool === 'all') return alert("Please select a school.");
-            data = registrations.filter(r => r.school === selectedSchool);
-            filename = `genius_passes_school_${selectedSchool}`;
-        } else if (scope === 'class' && passType === 'student') {
+            data = (activeData as any[]).filter(r => r.school === selectedSchool);
+            filename = `genius_passes_${passType}_school_${selectedSchool}`;
+        } else if (scope === 'class' && (passType === 'student' || passType === 'guardian')) {
             if (selectedClass === 'all') return alert("Please select a class.");
-            data = registrations.filter(r => r.className === selectedClass);
-            filename = `genius_passes_class_${selectedClass}`;
+            data = (activeData as any[]).filter(r => r.className === selectedClass);
+            filename = `genius_passes_${passType}_class_${selectedClass}`;
         }
 
         await generateBatchAccessPasses(data, filename, passType);
@@ -116,17 +146,44 @@ export default function AccessPassCenter({
                 </div>
 
                 {/* Pass type switcher */}
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
-                    {(Object.entries(PASS_META) as [PassType, typeof PASS_META[PassType]][]).map(([t, m]) => (
-                        <button
-                            key={t}
-                            onClick={() => { setPassType(t); setSelectedZone("all"); setSelectedSchool("all"); setSelectedClass("all"); }}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200
-                                ${passType === t ? `${m.bg} text-white shadow-lg` : 'text-slate-400 hover:text-slate-700'}`}
+                <div className="flex items-center justify-end">
+                    {!showSwitcher ? (
+                        <Button
+                            onClick={() => setShowSwitcher(true)}
+                            className="h-10 rounded-xl bg-slate-900 text-white font-normal uppercase text-[10px] tracking-widest hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
                         >
-                            {m.icon} {m.plural}
-                        </button>
-                    ))}
+                            <MoreHorizontal className="mr-2 h-4 w-4" /> {PASS_META[passType].plural}
+                        </Button>
+                    ) : (
+                        <div className="flex items-center gap-3 flex-wrap justify-end animate-in slide-in-from-right-4 duration-300">
+                            {(Object.entries(PASS_META) as [PassType, typeof PASS_META[PassType]][]).map(([t, m]) => (
+                                <Button
+                                    key={t}
+                                    variant={passType === t ? "default" : "outline"}
+                                    onClick={() => {
+                                        setPassType(t);
+                                        setSelectedZone("all");
+                                        setSelectedSchool("all");
+                                        setSelectedClass("all");
+                                        setShowSwitcher(false);
+                                    }}
+                                    className={`h-10 rounded-xl font-normal uppercase text-[10px] tracking-widest transition-all
+                                        ${passType === t
+                                            ? `${m.bg} hover:opacity-90 text-white shadow-lg shadow-${m.bg.replace('bg-', '')}/20`
+                                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                >
+                                    <span className="ml-2">{m.plural}</span>
+                                </Button>
+                            ))}
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowSwitcher(false)}
+                                className="h-10 w-10 p-0 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                            >
+                                <X size={18} />
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -188,8 +245,8 @@ export default function AccessPassCenter({
                             </Button>
                         </Card>
 
-                        {/* School filter — students only */}
-                        {passType === 'student' && (
+                        {/* School filter — students and guardians */}
+                        {(passType === 'student' || passType === 'guardian') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -206,7 +263,7 @@ export default function AccessPassCenter({
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl shadow-xl">
                                         <SelectItem value="all">All Schools</SelectItem>
-                                        {Array.from(new Set(registrations.map(r => r.school))).sort().map(s => (
+                                        {Array.from(new Set((activeData as any[]).map(r => r.school))).sort().map(s => (
                                             <SelectItem key={s} value={s}>
                                                 <div className="whitespace-normal break-words text-xs leading-snug py-0.5">{getSchoolName(s)}</div>
                                             </SelectItem>
@@ -219,8 +276,8 @@ export default function AccessPassCenter({
                             </Card>
                         )}
 
-                        {/* Class filter — students only */}
-                        {passType === 'student' && (
+                        {/* Class filter — students and guardians */}
+                        {(passType === 'student' || passType === 'guardian') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
@@ -237,8 +294,8 @@ export default function AccessPassCenter({
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl shadow-xl">
                                         <SelectItem value="all">All Grades</SelectItem>
-                                        {["3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"].filter(c =>
-                                            registrations.some(r => r.className === c)
+                                        {["3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"].filter(c =>
+                                            (activeData as any[]).some(r => r.className === c)
                                         ).map(c => (
                                             <SelectItem key={c} value={c}>Grade {c}</SelectItem>
                                         ))}
@@ -279,7 +336,7 @@ export default function AccessPassCenter({
                         <div className="text-center space-y-1">
                             <p className="text-slate-500 text-[10px] font-semibold">
                                 Showing {previewReg
-                                    ? (passType === 'student' ? previewReg.studentName : previewReg.name)
+                                    ? (passType === 'student' ? previewReg.studentName : passType === 'guardian' ? previewReg.guardianName : previewReg.name)
                                     : 'no data yet'}
                             </p>
                             <p className="text-slate-600 text-[9px] uppercase tracking-widest">

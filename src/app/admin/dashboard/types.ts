@@ -32,6 +32,7 @@ export interface GuestRegistration {
   whatsappNumber: string;
   address: string;
   createdAt: any;
+  photoUrl?: string;
   attendance?: boolean;
   attendedAt?: any;
 }

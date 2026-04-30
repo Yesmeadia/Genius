@@ -7,10 +7,11 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import Footer from "@/components/Footer";
 import MathCanvas from "@/components/MathCanvas";
-import { Search, CheckCircle2, User, School as SchoolIcon, Phone, Loader2, Tag, Sparkles } from "lucide-react";
+import { Search, CheckCircle2, User, School as SchoolIcon, Phone, Loader2, Tag, Sparkles, Scan, Zap, ShieldCheck } from "lucide-react";
 import { locations } from "@/data/locations";
+import WelcomeOverlay from "./components/WelcomeOverlay";
 
-interface AttendanceRecord {
+export interface AttendanceRecord {
   id: string;
   name: string;
   type: string;
@@ -39,6 +40,8 @@ export default function AttendancePage() {
     { name: "volunteer_registrations", label: "Volunteer", field: "volunteerName" },
     { name: "awardee_registrations", label: "Awardee", field: "name" },
     { name: "driver_staff_registrations", label: "Driver Staff", field: "name" },
+    { name: "qiraath_registrations", label: "Qiraath", field: "name" },
+    { name: "scout_team_registrations", label: "Scout Team", field: "name" },
   ];
 
   useGSAP(() => {
@@ -136,8 +139,19 @@ export default function AttendancePage() {
     }
   };
 
+  const speakWelcome = (name: string) => {
+    if (typeof window !== "undefined" && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(`Welcome ${name}, to the Genius jam 3.0`);
+      utterance.rate = 0.9;
+      utterance.pitch = 1.1;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const showWelcome = (record: AttendanceRecord) => {
     setLastMarked(record);
+    speakWelcome(record.name);
 
     // Play success animation
     setTimeout(() => {
@@ -239,94 +253,84 @@ export default function AttendancePage() {
           style={{ backgroundImage: "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
       </div>
 
-      {/* Welcome Overlay */}
-      {lastMarked && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="welcome-card w-full max-w-lg bg-white rounded-[3.5rem] p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] relative overflow-hidden text-center border border-white/20">
-            <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 animate-pulse" />
+      {lastMarked && <WelcomeOverlay record={lastMarked} />}
 
-            <div className="relative mb-10 flex justify-center">
-              <div className="w-40 h-40 rounded-full overflow-hidden border-8 border-white shadow-2xl ring-12 ring-red-50/30">
-                {lastMarked.photoUrl ? (
-                  <img src={lastMarked.photoUrl} alt={lastMarked.name} className="h-full w-full object-cover scale-110" />
-                ) : (
-                  <div className="h-full w-full bg-slate-50 flex items-center justify-center text-slate-200">
-                    <User size={80} />
-                  </div>
-                )}
-              </div>
-              <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-4 rounded-full shadow-lg border-8 border-white">
-                <CheckCircle2 size={32} />
-              </div>
-            </div>
-
-            <div className="space-y-3 mb-10">
-              <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
-                Welcome, <br />
-                <span className="text-red-600">{lastMarked.name}</span>
-              </h2>
-              <div className="flex items-center justify-center gap-3">
-                <span className="px-4 py-1.5 rounded-full bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-[0.3em] border border-red-100 shadow-sm">
-                  {lastMarked.type} verified
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-slate-50/50 rounded-3xl p-6 mb-10 border border-slate-100">
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.1em] mb-1">
-                {lastMarked.type === 'Yesian' ? 'Designation' : 
-                 lastMarked.type === 'Guest' ? 'Address' : 
-                 'School'}
-              </p>
-              <p className="text-lg font-bold text-slate-700 leading-tight">
-                {lastMarked.school || "Genius Jam 2026"}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="relative z-10 container mx-auto py-12 md:py-24 px-6 max-w-4xl">
+      <div className="relative z-10 container mx-auto min-h-screen flex flex-col justify-center items-center py-20 px-6 max-w-4xl">
         <header className="page-header flex flex-col items-center text-center mb-16">
           <div className="flex flex-col items-center gap-8 mb-10">
             <img src="/yeslogo.png" alt="YES INDIA" className="h-8 opacity-40 grayscale" />
-            <img src="/Genius.png" alt="Genius Jam" className="h-24 md:h-32 object-contain" />
+            <img src="/Genius.png" alt="Genius Jam" className="h-32 md:h-48 object-contain" />
           </div>
-          <div className="space-y-4">
-            <h1 className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
-              Smart Attendance System
-            </h1>
-            <p className="text-slate-500 text-base max-w-md mx-auto leading-relaxed">
-              Auto-Scan mode is active <span className="text-red-600 font-black">Scan the bar code </span>
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h1 className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
+                Neural Scanning Terminal
+              </h1>
+            </div>
+            <p className="text-slate-500 text-sm max-w-sm mx-auto font-medium">
+              System is primed and ready for <span className="text-red-600 font-black uppercase tracking-wider text-[10px]">Rapid Check-in</span>
             </p>
           </div>
         </header>
 
-        {/* Search Section */}
-        <div className="search-container mb-16">
-          <form onSubmit={handleSearch} className="relative group">
-            <input
-              ref={inputRef}
-              autoFocus
-              type="text"
-              placeholder="Scan 8-digit ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-24 pl-20 pr-40 rounded-[3rem] border-0 bg-white/70 backdrop-blur-2xl shadow-[0_32px_64px_-20px_rgba(0,0,0,0.1)] text-3xl font-black text-slate-900 focus:ring-12 focus:ring-red-500/5 transition-all placeholder:text-slate-200 placeholder:font-bold tracking-widest text-center md:text-left"
-            />
-            <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-slate-200 group-focus-within:text-red-500 transition-colors hidden md:block" size={32} />
-            <button
-              type="submit"
-              disabled={loading}
-              className="absolute right-6 top-1/2 -translate-y-1/2 h-14 px-10 rounded-[1.5rem] bg-red-600 text-white font-black text-xs tracking-[0.2em] uppercase hover:bg-red-700 hover:shadow-lg hover:shadow-red-500/30 active:scale-95 transition-all flex items-center gap-2 hidden md:flex"
-            >
-              {loading ? <Loader2 className="animate-spin" size={24} /> : "Search"}
-            </button>
-          </form>
+        {/* Scanner Visualization */}
+        <div className="search-container mb-12 relative">
+          <div className="relative max-w-2xl mx-auto group">
+            {/* Viewfinder Corners */}
+            <div className="absolute -top-4 -left-4 w-12 h-12 border-t-4 border-l-4 border-red-600 rounded-tl-xl opacity-20 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -top-4 -right-4 w-12 h-12 border-t-4 border-r-4 border-red-600 rounded-tr-xl opacity-20 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -bottom-4 -left-4 w-12 h-12 border-b-4 border-l-4 border-red-600 rounded-bl-xl opacity-20 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="absolute -bottom-4 -right-4 w-12 h-12 border-b-4 border-r-4 border-red-600 rounded-br-xl opacity-20 group-focus-within:opacity-100 transition-opacity duration-500" />
+
+            <form onSubmit={handleSearch} className="relative z-10">
+              <div className="relative overflow-hidden rounded-2xl bg-transparent">
+                {/* Scanning Laser Animation */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  <div className="w-full h-[2px] bg-gradient-to-r from-transparent via-red-500/50 to-transparent absolute top-0 animate-[scan_3s_ease-in-out_infinite]"
+                    style={{
+                      boxShadow: '0 0 15px 2px rgba(239, 68, 68, 0.4)',
+                    }}
+                  />
+                </div>
+
+                <input
+                  ref={inputRef}
+                  autoFocus
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full h-32 pl-12 pr-12 bg-transparent border-0 text-4xl font-black text-slate-900 focus:ring-0 transition-all placeholder:text-slate-200 placeholder:font-bold tracking-[0.2em] text-center"
+                />
+
+                {/* Scanner Interface Elements */}
+                <div className="absolute left-8 top-1/2 -translate-y-1/2 flex items-center gap-4 text-slate-300 pointer-events-none transition-opacity duration-300 group-focus-within:opacity-0 hidden lg:flex">
+                  <Scan size={24} className="animate-pulse" />
+                </div>
+
+                <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-2 hidden lg:flex group-focus-within:opacity-0 transition-opacity">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Auto</span>
+                  <Zap size={14} className="text-amber-400 fill-amber-400" />
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Quick Stats/Indicators below scanner */}
+          <div className="flex justify-center gap-8 mt-12 opacity-40">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={14} className="text-emerald-500" />
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">ID Verification Active</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Real-time Sync</span>
+            </div>
+          </div>
         </div>
 
         {/* Results Section */}
-        <div className="space-y-6 min-h-[400px]">
+        <div className="space-y-6 min-h-[300px]">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-8">
               <div className="relative">
@@ -335,17 +339,17 @@ export default function AttendancePage() {
                   <div className="w-10 h-10 bg-red-500 rounded-full animate-pulse opacity-10" />
                 </div>
               </div>
-              <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Syncing Database Cluster</p>
+              <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Querying Registry Hub</p>
             </div>
           ) : results.length > 0 ? (
-            <div className="grid gap-6">
+            <div className="grid gap-6 animate-in slide-in-from-bottom-8 duration-700">
               {results.map((record) => (
                 <div
                   key={record.id}
-                  className="group bg-white/70 backdrop-blur-xl border border-slate-100 rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-8 hover:shadow-2xl hover:shadow-slate-200/50 hover:border-red-200 transition-all duration-700"
+                  className="group bg-white/70 backdrop-blur-xl border border-slate-100 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 hover:shadow-2xl hover:shadow-slate-200/50 hover:border-red-200 transition-all duration-700 overflow-hidden relative"
                 >
-                  <div className="flex items-center gap-6 w-full md:w-auto">
-                    <div className="relative h-20 w-20 rounded-[1.5rem] overflow-hidden bg-slate-50 border border-slate-100 flex-shrink-0 shadow-inner">
+                  <div className="flex items-center gap-6 w-full md:w-auto relative z-10">
+                    <div className="relative h-20 w-20 rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 flex-shrink-0 shadow-inner">
                       {record.photoUrl ? (
                         <img src={record.photoUrl} alt={record.name} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" />
                       ) : (
@@ -378,7 +382,7 @@ export default function AttendancePage() {
                   <button
                     onClick={() => markAttendance(record)}
                     disabled={markingId === record.id}
-                    className={`w-full md:w-auto h-16 px-10 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${record.attendance
+                    className={`relative z-10 w-full md:w-auto h-16 px-10 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${record.attendance
                       ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100"
                       : "bg-slate-900 text-white hover:bg-red-600 hover:shadow-2xl hover:shadow-red-500/30 active:scale-95"
                       }`}
@@ -388,23 +392,26 @@ export default function AttendancePage() {
                     ) : record.attendance ? (
                       <>
                         <CheckCircle2 size={20} />
-                        Present
+                        Verified
                       </>
                     ) : (
-                      "Verify Check-in"
+                      "Confirm Entry"
                     )}
                   </button>
+
+                  {/* Decorative element for card */}
+                  <div className="absolute right-0 top-0 w-32 h-32 bg-slate-50 rounded-full translate-x-16 -translate-y-16 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 </div>
               ))}
             </div>
           ) : searchTerm && !loading && searchTerm.length !== 8 ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center animate-in fade-in zoom-in-95 duration-700">
-              <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-8 border border-slate-100">
-                <Search size={40} className="text-slate-200" />
+            <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in-95 duration-700">
+              <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-8 border border-slate-100">
+                <Scan size={32} className="text-slate-200" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight">No Match Found</h3>
-              <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
-                We couldn't find anyone matching "{searchTerm}" in the registry cluster.
+              <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Access Denied</h3>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest max-w-xs leading-relaxed">
+                ID Hash "{searchTerm}" not recognized
               </p>
             </div>
           ) : null}
@@ -412,6 +419,15 @@ export default function AttendancePage() {
 
         <Footer />
       </div>
+
+      <style jsx global>{`
+        @keyframes scan {
+          0%, 100% { top: 0%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+      `}</style>
     </main>
   );
 }

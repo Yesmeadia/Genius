@@ -102,6 +102,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.includes("/reports")) return "Analytics & Reports";
     if (pathname.includes("/master-export")) return "Master Export Center";
     if (pathname.includes("/recycle-bin")) return "Recycle Bin";
+    if (pathname.includes("/attendance-track")) return "Attendance Tracker";
     if (pathname.includes("/registration")) return "Direct Registration";
     if (pathname.includes("/settings")) return "Portal Configuration";
     if (pathname.includes("/profile")) return "My Profile";

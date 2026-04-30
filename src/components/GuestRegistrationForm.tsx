@@ -2,8 +2,9 @@
 
 import { useForm } from "react-hook-form";
 import { useState, useRef } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -18,10 +19,12 @@ interface GuestFormData {
   gender: string;
   whatsappNumber: string;
   address: string;
+  photo?: FileList;
 }
 
 export default function GuestRegistrationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -55,8 +58,19 @@ export default function GuestRegistrationForm() {
   const onSubmit = async (data: GuestFormData) => {
     setIsSubmitting(true);
     try {
+      let photoUrl = "";
+      if (data.photo && data.photo[0]) {
+        const file = data.photo[0];
+        const storageRef = ref(storage, `photos/guest_${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        photoUrl = await getDownloadURL(snapshot.ref);
+      }
+
+      const { photo, ...restData } = data;
+
       const docRef = await addDoc(collection(db, "guest_registrations"), {
-        ...data,
+        ...restData,
+        photoUrl,
         name: data.name.toUpperCase(),
         address: data.address.toUpperCase(),
         registrationType: "guest",
@@ -207,6 +221,51 @@ export default function GuestRegistrationForm() {
               {errors.address && (
                 <p className="text-xs text-destructive mt-1 font-medium">
                   {errors.address.message}
+                </p>
+              )}
+            </div>
+
+            {/* Photo Upload Section */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <Label
+                htmlFor="photo"
+                className={`text-xs font-normal uppercase tracking-wider ${errors.photo ? "text-destructive" : "text-slate-500"}`}
+              >
+                Upload Passport Size Photo
+              </Label>
+              <div className="flex flex-col gap-4">
+                <div className="relative">
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    {...register("photo", {
+                      validate: {
+                        lessThan3MB: (files) => !files?.[0] || files[0].size <= 3 * 1024 * 1024 || "Maximum size is 3MB",
+                        acceptedFormats: (files) => !files?.[0] || ['image/jpeg', 'image/png'].includes(files[0].type) || "Only JPG, JPEG, PNG are allowed"
+                      },
+                      onChange: (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setPhotoPreview(URL.createObjectURL(file));
+                        } else {
+                          setPhotoPreview(null);
+                        }
+                      }
+                    })}
+                    className={`h-12 bg-white/50 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all cursor-pointer file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 ${errors.photo ? "border-destructive" : ""}`}
+                  />
+                </div>
+                {photoPreview && (
+                  <div className="w-20 md:w-24 aspect-[3/4] rounded-xl overflow-hidden border-2 border-slate-100 shadow-lg ring-4 ring-white/50 animate-in zoom-in-95 duration-300">
+                    <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">Max size 3MB • JPG, JPEG, or PNG only</p>
+              {errors.photo && (
+                <p className="text-xs text-destructive mt-1 font-medium">
+                  {errors.photo.message}
                 </p>
               )}
             </div>

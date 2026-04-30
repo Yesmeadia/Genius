@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GuestRegistration } from "../types";
 
 interface GuestDataTableProps {
@@ -124,6 +124,9 @@ export function GuestDataTable({
                   <TableCell className="py-4 pl-6">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-10 w-10 border border-slate-100 shadow-sm">
+                        {reg.photoUrl && (
+                          <AvatarImage src={reg.photoUrl} alt={reg.name} className="object-cover" />
+                        )}
                         <AvatarFallback className="bg-slate-50 text-slate-400">
                           <User size={16} />
                         </AvatarFallback>

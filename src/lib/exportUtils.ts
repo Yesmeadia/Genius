@@ -786,7 +786,7 @@ export async function generateStrategicReportPDF(
     list.forEach((r: any) => {
       const zone = r.zone || "N/A";
       if (!accZoneMap[zone]) accZoneMap[zone] = { Male: 0, Female: 0, Total: 0 };
-      
+
       if (r.accompaniments && r.accompaniments.length > 0) {
         r.accompaniments.forEach((acc: any) => {
           const g = acc.gender?.toLowerCase() === "male" ? "Male" : "Female";
@@ -820,7 +820,7 @@ export async function generateStrategicReportPDF(
     theme: "striped",
     headStyles: { fillColor: [219, 39, 119], fontSize: 9 },
     styles: { fontSize: 8 },
-    foot: [["TOTAL", 
+    foot: [["TOTAL",
       Object.values(accZoneMap).reduce((a: number, b: any) => a + b.Male, 0),
       Object.values(accZoneMap).reduce((a: number, b: any) => a + b.Female, 0),
       totalAcc
@@ -859,7 +859,7 @@ function addFooter(doc: jsPDF, data: any) {
   const pageHeight = doc.internal.pageSize.height;
   const pageWidth = doc.internal.pageSize.width;
   const marginLeft = data?.settings?.margin?.left || 14;
-  
+
   doc.text(footerStr, marginLeft, pageHeight - 10);
   const currentPage = (doc as any).internal.getCurrentPageInfo().pageNumber;
   const pageStr = `Page ${currentPage}`;
@@ -880,7 +880,7 @@ function toTitleCase(str: string): string {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'scout-team',
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian',
   fontsLoaded: { kalash: boolean; montserratSemiBold: boolean; montserratMedium: boolean }
 ) {
   const W = doc.internal.pageSize.width;   // 85mm
@@ -889,10 +889,11 @@ async function drawBadgeContent(
   // ── 1. FULL-CARD BACKGROUND IMAGE ─────────────────────────────
   const bgPath = type === 'student' ? '/pass/Delegate.jpeg'
     : type === 'local-staff' ? '/pass/Mentor.jpeg'
-    : type === 'awardee' ? '/pass/Awardee.jpeg'
-    : type === 'yesian' ? '/pass/Crew.jpeg'
-    : type === 'guest' ? '/pass/guest.png'
-    : '/pass/Crew.jpeg';
+      : type === 'awardee' ? '/pass/Awardee.jpeg'
+        : type === 'yesian' ? '/pass/Crew.jpeg'
+          : type === 'guardian' ? '/pass/Guardian.jpeg'
+            : type === 'guest' ? '/pass/guest.png'
+              : '/pass/Crew.jpeg';
   const bg = await getBase64ImageFromUrl(bgPath);
   if (bg) {
     const bgFormat = bgPath.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
@@ -910,7 +911,7 @@ async function drawBadgeContent(
   let photoX = 20;
   let photoY = 12;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
     photoW = 29.157;
     photoH = 36.425;
     photoX = 46.289;
@@ -921,11 +922,11 @@ async function drawBadgeContent(
     photoX = stripW + 1 + (photoAreaW - photoW) / 2;
   }
 
-  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff' || type === 'scout-team') ? data.photoUrl : null;
+  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff' || type === 'guardian') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) {
-      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
+      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
         const r = 7.69;
         const d = doc as any;
         // Robust PDF clipping using internal operators
@@ -942,7 +943,7 @@ async function drawBadgeContent(
 
 
   // ── 3. NAME (single line) ──────────────────────────────────────
-  const fullName = (type === 'student' ? data.studentName : type === 'volunteer' ? data.volunteerName : (data.name || '')).trim();
+  const fullName = (type === 'student' ? data.studentName : type === 'volunteer' ? data.volunteerName : type === 'guardian' ? data.guardianName : (data.name || '')).trim();
 
   // Auto-scale font size based on name length
   const nameFontSize = fullName.length <= 10 ? 12
@@ -950,7 +951,7 @@ async function drawBadgeContent(
       : fullName.length <= 20 ? 8
         : 7;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
     doc.setFont(fontsLoaded.montserratSemiBold ? 'MontserratSemiBold' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratSemiBold) doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
@@ -975,7 +976,6 @@ async function drawBadgeContent(
   else if (type === 'awardee') tc = [124, 58, 237]; // violet
   else if (type === 'qiraath') tc = [16, 185, 129]; // emerald
   else if (type === 'driver-staff') tc = [79, 70, 229]; // indigo
-  else if (type === 'scout-team') tc = [37, 99, 235]; // blue
 
   let infoText = '';
   if (type === 'student') infoText = ` ${getSchoolName(data.school)}`;
@@ -1005,18 +1005,17 @@ async function drawBadgeContent(
       ? `DRIVER | ${data.vehicleType || ''}\n${data.vehicleNumber || ''}\nZONE: ${data.zone || ''}`
       : `SUPPORT STAFF\nZONE: ${data.zone || ''}`;
   }
-  else if (type === 'scout-team') {
-    const schoolName = getSchoolName(data.school);
-    infoText = `SCOUT TEAM\n${schoolName}`;
+  else if (type === 'guardian') {
+    infoText = `STUDENT: ${data.studentName || ''}`;
   }
   else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
     doc.setFontSize(7);
     doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratMedium) doc.setFont('helvetica', 'bold');
     doc.setTextColor(226, 232, 240);
-    
+
     let displayInfo = "";
     if (type === 'student') {
       displayInfo = toTitleCase(getSchoolName(data.school));
@@ -1025,6 +1024,8 @@ async function drawBadgeContent(
       displayInfo = `${(data.role || '').toUpperCase()} | ${schoolName}`;
     } else if (type === 'yesian') {
       displayInfo = `${(data.designation || '').toUpperCase()} | ${(data.zone || '').toUpperCase()}`;
+    } else if (type === 'guardian') {
+      displayInfo = `STUDENT: ${data.studentName || ''}`;
     } else {
       // Awardee (removed rank and class per user request)
       displayInfo = toTitleCase(getSchoolName(data.school));
@@ -1045,7 +1046,7 @@ async function drawBadgeContent(
 
   // ── 5. BARCODE + SHORT REF ID (centered) ─────────────────────
   const barcode = getBarcodeBase64(data.id);
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
     const bcW = 26;
     const bcH = 6;
     const bcX = W - bcW - 8.228; // right: 0.8228 cm
@@ -1073,7 +1074,7 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'scout-team' = 'student'
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' = 'student'
 ) {
   if (data.length === 0) return alert("No records found.");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [85, 120] });
@@ -1185,4 +1186,50 @@ export async function generateZipBackup(data: any[], title: string, filename: st
   const content = await zip.generateAsync({ type: "blob" });
   saveAs(content, `${cleanName}_backup.zip`);
   if (onProgress) onProgress("Done");
+}
+
+/**
+ * Attendance Report PDF
+ */
+export async function generateAttendancePDF(data: any[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => {
+    let checkInTime = "N/A";
+    if (reg.attendedAt) {
+      const date = reg.attendedAt.toDate ? reg.attendedAt.toDate() : new Date(reg.attendedAt);
+      checkInTime = new Intl.DateTimeFormat("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        day: "2-digit",
+        month: "short"
+      }).format(date);
+    }
+
+    return [
+      index + 1,
+      reg.label || reg.name || reg.studentName || reg.volunteerName || "Unknown",
+      reg.category || "N/A",
+      reg.id?.substring(0, 8) || "N/A",
+      (reg as any).zone || "N/A",
+      getSchoolName((reg as any).school) || (reg as any).schoolName || "N/A",
+      (reg as any).className || "N/A",
+      reg.gender || "N/A",
+      checkInTime
+    ];
+  });
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Name", "Category", "ID Prefix", "Zone", "School", "Class", "Gender", "Check-in Time"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
 }

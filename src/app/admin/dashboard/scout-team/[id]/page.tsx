@@ -14,7 +14,6 @@ import {
   MapPin, GraduationCap, Download, Trash2, CheckCircle2, Award, MoreHorizontal
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { generateBatchAccessPasses } from "@/lib/exportUtils";
 import { generateScoutCertificate } from "@/lib/scoutCertificateUtils";
 import { moveToRecycleBin } from "@/lib/deleteUtils";
 import { Button } from "@/components/ui/button";
@@ -300,13 +299,6 @@ export default function ScoutTeamProfilePage() {
                     ) : (
                       <><Trash2 className="mr-2 h-4 w-4" /> Delete</>
                     )}
-                  </Button>
-
-                  <Button
-                    onClick={() => generateBatchAccessPasses([registration as any], `AccessPass_${registration.name.replace(/\s+/g, '_')}`, 'scout-team')}
-                    className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-normal uppercase text-[10px] tracking-widest shadow-lg shadow-blue-100"
-                  >
-                    <Download className="mr-2 h-4 w-4" /> Download ID
                   </Button>
 
                   <Button
