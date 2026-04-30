@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, User, Zap, School, Archive, ArrowRight, ShieldCheck, Trophy, MoreHorizontal, X } from "lucide-react";
 import { AccessPassDesign } from "./AccessPassDesign";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration } from "../types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration, QiraathRegistration } from "../types";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -19,9 +19,10 @@ interface AccessPassCenterProps {
     localStaffRegistrations: LocalStaffRegistration[];
     scoutTeamRegistrations: ScoutTeamRegistration[];
     awardeeRegistrations: AwardeeRegistration[];
+    qiraathRegistrations: QiraathRegistration[];
 }
 
-type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian';
+type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath';
 
 const PASS_META: Record<PassType, { label: string; plural: string; color: string; bg: string; }> = {
     student: { label: 'Delegate', plural: 'Delegates', color: 'text-orange-600', bg: 'bg-orange-600' },
@@ -30,6 +31,7 @@ const PASS_META: Record<PassType, { label: string; plural: string; color: string
     'local-staff': { label: 'Staff', plural: 'Staff', color: 'text-sky-600', bg: 'bg-sky-600' },
     'awardee': { label: 'Awardee', plural: 'Awardees', color: 'text-violet-600', bg: 'bg-violet-600' },
     'guardian': { label: 'Guardian', plural: 'Guardians', color: 'text-pink-600', bg: 'bg-pink-600' },
+    'qiraath': { label: 'Qiraath', plural: 'Qiraath', color: 'text-emerald-600', bg: 'bg-emerald-600' },
 };
 
 export default function AccessPassCenter({
@@ -38,7 +40,8 @@ export default function AccessPassCenter({
     yesianRegistrations,
     localStaffRegistrations,
     scoutTeamRegistrations,
-    awardeeRegistrations
+    awardeeRegistrations,
+    qiraathRegistrations
 }: AccessPassCenterProps) {
     const [passType, setPassType] = useState<PassType>('student');
     const [selectedZone, setSelectedZone] = useState("all");
@@ -53,6 +56,7 @@ export default function AccessPassCenter({
         if (passType === 'yesian') return yesianRegistrations;
         if (passType === 'local-staff') return localStaffRegistrations;
         if (passType === 'awardee') return awardeeRegistrations;
+        if (passType === 'qiraath') return qiraathRegistrations;
         if (passType === 'guardian') {
             const guardians: any[] = [];
             registrations.forEach(reg => {
@@ -83,12 +87,12 @@ export default function AccessPassCenter({
             return guardians;
         }
         return registrations;
-    }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, scoutTeamRegistrations, awardeeRegistrations]);
+    }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, scoutTeamRegistrations, awardeeRegistrations, qiraathRegistrations]);
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];
         if (selectedZone !== 'all') d = d.filter(r => r.zone === selectedZone);
-        if (passType === 'student' || passType === 'guardian') {
+        if (passType === 'student' || passType === 'guardian' || passType === 'qiraath') {
             if (selectedSchool !== 'all') d = d.filter(r => r.school === selectedSchool);
             if (selectedClass !== 'all') d = d.filter(r => r.className === selectedClass);
         }
@@ -119,11 +123,11 @@ export default function AccessPassCenter({
             if (selectedZone === 'all') return alert("Please select a zone.");
             data = (activeData as any[]).filter(r => r.zone === selectedZone);
             filename = `genius_passes_${passType}_zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
-        } else if (scope === 'school' && (passType === 'student' || passType === 'guardian')) {
+        } else if (scope === 'school' && (passType === 'student' || passType === 'guardian' || passType === 'qiraath')) {
             if (selectedSchool === 'all') return alert("Please select a school.");
             data = (activeData as any[]).filter(r => r.school === selectedSchool);
             filename = `genius_passes_${passType}_school_${selectedSchool}`;
-        } else if (scope === 'class' && (passType === 'student' || passType === 'guardian')) {
+        } else if (scope === 'class' && (passType === 'student' || passType === 'guardian' || passType === 'qiraath')) {
             if (selectedClass === 'all') return alert("Please select a class.");
             data = (activeData as any[]).filter(r => r.className === selectedClass);
             filename = `genius_passes_${passType}_class_${selectedClass}`;
@@ -245,8 +249,8 @@ export default function AccessPassCenter({
                             </Button>
                         </Card>
 
-                        {/* School filter — students and guardians */}
-                        {(passType === 'student' || passType === 'guardian') && (
+                        {/* School filter — students, guardians, qiraath */}
+                        {(passType === 'student' || passType === 'guardian' || passType === 'qiraath') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -276,8 +280,8 @@ export default function AccessPassCenter({
                             </Card>
                         )}
 
-                        {/* Class filter — students and guardians */}
-                        {(passType === 'student' || passType === 'guardian') && (
+                        {/* Class filter — students, guardians, qiraath */}
+                        {(passType === 'student' || passType === 'guardian' || passType === 'qiraath') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">

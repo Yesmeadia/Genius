@@ -887,7 +887,7 @@ async function drawBadgeContent(
   const H = doc.internal.pageSize.height;  // 120mm
 
   // ── 1. FULL-CARD BACKGROUND IMAGE ─────────────────────────────
-  const bgPath = type === 'student' ? '/pass/Delegate.jpeg'
+  const bgPath = (type === 'student' || type === 'qiraath') ? '/pass/Delegate.jpeg'
     : type === 'local-staff' ? '/pass/Mentor.jpeg'
       : type === 'awardee' ? '/pass/Awardee.jpeg'
         : type === 'yesian' ? '/pass/Crew.jpeg'
@@ -911,7 +911,7 @@ async function drawBadgeContent(
   let photoX = 20;
   let photoY = 12;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
     photoW = 29.157;
     photoH = 36.425;
     photoX = 46.289;
@@ -926,7 +926,7 @@ async function drawBadgeContent(
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) {
-      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
+      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
         const r = 7.69;
         const d = doc as any;
         // Robust PDF clipping using internal operators
@@ -951,11 +951,14 @@ async function drawBadgeContent(
       : fullName.length <= 20 ? 8
         : 7;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
     doc.setFont(fontsLoaded.montserratSemiBold ? 'MontserratSemiBold' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratSemiBold) doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    const fontSize = fullName.length > 13 ? 12 : 15;
+    const fontSize = fullName.length > 25 ? 9 
+      : fullName.length > 18 ? 11
+      : fullName.length > 13 ? 12 
+      : 15;
     doc.setFontSize(fontSize);
     doc.text(toTitleCase(fullName), 11.753, 44.354); // Moved down from 41.354
   } else {
@@ -1010,7 +1013,7 @@ async function drawBadgeContent(
   }
   else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
     doc.setFontSize(7);
     doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratMedium) doc.setFont('helvetica', 'bold');
@@ -1046,7 +1049,7 @@ async function drawBadgeContent(
 
   // ── 5. BARCODE + SHORT REF ID (centered) ─────────────────────
   const barcode = getBarcodeBase64(data.id);
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
     const bcW = 26;
     const bcH = 6;
     const bcX = W - bcW - 8.228; // right: 0.8228 cm
