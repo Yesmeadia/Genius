@@ -32,26 +32,27 @@ interface CertificateCenterProps {
 
 type CertType = 'student' | 'awardee' | 'scout-team' | 'volunteer' | 'qiraath';
 
-const CERT_META: Record<CertType, { label: string; plural: string; color: string; bg: string; icon: React.ReactNode }> = {
-    student: { label: 'Delegate',  plural: 'Delegates',  color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <Users size={16} /> },
-    awardee: { label: 'Awardee',   plural: 'Awardees',   color: 'text-violet-600',  bg: 'bg-violet-600',  icon: <Award size={16} /> },
-    'scout-team': { label: 'Scout',     plural: 'Scout Team', color: 'text-blue-600',    bg: 'bg-blue-600',    icon: <ShieldCheck size={16} /> },
-    volunteer: { label: 'Volunteer', plural: 'Volunteers', color: 'text-rose-600', bg: 'bg-rose-600', icon: <Users size={16} /> },
-    qiraath: { label: 'Qiraath', plural: 'Qiraath', color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <Users size={16} /> },
+const CERT_META: Record<CertType, { label: string; plural: string; color: string; bg: string; }> = {
+    student: { label: 'Delegate', plural: 'Delegates', color: 'text-emerald-600', bg: 'bg-emerald-600', },
+    awardee: { label: 'Awardee', plural: 'Awardees', color: 'text-violet-600', bg: 'bg-violet-600', },
+    'scout-team': { label: 'Scout', plural: 'Scout Team', color: 'text-blue-600', bg: 'bg-blue-600', },
+    volunteer: { label: 'Volunteer', plural: 'Volunteers', color: 'text-rose-600', bg: 'bg-rose-600', },
+    qiraath: { label: 'Qiraath', plural: 'Qiraath', color: 'text-emerald-600', bg: 'bg-emerald-600', },
 };
 
-export default function CertificateCenter({ 
-    registrations, 
+export default function CertificateCenter({
+    registrations,
     awardeeRegistrations,
     scoutTeamRegistrations,
     volunteerRegistrations,
     qiraathRegistrations
 }: CertificateCenterProps) {
     const [certType, setCertType] = useState<CertType>('student');
-    const [selectedZone, setSelectedZone]   = useState("all");
+    const [selectedZone, setSelectedZone] = useState("all");
     const [selectedSchool, setSelectedSchool] = useState("all");
-    const [selectedClass, setSelectedClass]  = useState("all");
+    const [selectedClass, setSelectedClass] = useState("all");
     const [isGenerating, setIsGenerating] = useState(false);
+    const [showSwitcher, setShowSwitcher] = useState(false);
     const [showActions, setShowActions] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -66,17 +67,17 @@ export default function CertificateCenter({
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];
-        if (selectedZone   !== 'all') d = d.filter(r => r.zone === selectedZone);
+        if (selectedZone !== 'all') d = d.filter(r => r.zone === selectedZone);
         if (certType === 'student' || certType === 'volunteer' || certType === 'scout-team' || certType === 'qiraath') {
             if (selectedSchool !== 'all') d = d.filter(r => r.school === selectedSchool);
-            if (selectedClass  !== 'all') d = d.filter(r => r.className === selectedClass);
+            if (selectedClass !== 'all') d = d.filter(r => r.className === selectedClass);
         }
         return d;
     }, [activeData, selectedZone, selectedSchool, selectedClass, certType]);
 
     const previewReg = useMemo(() =>
         filteredData.length > 0 ? filteredData[0] : null,
-    [filteredData]);
+        [filteredData]);
 
     useGSAP(() => {
         gsap.from(".apc-card", { opacity: 0, y: 24, stagger: 0.08, duration: 0.7, ease: "power3.out" });
@@ -159,18 +160,45 @@ export default function CertificateCenter({
                     <p className="text-slate-500 text-sm mt-1">Generate and export Participation Certificates in bulk.</p>
                 </div>
 
-                {/* Type switcher */}
-                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
-                    {(Object.entries(CERT_META) as [CertType, typeof CERT_META[CertType]][]).map(([t, m]) => (
-                        <button
-                            key={t}
-                            onClick={() => { setCertType(t); setSelectedZone("all"); setSelectedSchool("all"); setSelectedClass("all"); }}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200
-                                ${certType === t ? `${m.bg} text-white shadow-lg` : 'text-slate-400 hover:text-slate-700'}`}
+                {/* Category switcher */}
+                <div className="flex items-center justify-end">
+                    {!showSwitcher ? (
+                        <Button
+                            onClick={() => setShowSwitcher(true)}
+                            className="h-10 rounded-xl bg-slate-900 text-white font-normal uppercase text-[10px] tracking-widest hover:bg-slate-800 shadow-lg active:scale-95 transition-all"
                         >
-                            {m.icon} {m.plural}
-                        </button>
-                    ))}
+                            <MoreHorizontal className="mr-2 h-4 w-4" /> {CERT_META[certType].plural}
+                        </Button>
+                    ) : (
+                        <div className="flex items-center gap-3 flex-wrap justify-end animate-in slide-in-from-right-4 duration-300">
+                            {(Object.entries(CERT_META) as [CertType, typeof CERT_META[CertType]][]).map(([t, m]) => (
+                                <Button
+                                    key={t}
+                                    variant={certType === t ? "default" : "outline"}
+                                    onClick={() => {
+                                        setCertType(t);
+                                        setSelectedZone("all");
+                                        setSelectedSchool("all");
+                                        setSelectedClass("all");
+                                        setShowSwitcher(false);
+                                    }}
+                                    className={`h-10 rounded-xl font-normal uppercase text-[10px] tracking-widest transition-all
+                                        ${certType === t
+                                            ? `${m.bg} hover:opacity-90 text-white shadow-lg`
+                                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                                >
+                                    <span className="ml-2">{m.plural}</span>
+                                </Button>
+                            ))}
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowSwitcher(false)}
+                                className="h-10 w-10 p-0 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                            >
+                                <X size={18} />
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -282,7 +310,7 @@ export default function CertificateCenter({
                                     </SelectTrigger>
                                     <SelectContent className="rounded-2xl shadow-xl">
                                         <SelectItem value="all">All Grades</SelectItem>
-                                        {["3rd","4th","5th","6th","7th","8th","9th","10th","11th","12th"].filter(c =>
+                                        {["3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"].filter(c =>
                                             (activeData as any[]).some(r => r.className === c)
                                         ).map(c => (
                                             <SelectItem key={c} value={c}>Grade {c}</SelectItem>
@@ -368,23 +396,23 @@ export default function CertificateCenter({
 
                         {/* Glowing halo behind the pass card */}
                         <div className="relative w-full overflow-hidden rounded-md border border-slate-800 bg-white">
-                            <img 
+                            <img
                                 src={
-                                    certType === 'scout-team' ? "/certificate/GjamS.jpeg" : 
-                                    certType === 'volunteer' ? "/certificate/GjamV.jpeg" : 
-                                    certType === 'qiraath' ? "/certificate/GjamD.jpeg" :
-                                    "/certificate/Gjamp.jpeg"
-                                } 
-                                alt="Certificate Background" 
-                                className="w-full h-auto object-cover opacity-90" 
+                                    certType === 'scout-team' ? "/certificate/GjamS.jpeg" :
+                                        certType === 'volunteer' ? "/certificate/GjamV.jpeg" :
+                                            certType === 'qiraath' ? "/certificate/GjamD.jpeg" :
+                                                "/certificate/Gjamp.jpeg"
+                                }
+                                alt="Certificate Background"
+                                className="w-full h-auto object-cover opacity-90"
                             />
                             {previewReg && (
                                 <div className="absolute inset-0 z-10 flex flex-col justify-center" style={{ left: '45.5%', width: '31%', top: (certType === 'scout-team' || certType === 'volunteer') ? '1.5%' : '5%' }}>
                                     <div className="text-[#a51d46] font-bold" style={{ fontSize: '1.4vw', lineHeight: 1.1 }}>
                                         {toTitleCase(
-                                            (certType === 'student' ? previewReg.studentName : 
-                                             certType === 'volunteer' ? (previewReg as any).volunteerName :
-                                             (previewReg as any).name) || "NAME OF PARTICIPANT"
+                                            (certType === 'student' ? previewReg.studentName :
+                                                certType === 'volunteer' ? (previewReg as any).volunteerName :
+                                                    (previewReg as any).name) || "NAME OF PARTICIPANT"
                                         )}
                                     </div>
                                     <div className="text-[#283272] mt-1" style={{ fontSize: '0.7vw', lineHeight: 1.2 }}>
@@ -397,9 +425,9 @@ export default function CertificateCenter({
                         <div className="text-center space-y-1">
                             <p className="text-slate-500 text-[10px] font-semibold">
                                 Showing {previewReg
-                                    ? (certType === 'student' ? previewReg.studentName : 
-                                       certType === 'volunteer' ? (previewReg as any).volunteerName :
-                                       (previewReg as any).name)
+                                    ? (certType === 'student' ? previewReg.studentName :
+                                        certType === 'volunteer' ? (previewReg as any).volunteerName :
+                                            (previewReg as any).name)
                                     : 'no data yet'}
                             </p>
                             <p className="text-slate-600 text-[9px] uppercase tracking-widest">
