@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { generateParticipationCertificate } from "@/lib/certificateUtils";
+import { generateParticipationCertificate, generateBatchParticipationCertificates } from "@/lib/certificateUtils";
+import { generateBatchAccessPasses } from "@/lib/exportUtils";
 import { generateScoutCertificate } from "@/lib/scoutCertificateUtils";
 import { generateVolunteerCertificate } from "@/lib/volunteerCertificateUtils";
+import { generateQiraathCertificate } from "@/lib/qiraathCertificateUtils";
 import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Award, School, Archive, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
-import { Registration, AwardeeRegistration, ScoutTeamRegistration, VolunteerRegistration } from "../types";
+import { Users, Award, School, Archive, ArrowRight, Loader2, ShieldCheck, MoreHorizontal, X, User, Download, ExternalLink } from "lucide-react";
+import { Registration, AwardeeRegistration, ScoutTeamRegistration, VolunteerRegistration, QiraathRegistration } from "../types";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import Link from "next/link";
 
 const toTitleCase = (str: string) => {
     return str.toLowerCase()
@@ -24,41 +27,47 @@ interface CertificateCenterProps {
     awardeeRegistrations: AwardeeRegistration[];
     scoutTeamRegistrations: ScoutTeamRegistration[];
     volunteerRegistrations: VolunteerRegistration[];
+    qiraathRegistrations: QiraathRegistration[];
 }
 
-type CertType = 'student' | 'awardee' | 'scout-team' | 'volunteer';
+type CertType = 'student' | 'awardee' | 'scout-team' | 'volunteer' | 'qiraath';
 
 const CERT_META: Record<CertType, { label: string; plural: string; color: string; bg: string; icon: React.ReactNode }> = {
     student: { label: 'Delegate',  plural: 'Delegates',  color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <Users size={16} /> },
     awardee: { label: 'Awardee',   plural: 'Awardees',   color: 'text-violet-600',  bg: 'bg-violet-600',  icon: <Award size={16} /> },
     'scout-team': { label: 'Scout',     plural: 'Scout Team', color: 'text-blue-600',    bg: 'bg-blue-600',    icon: <ShieldCheck size={16} /> },
     volunteer: { label: 'Volunteer', plural: 'Volunteers', color: 'text-rose-600', bg: 'bg-rose-600', icon: <Users size={16} /> },
+    qiraath: { label: 'Qiraath', plural: 'Qiraath', color: 'text-emerald-600', bg: 'bg-emerald-600', icon: <Users size={16} /> },
 };
 
 export default function CertificateCenter({ 
     registrations, 
     awardeeRegistrations,
     scoutTeamRegistrations,
-    volunteerRegistrations
+    volunteerRegistrations,
+    qiraathRegistrations
 }: CertificateCenterProps) {
     const [certType, setCertType] = useState<CertType>('student');
     const [selectedZone, setSelectedZone]   = useState("all");
     const [selectedSchool, setSelectedSchool] = useState("all");
     const [selectedClass, setSelectedClass]  = useState("all");
     const [isGenerating, setIsGenerating] = useState(false);
+    const [showActions, setShowActions] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const activeData = useMemo(() => {
         if (certType === 'student') return registrations;
         if (certType === 'awardee') return awardeeRegistrations;
         if (certType === 'scout-team') return scoutTeamRegistrations;
-        return volunteerRegistrations;
-    }, [certType, registrations, awardeeRegistrations, scoutTeamRegistrations, volunteerRegistrations]);
+        if (certType === 'volunteer') return volunteerRegistrations;
+        if (certType === 'qiraath') return qiraathRegistrations;
+        return registrations;
+    }, [certType, registrations, awardeeRegistrations, scoutTeamRegistrations, volunteerRegistrations, qiraathRegistrations]);
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];
         if (selectedZone   !== 'all') d = d.filter(r => r.zone === selectedZone);
-        if (certType === 'student' || certType === 'volunteer' || certType === 'scout-team') {
+        if (certType === 'student' || certType === 'volunteer' || certType === 'scout-team' || certType === 'qiraath') {
             if (selectedSchool !== 'all') d = d.filter(r => r.school === selectedSchool);
             if (selectedClass  !== 'all') d = d.filter(r => r.className === selectedClass);
         }
@@ -89,11 +98,11 @@ export default function CertificateCenter({
             if (selectedZone === 'all') return alert("Please select a zone.");
             data = (activeData as any[]).filter(r => r.zone === selectedZone);
             filename = `genius_certificates_${certType}_zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
-        } else if (scope === 'school' && (certType === 'student' || certType === 'volunteer' || certType === 'scout-team')) {
+        } else if (scope === 'school' && (certType === 'student' || certType === 'volunteer' || certType === 'scout-team' || certType === 'qiraath')) {
             if (selectedSchool === 'all') return alert("Please select a school.");
             data = (activeData as any[]).filter(r => r.school === selectedSchool);
             filename = `genius_certificates_${certType}_school_${selectedSchool}`;
-        } else if (scope === 'class' && (certType === 'student' || certType === 'volunteer' || certType === 'scout-team')) {
+        } else if (scope === 'class' && (certType === 'student' || certType === 'volunteer' || certType === 'scout-team' || certType === 'qiraath')) {
             if (selectedClass === 'all') return alert("Please select a class.");
             data = (activeData as any[]).filter(r => r.className === selectedClass);
             filename = `genius_certificates_${certType}_class_${selectedClass}`;
@@ -105,12 +114,36 @@ export default function CertificateCenter({
                 await generateScoutCertificate(data, filename);
             } else if (certType === 'volunteer') {
                 await generateVolunteerCertificate(data, filename);
+            } else if (certType === 'qiraath') {
+                await generateQiraathCertificate(data, filename);
             } else {
                 await generateParticipationCertificate(data, filename, certType);
             }
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const getProfileLink = (type: CertType, id: string) => {
+        switch (type) {
+            case 'student': return `/admin/dashboard/student/${id}`;
+            case 'awardee': return `/admin/dashboard/awardee/${id}`;
+            case 'scout-team': return `/admin/dashboard/scout/${id}`;
+            case 'volunteer': return `/admin/dashboard/volunteer/${id}`;
+            case 'qiraath': return `/admin/dashboard/qiraath/${id}`;
+            default: return `/admin/dashboard`;
+        }
+    };
+
+    const getPassType = (type: CertType): any => {
+        const mapping: Record<string, string> = {
+            student: 'student',
+            awardee: 'awardee',
+            'scout-team': 'volunteer', // Fallback for scouts
+            volunteer: 'volunteer',
+            qiraath: 'qiraath'
+        };
+        return mapping[type] || 'student';
     };
 
     const meta = CERT_META[certType];
@@ -200,8 +233,8 @@ export default function CertificateCenter({
                             </Button>
                         </Card>
 
-                        {/* School filter — students, volunteers, scouts */}
-                        {(certType === 'student' || certType === 'volunteer' || certType === 'scout-team') && (
+                        {/* School filter — students, volunteers, scouts, qiraath */}
+                        {(certType === 'student' || certType === 'volunteer' || certType === 'scout-team' || certType === 'qiraath') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
@@ -231,8 +264,8 @@ export default function CertificateCenter({
                             </Card>
                         )}
 
-                        {/* Class filter — students, volunteers, scouts */}
-                        {(certType === 'student' || certType === 'volunteer' || certType === 'scout-team') && (
+                        {/* Class filter — students, volunteers, scouts, qiraath */}
+                        {(certType === 'student' || certType === 'volunteer' || certType === 'scout-team' || certType === 'qiraath') && (
                             <Card className="apc-card border border-slate-100 rounded-[24px] p-6 space-y-4 hover:shadow-md transition-shadow">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600">
@@ -276,12 +309,70 @@ export default function CertificateCenter({
                             </span>
                         </div>
 
+                        {/* Record Actions Toggle */}
+                        {previewReg && (
+                            <div className="w-full flex justify-end">
+                                {!showActions ? (
+                                    <Button
+                                        onClick={() => setShowActions(true)}
+                                        className="h-8 rounded-xl bg-slate-800 text-white font-normal uppercase text-[9px] tracking-widest hover:bg-slate-700 shadow-lg active:scale-95 transition-all"
+                                    >
+                                        <MoreHorizontal className="mr-2 h-3 w-3" /> Actions
+                                    </Button>
+                                ) : (
+                                    <div className="flex items-center gap-2 animate-in slide-in-from-right-4 duration-300">
+                                        <Link href={getProfileLink(certType, previewReg.id)}>
+                                            <Button
+                                                variant="outline"
+                                                className="h-8 px-3 rounded-xl border-slate-700 text-slate-300 font-normal uppercase text-[9px] tracking-widest hover:bg-slate-800 hover:text-white"
+                                            >
+                                                <ExternalLink className="mr-2 h-3 w-3" /> Profile
+                                            </Button>
+                                        </Link>
+
+                                        <Button
+                                            onClick={() => generateBatchAccessPasses([previewReg], `AccessPass_${(previewReg.studentName || (previewReg as any).name || 'Pass').replace(/\s+/g, '_')}`, getPassType(certType))}
+                                            className="h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-normal uppercase text-[9px] tracking-widest shadow-lg shadow-indigo-900/20"
+                                        >
+                                            <Download className="mr-2 h-3 w-3" /> ID
+                                        </Button>
+
+                                        <Button
+                                            onClick={() => {
+                                                if (certType === 'scout-team') {
+                                                    generateScoutCertificate([previewReg], `Certificate_${((previewReg as any).name || 'Scout').replace(/\s+/g, '_')}`);
+                                                } else if (certType === 'volunteer') {
+                                                    generateVolunteerCertificate([previewReg], `Certificate_${((previewReg as any).volunteerName || (previewReg as any).name || 'Volunteer').replace(/\s+/g, '_')}`);
+                                                } else if (certType === 'qiraath') {
+                                                    generateQiraathCertificate([previewReg], `Certificate_${((previewReg as any).name || 'Qiraath').replace(/\s+/g, '_')}`);
+                                                } else {
+                                                    generateParticipationCertificate([previewReg], `Certificate_${(previewReg.studentName || (previewReg as any).name || 'Participant').replace(/\s+/g, '_')}`, certType as any);
+                                                }
+                                            }}
+                                            className="h-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-normal uppercase text-[9px] tracking-widest shadow-lg shadow-emerald-900/20"
+                                        >
+                                            <Download className="mr-2 h-3 w-3" /> Cert
+                                        </Button>
+
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setShowActions(false)}
+                                            className="h-8 w-8 p-0 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+                                        >
+                                            <X size={14} />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Glowing halo behind the pass card */}
                         <div className="relative w-full overflow-hidden rounded-md border border-slate-800 bg-white">
                             <img 
                                 src={
                                     certType === 'scout-team' ? "/certificate/GjamS.jpeg" : 
                                     certType === 'volunteer' ? "/certificate/GjamV.jpeg" : 
+                                    certType === 'qiraath' ? "/certificate/GjamD.jpeg" :
                                     "/certificate/Gjamp.jpeg"
                                 } 
                                 alt="Certificate Background" 

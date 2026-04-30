@@ -8,7 +8,8 @@ export default function CertificatesPage() {
     registrations, 
     awardeeRegistrations,
     scoutTeamRegistrations,
-    volunteerRegistrations
+    volunteerRegistrations,
+    qiraathRegistrations
   } = useDashboardData();
 
   return (
@@ -18,6 +19,7 @@ export default function CertificatesPage() {
         awardeeRegistrations={awardeeRegistrations}
         scoutTeamRegistrations={scoutTeamRegistrations}
         volunteerRegistrations={volunteerRegistrations}
+        qiraathRegistrations={qiraathRegistrations}
       />
     </div>
   );
