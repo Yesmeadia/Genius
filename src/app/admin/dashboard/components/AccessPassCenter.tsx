@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, User, Zap, School, Archive, ArrowRight, ShieldCheck, Trophy, MoreHorizontal, X } from "lucide-react";
 import { AccessPassDesign } from "./AccessPassDesign";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration, QiraathRegistration, MediaRegistration } from "../types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration, QiraathRegistration, MediaRegistration, VolunteerRegistration, AlumniRegistration } from "../types";
 import { useDashboardData } from "./DashboardDataContext";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -22,6 +22,8 @@ interface AccessPassCenterProps {
     awardeeRegistrations: AwardeeRegistration[];
     qiraathRegistrations: QiraathRegistration[];
     mediaRegistrations: MediaRegistration[];
+    volunteerRegistrations: VolunteerRegistration[];
+    alumniRegistrations: AlumniRegistration[];
 }
 
 type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath' | 'media';
@@ -45,7 +47,9 @@ export default function AccessPassCenter({
     scoutTeamRegistrations,
     awardeeRegistrations,
     qiraathRegistrations,
-    mediaRegistrations
+    mediaRegistrations,
+    volunteerRegistrations,
+    alumniRegistrations
 }: AccessPassCenterProps) {
     const { dynamicLocations } = useDashboardData();
     const [passType, setPassType] = useState<PassType>('student');
@@ -65,35 +69,45 @@ export default function AccessPassCenter({
         if (passType === 'media') return mediaRegistrations;
         if (passType === 'guardian') {
             const guardians: any[] = [];
-            registrations.forEach(reg => {
+            const allWithAcc = [
+                ...registrations.map(r => ({ ...r, type: 'Student' })),
+                ...alumniRegistrations.map(r => ({ ...r, type: 'Alumni' })),
+                ...volunteerRegistrations.map(r => ({ ...r, type: 'Volunteer' })),
+                ...awardeeRegistrations.map(r => ({ ...r, type: 'Awardee' })),
+                ...qiraathRegistrations.map(r => ({ ...r, type: 'Qiraath' })),
+                ...scoutTeamRegistrations.map(r => ({ ...r, type: 'Scout' }))
+            ];
+            
+            allWithAcc.forEach(reg => {
+                const baseName = (reg as any).studentName || (reg as any).volunteerName || (reg as any).name || 'Participant';
                 if (reg.accompaniments && reg.accompaniments.length > 0) {
                     reg.accompaniments.forEach((acc, i) => {
                         guardians.push({
                             id: `${reg.id}-G${i}`,
                             guardianName: acc.name,
-                            studentName: reg.studentName,
-                            school: reg.school,
-                            className: reg.className,
-                            zone: reg.zone,
-                            photoUrl: reg.photoUrl
+                            studentName: baseName,
+                            school: (reg as any).school,
+                            className: (reg as any).className,
+                            zone: (reg as any).zone,
+                            photoUrl: (reg as any).photoUrl
                         });
                     });
-                } else if (reg.parentName || reg.withParent) {
+                } else if ((reg as any).parentName || reg.withParent) {
                     guardians.push({
                         id: `${reg.id}-G`,
-                        guardianName: reg.parentName || "Parent/Guardian",
-                        studentName: reg.studentName,
-                        school: reg.school,
-                        className: reg.className,
-                        zone: reg.zone,
-                        photoUrl: reg.photoUrl
+                        guardianName: (reg as any).parentName || "Parent/Guardian",
+                        studentName: baseName,
+                        school: (reg as any).school,
+                        className: (reg as any).className,
+                        zone: (reg as any).zone,
+                        photoUrl: (reg as any).photoUrl
                     });
                 }
             });
             return guardians;
         }
         return registrations;
-    }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, scoutTeamRegistrations, awardeeRegistrations, qiraathRegistrations]);
+    }, [passType, registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, scoutTeamRegistrations, awardeeRegistrations, qiraathRegistrations, volunteerRegistrations, alumniRegistrations, mediaRegistrations]);
 
     const filteredData = useMemo(() => {
         let d = activeData as any[];
