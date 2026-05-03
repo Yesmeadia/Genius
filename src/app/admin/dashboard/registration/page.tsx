@@ -9,6 +9,7 @@ import YesianRegistrationForm from "@/components/YesianRegistrationForm";
 import LocalStaffRegistrationForm from "@/components/LocalStaffRegistrationForm";
 import AlumniAchieverRegistrationForm from "@/components/AlumniAchieverRegistrationForm";
 import { DriverStaffRegistrationForm } from "@/components/DriverStaffRegistrationForm";
+import MediaRegistrationForm from "@/components/MediaRegistrationForm";
 
 import {
   Select,
@@ -29,6 +30,7 @@ const REGISTRATION_TYPES = [
   { id: "local-staff", label: "Local Staff", component: LocalStaffRegistrationForm },
   { id: "alumni", label: "Alumni Achiever", component: AlumniAchieverRegistrationForm },
   { id: "driver", label: "Driver & Staff", component: DriverStaffRegistrationForm },
+  { id: "media", label: "Media", component: MediaRegistrationForm },
 ];
 
 export default function AdminRegistrationPage() {

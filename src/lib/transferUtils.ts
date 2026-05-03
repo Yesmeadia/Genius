@@ -11,7 +11,8 @@ export type RegistrationType =
   | "awardee" 
   | "qiraath"
   | "driver-staff"
-  | "scout-team";
+  | "scout-team"
+  | "media";
 
 export const REGISTRATION_TYPES: { id: RegistrationType; label: string; collection: string; path: string }[] = [
   { id: "student", label: "Student", collection: "registrations", path: "/admin/dashboard/student" },
@@ -24,6 +25,7 @@ export const REGISTRATION_TYPES: { id: RegistrationType; label: string; collecti
   { id: "qiraath", label: "Qiraath", collection: "qiraath_registrations", path: "/admin/dashboard/qiraath" },
   { id: "driver-staff", label: "Driver Staff", collection: "driver_staff_registrations", path: "/admin/dashboard/driver-staff" },
   { id: "scout-team", label: "Scout Team", collection: "scout_team_registrations", path: "/admin/dashboard/scout-team" },
+  { id: "media", label: "Media", collection: "media_registrations", path: "/admin/dashboard/media" },
 ];
 
 export async function transferRegistration(

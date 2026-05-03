@@ -167,6 +167,19 @@ export interface ScoutTeamRegistration {
   accompaniments?: Accompaniment[];
 }
 
+export interface MediaRegistration {
+  id: string;
+  name: string;
+  gender: string;
+  whatsappNumber: string;
+  agency: string; // News Agency / Media House
+  designation: string;
+  createdAt: any;
+  photoUrl?: string;
+  attendance?: boolean;
+  attendedAt?: any;
+}
+
 export interface DashboardStats {
   totalStudents: number;
   totalGuests: number;
@@ -178,6 +191,7 @@ export interface DashboardStats {
   totalQiraath: number;
   totalDriverStaff: number;
   totalScoutTeam: number;
+  totalMedia: number;
   todayCount: number;
   totalParticipation: number;
   totalAccompanied: number;
@@ -204,6 +218,7 @@ export interface DashboardDataContextType {
   qiraathRegistrations: QiraathRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
   scoutTeamRegistrations: ScoutTeamRegistration[];
+  mediaRegistrations: MediaRegistration[];
   stats: DashboardStats;
   loading: boolean;
   lastSync: string;

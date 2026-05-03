@@ -98,9 +98,12 @@ async function loadMontserratFonts(doc: jsPDF): Promise<{ semiBold: boolean; med
 }
 
 function toTitleCase(str: string): string {
-  return str.toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\bYes\b/g, "YES");
+  if (!str) return '';
+  const acronyms = ['YES', 'DS', 'PA'];
+  return str.split(' ').map(word => {
+    if (acronyms.includes(word.toUpperCase())) return word.toUpperCase();
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
 }
 
 // ─── Drawing logic ────────────────────────────────────────────────────────────

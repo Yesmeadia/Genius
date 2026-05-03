@@ -1,26 +1,21 @@
 "use client";
 
-import { locations } from "@/data/locations";
+import { locations, Zone } from "@/data/locations";
 import JsBarcode from "jsbarcode";
 import { useRef, useEffect } from "react";
 
-export type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath';
-
-export interface AccessPassTheme {
-  primary: string;
-  bg: string;
-  light: string;
-  border: string;
-}
+export type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath' | 'media';
 
 export interface AccessPassDesignProps {
   registration: any;
   passType: PassType;
-  theme: AccessPassTheme; // kept for API compat, display now uses bg image
+  customLocations?: Zone[];
 }
 
-export function AccessPassDesign({ registration, passType }: AccessPassDesignProps) {
+export function AccessPassDesign({ registration, passType, customLocations }: AccessPassDesignProps) {
   const barcodeRef = useRef<SVGSVGElement>(null);
+
+  const activeLocations = customLocations || locations;
 
   // Background image per pass type
   const bgSrc =
@@ -29,21 +24,25 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         : passType === 'awardee' ? '/pass/Awardee.jpeg'
           : passType === 'yesian' ? '/pass/Crew.jpeg'
             : passType === 'guardian' ? '/pass/Guardian.jpeg'
-              : passType === 'guest' ? '/pass/guest.png'
-                : '/pass/Crew.jpeg'; // officials.png used for yesian & local-staff
+              : passType === 'media' ? '/pass/Media.jpeg'
+                : passType === 'guest' ? '/pass/guest.png'
+                  : '/pass/Crew.jpeg'; // officials.png used for yesian & local-staff
 
-  const getSchoolName = (schoolId: string) => {
-    for (const zone of locations) {
+  const getLocationDetails = (schoolId: string) => {
+    for (const zone of activeLocations) {
       const school = zone.schools.find(s => s.id === schoolId);
-      if (school) return school.name;
+      if (school) return { schoolName: school.name, zoneName: zone.name };
     }
-    return schoolId;
+    return { schoolName: schoolId, zoneName: '' };
   };
+
+  const getSchoolName = (schoolId: string) => getLocationDetails(schoolId).schoolName;
 
   function toTitleCase(str: string): string {
     if (!str) return '';
+    const acronyms = ['YES', 'DS', 'PA'];
     return str.split(' ').map(word => {
-      if (word.toUpperCase() === 'YES') return 'YES';
+      if (acronyms.includes(word.toUpperCase())) return word.toUpperCase();
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     }).join(' ');
   }
@@ -52,38 +51,39 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
   const rawFullName = registration
     ? (passType === 'student' ? registration.studentName : passType === 'guardian' ? registration.guardianName : registration.name) || ''
     : 'FULL NAME';
-  const fullName = (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') ? toTitleCase(rawFullName) : rawFullName;
+  const fullName = (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? toTitleCase(rawFullName) : rawFullName;
 
   // Detail line
   let infoLine = '';
   if (registration) {
-    if (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') {
-      let combined = '';
-      if (passType === 'student' || passType === 'awardee' || passType === 'qiraath') {
-        combined = toTitleCase(getSchoolName(registration.school));
+    if (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') {
+      if (passType === 'student') {
+        const { schoolName } = getLocationDetails(registration?.school);
+        infoLine = `${toTitleCase(schoolName)}`;
       } else if (passType === 'local-staff') {
-        const sName = toTitleCase(getSchoolName(registration.school));
-        combined = `${(registration.role || '').toUpperCase()} | ${sName}`;
+        const { schoolName } = getLocationDetails(registration?.school);
+        infoLine = `${toTitleCase(schoolName)}`;
       } else if (passType === 'yesian') {
-        combined = `${(registration.designation || '').toUpperCase()} | ${(registration.zone || '').toUpperCase()}`;
+        infoLine = ``;
       } else if (passType === 'guardian') {
-        combined = `STUDENT: ${registration.studentName || ''}`;
-      }
-
-      if (combined.includes('-') && passType !== 'guardian') {
-        infoLine = combined.split('-').map(p => p.trim()).join('\n');
+        infoLine = `C/O: ${toTitleCase(registration?.studentName || '')}`;
+      } else if (passType === 'media') {
+        infoLine = ``;
       } else {
-        infoLine = combined;
+        // Awardee / Qiraath
+        const { schoolName } = getLocationDetails(registration?.school);
+        infoLine = `${toTitleCase(schoolName)}`;
       }
     }
     else if (passType === 'guest') infoLine = registration.address || '';
+    else if (passType === 'media') infoLine = registration.agency ? `${registration.agency}\n${registration.designation || ''}` : registration.designation || '';
     else infoLine = registration.designation ? `${registration.designation}` : registration.zone || '';
   } else {
     infoLine = 'SCHOOL NAME';
   }
 
   // Photo
-  const photoUrl = (passType === 'student' || passType === 'yesian' || passType === 'local-staff' || passType === 'awardee' || passType === 'guardian') ? registration?.photoUrl : null;
+  const photoUrl = (passType === 'student' || passType === 'yesian' || passType === 'local-staff' || passType === 'awardee' || passType === 'media') ? registration?.photoUrl : null;
 
   // Barcode
   useEffect(() => {
@@ -122,7 +122,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         {/* ── PHOTO ── */}
         <div
           className="absolute overflow-hidden object-cover"
-          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') ? {
+          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
             top: '42.64%', // 51.168mm / 120mm
             left: '54.45%', // 46.289mm / 85mm
             width: '34.3%', // 29.157mm / 85mm
@@ -149,10 +149,12 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         {/* ── INFO SECTION ── */}
         <div
           className="absolute flex flex-col justify-start gap-0"
-          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') ? {
-            top: '36.96%', // 44.354mm / 120mm
-            left: '13.83%', // 11.753mm / 85mm
-            right: '48%',  // leave room for photo
+          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
+            top: passType === 'guardian' ? '44.46%' : '36.96%', // 53.354mm / 120mm vs 44.354mm / 120mm
+            left: passType === 'guardian' ? '0' : '13.83%',
+            right: passType === 'guardian' ? '0' : '48%',
+            alignItems: passType === 'guardian' ? 'center' : 'flex-start',
+            textAlign: passType === 'guardian' ? 'center' : 'left',
           } : {
             top: '68%',
             left: '5%',
@@ -162,8 +164,8 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         >
           {/* NAME */}
           <p
-            className={`leading-tight tracking-tight truncate ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') ? 'text-white' : 'font-black uppercase text-slate-900'}`}
-            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') ? {
+            className={`leading-tight tracking-tight truncate ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? 'text-white' : 'font-black uppercase text-slate-900'}`}
+            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 600, // SemiBold
               fontSize: fullName.length > 25 ? 'clamp(8px, 3vw, 11px)' 
@@ -177,8 +179,8 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
 
           {/*SCHOOL */}
           <p
-            className={`leading-tight truncate whitespace-pre-line ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') ? 'text-slate-200' : 'font-bold uppercase tracking-wide mt-0.5'}`}
-            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') ? {
+            className={`leading-tight truncate whitespace-pre-line ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? 'text-slate-200' : 'font-bold uppercase tracking-wide mt-0.5'}`}
+            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 500, // Medium
               fontSize: 'clamp(6px, 2.5vw, 12px)'
@@ -202,7 +204,7 @@ export function AccessPassDesign({ registration, passType }: AccessPassDesignPro
         </div>
 
         {/* BARCODE FOR STUDENT/STAFF/AWARDEE/OFFICIAL */}
-        {(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath') && (
+        {(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') && (
           <div className="absolute flex flex-col items-center" style={{ bottom: '8.88%', right: '9.68%', width: '30.58%' }}>
             <svg ref={barcodeRef} className="w-full" />
             <p className="text-black font-bold font-mono tracking-widest mt-[2px]" style={{ fontSize: 'clamp(5px, 1.5vw, 7px)' }}>

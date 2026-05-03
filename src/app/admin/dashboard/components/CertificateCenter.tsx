@@ -17,9 +17,12 @@ import { useGSAP } from "@gsap/react";
 import Link from "next/link";
 
 const toTitleCase = (str: string) => {
-    return str.toLowerCase()
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-        .replace(/\bYes\b/g, "YES");
+    if (!str) return '';
+    const acronyms = ['YES', 'DS', 'PA'];
+    return str.split(' ').map(word => {
+        if (acronyms.includes(word.toUpperCase())) return word.toUpperCase();
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
 };
 
 interface CertificateCenterProps {

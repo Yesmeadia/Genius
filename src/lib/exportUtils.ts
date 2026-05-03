@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { locations } from "@/data/locations";
+import { locations, Zone } from "@/data/locations";
 import {
   Registration,
   GuestRegistration,
@@ -57,13 +57,17 @@ const getBarcodeBase64 = (text: string): string | null => {
   }
 };
 
-const getSchoolName = (schoolId: string) => {
-  for (const zone of locations) {
+const getLocationDetails = (schoolId: string, customLocations?: Zone[]) => {
+  const activeLocs = customLocations || locations;
+  for (const zone of activeLocs) {
     const school = zone.schools.find((s) => s.id === schoolId);
-    if (school) return school.name;
+    if (school) return { schoolName: school.name, zoneName: zone.name };
   }
-  return schoolId;
+  return { schoolName: schoolId, zoneName: '' };
 };
+
+const getSchoolName = (schoolId: string, customLocations?: Zone[]) =>
+  getLocationDetails(schoolId, customLocations).schoolName;
 
 const getBase64ImageFromUrl = async (imageUrl: string) => {
   try {
@@ -868,8 +872,9 @@ function addFooter(doc: jsPDF, data: any) {
 
 function toTitleCase(str: string): string {
   if (!str) return '';
+  const acronyms = ['YES', 'DS', 'PA'];
   return str.split(' ').map(word => {
-    if (word.toUpperCase() === 'YES') return 'YES';
+    if (acronyms.includes(word.toUpperCase())) return word.toUpperCase();
     return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
   }).join(' ');
 }
@@ -880,8 +885,9 @@ function toTitleCase(str: string): string {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian',
-  fontsLoaded: { kalash: boolean; montserratSemiBold: boolean; montserratMedium: boolean }
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' | 'media',
+  fontsLoaded: { kalash: boolean; montserratSemiBold: boolean; montserratMedium: boolean },
+  dynamicLocations?: Zone[]
 ) {
   const W = doc.internal.pageSize.width;   // 85mm
   const H = doc.internal.pageSize.height;  // 120mm
@@ -892,8 +898,9 @@ async function drawBadgeContent(
       : type === 'awardee' ? '/pass/Awardee.jpeg'
         : type === 'yesian' ? '/pass/Crew.jpeg'
           : type === 'guardian' ? '/pass/Guardian.jpeg'
-            : type === 'guest' ? '/pass/guest.png'
-              : '/pass/Crew.jpeg';
+            : type === 'media' ? '/pass/Media.jpeg'
+              : type === 'guest' ? '/pass/guest.png'
+                : '/pass/Crew.jpeg';
   const bg = await getBase64ImageFromUrl(bgPath);
   if (bg) {
     const bgFormat = bgPath.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
@@ -911,7 +918,7 @@ async function drawBadgeContent(
   let photoX = 20;
   let photoY = 12;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
     photoW = 29.157;
     photoH = 36.425;
     photoX = 46.289;
@@ -922,11 +929,11 @@ async function drawBadgeContent(
     photoX = stripW + 1 + (photoAreaW - photoW) / 2;
   }
 
-  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff' || type === 'guardian') ? data.photoUrl : null;
+  const photoSrc = (type === 'student' || type === 'yesian' || type === 'local-staff' || type === 'alumni-achiever' || type === 'volunteer' || type === 'awardee' || type === 'qiraath' || type === 'driver-staff' || type === 'media') ? data.photoUrl : null;
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) {
-      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
+      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'qiraath' || type === 'media') {
         const r = 7.69;
         const d = doc as any;
         // Robust PDF clipping using internal operators
@@ -951,16 +958,19 @@ async function drawBadgeContent(
       : fullName.length <= 20 ? 8
         : 7;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
     doc.setFont(fontsLoaded.montserratSemiBold ? 'MontserratSemiBold' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratSemiBold) doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
-    const fontSize = fullName.length > 25 ? 9 
+    const fontSize = fullName.length > 25 ? 9
       : fullName.length > 18 ? 11
-      : fullName.length > 13 ? 12 
-      : 15;
+        : fullName.length > 13 ? 12
+          : 15;
     doc.setFontSize(fontSize);
-    doc.text(toTitleCase(fullName), 11.753, 44.354); // Moved down from 41.354
+    const nameY = type === 'guardian' ? 53.354 : 44.354;
+    const nameX = type === 'guardian' ? W / 2 : 11.753;
+    const align = type === 'guardian' ? 'center' : 'left';
+    doc.text(toTitleCase(fullName), nameX, nameY, { align }); // Moved down from 41.354
   } else {
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(10, 10, 10);
@@ -1011,9 +1021,12 @@ async function drawBadgeContent(
   else if (type === 'guardian') {
     infoText = `STUDENT: ${data.studentName || ''}`;
   }
+  else if (type === 'media') {
+    infoText = data.agency ? `${data.agency}\n${data.designation || ''}` : data.designation || '';
+  }
   else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
     doc.setFontSize(7);
     doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratMedium) doc.setFont('helvetica', 'bold');
@@ -1021,24 +1034,31 @@ async function drawBadgeContent(
 
     let displayInfo = "";
     if (type === 'student') {
-      displayInfo = toTitleCase(getSchoolName(data.school));
+      const { schoolName } = getLocationDetails(data.school, dynamicLocations);
+      displayInfo = `${toTitleCase(schoolName)}`;
     } else if (type === 'local-staff') {
-      const schoolName = toTitleCase(getSchoolName(data.school));
-      displayInfo = `${(data.role || '').toUpperCase()} | ${schoolName}`;
+      const { schoolName } = getLocationDetails(data.school, dynamicLocations);
+      displayInfo = `${toTitleCase(schoolName)}`;
     } else if (type === 'yesian') {
-      displayInfo = `${(data.designation || '').toUpperCase()} | ${(data.zone || '').toUpperCase()}`;
+      displayInfo = "";
     } else if (type === 'guardian') {
-      displayInfo = `STUDENT: ${data.studentName || ''}`;
+      displayInfo = `C/O: ${toTitleCase(data.studentName || '')}`;
+    } else if (type === 'media') {
+      displayInfo = "";
     } else {
-      // Awardee (removed rank and class per user request)
-      displayInfo = toTitleCase(getSchoolName(data.school));
+      // Awardee
+      const { schoolName } = getLocationDetails(data.school, dynamicLocations);
+      displayInfo = `${toTitleCase(schoolName)}`;
     }
 
     if (displayInfo.includes('-')) {
       const parts = displayInfo.split('-');
       displayInfo = parts.map(p => p.trim()).join('\n');
     }
-    doc.text(displayInfo, 11.753, 48.354);
+    const infoY = type === 'guardian' ? 56.354 : 48.354;
+    const infoX = type === 'guardian' ? W / 2 : 11.753;
+    const align = type === 'guardian' ? 'center' : 'left';
+    doc.text(displayInfo, infoX, infoY, { align });
   } else {
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
@@ -1049,7 +1069,7 @@ async function drawBadgeContent(
 
   // ── 5. BARCODE + SHORT REF ID (centered) ─────────────────────
   const barcode = getBarcodeBase64(data.id);
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
     const bcW = 26;
     const bcH = 6;
     const bcX = W - bcW - 8.228; // right: 0.8228 cm
@@ -1077,7 +1097,8 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' = 'student'
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' | 'media' = 'student',
+  dynamicLocations?: Zone[]
 ) {
   if (data.length === 0) return alert("No records found.");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [85, 120] });
@@ -1118,7 +1139,7 @@ export async function generateBatchAccessPasses(
 
   for (let i = 0; i < data.length; i++) {
     if (i > 0) doc.addPage([85, 120], "portrait");
-    await drawBadgeContent(doc, data[i], type, fontsLoaded);
+    await drawBadgeContent(doc, data[i], type, fontsLoaded, dynamicLocations);
   }
   triggerDownload(doc, filename);
 }

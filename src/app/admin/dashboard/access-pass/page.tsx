@@ -11,7 +11,8 @@ export default function AccessPassPage() {
     localStaffRegistrations,
     scoutTeamRegistrations,
     awardeeRegistrations,
-    qiraathRegistrations
+    qiraathRegistrations,
+    mediaRegistrations
   } = useDashboardData();
 
   return (
@@ -24,6 +25,7 @@ export default function AccessPassPage() {
         scoutTeamRegistrations={scoutTeamRegistrations}
         awardeeRegistrations={awardeeRegistrations}
         qiraathRegistrations={qiraathRegistrations}
+        mediaRegistrations={mediaRegistrations}
       />
     </div>
   );

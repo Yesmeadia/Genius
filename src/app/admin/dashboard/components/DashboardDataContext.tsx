@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { db, auth } from "@/lib/firebase";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
-import { locations } from "@/data/locations";
+import { collection, query, orderBy, onSnapshot, doc } from "firebase/firestore";
+import { locations, Zone } from "@/data/locations";
 import {
   Registration,
   GuestRegistration,
@@ -15,7 +15,8 @@ import {
   AwardeeRegistration,
   QiraathRegistration,
   DriverStaffRegistration,
-  ScoutTeamRegistration
+  ScoutTeamRegistration,
+  MediaRegistration
 } from "../types";
 
 interface DashboardDataContextType {
@@ -29,6 +30,7 @@ interface DashboardDataContextType {
   qiraathRegistrations: QiraathRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
   scoutTeamRegistrations: ScoutTeamRegistration[];
+  mediaRegistrations: MediaRegistration[];
   stats: DashboardStats;
   loading: boolean;
   lastSync: string;
@@ -49,6 +51,7 @@ interface DashboardDataContextType {
   setFilterAwardType: (type: string) => void;
   resetFilters: () => void;
   filterOptions: { zones: string[]; schools: string[]; classes: string[] };
+  dynamicLocations: Zone[];
 }
 
 const DashboardDataContext = createContext<DashboardDataContextType | undefined>(undefined);
@@ -64,8 +67,10 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   const [qiraathRegistrations, setQiraathRegistrations] = useState<QiraathRegistration[]>([]);
   const [driverStaffRegistrations, setDriverStaffRegistrations] = useState<DriverStaffRegistration[]>([]);
   const [scoutTeamRegistrations, setScoutTeamRegistrations] = useState<ScoutTeamRegistration[]>([]);
+  const [mediaRegistrations, setMediaRegistrations] = useState<MediaRegistration[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
+  const [dynamicLocations, setDynamicLocations] = useState<Zone[]>(locations);
 
   // Shared Filtering States
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,6 +80,15 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
   const [filterGender, setFilterGender] = useState("all");
   const [filterAccompaniment, setFilterAccompaniment] = useState("all");
   const [filterAwardType, setFilterAwardType] = useState("all");
+
+  useEffect(() => {
+    const unsubLocs = onSnapshot(doc(db, "config", "locations"), (snap) => {
+      if (snap.exists() && snap.data().zones) {
+        setDynamicLocations(snap.data().zones);
+      }
+    });
+    return () => unsubLocs();
+  }, []);
 
   useEffect(() => {
     // Listeners
@@ -130,6 +144,11 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       setScoutTeamRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ScoutTeamRegistration[]);
     });
 
+    const qMedia = query(collection(db, "media_registrations"), orderBy("createdAt", "desc"));
+    const unsubMedia = onSnapshot(qMedia, (snap) => {
+      setMediaRegistrations(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MediaRegistration[]);
+    });
+
     return () => {
       unsubStudents();
       unsubGuests();
@@ -141,6 +160,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       unsubQiraath();
       unsubDriverStaff();
       unsubScoutTeam();
+      unsubMedia();
     };
   }, []);
 
@@ -180,7 +200,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
 
     const studentMales = registrations.filter(r => r.gender?.toLowerCase() === "male").length;
     const studentFemales = registrations.filter(r => r.gender?.toLowerCase() === "female").length;
-    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length + alumniRegistrations.length + volunteerRegistrations.length + awardeeRegistrations.length + qiraathRegistrations.length + driverStaffRegistrations.length + scoutTeamRegistrations.length;
+    const totalParticipation = registrations.length + guestRegistrations.length + yesianRegistrations.length + localStaffRegistrations.length + alumniRegistrations.length + volunteerRegistrations.length + awardeeRegistrations.length + qiraathRegistrations.length + driverStaffRegistrations.length + scoutTeamRegistrations.length + mediaRegistrations.length;
 
     const trendMap = new Map();
     const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -223,6 +243,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalQiraath: qiraathRegistrations.length,
       totalDriverStaff: driverStaffRegistrations.length,
       totalScoutTeam: scoutTeamRegistrations.length,
+      totalMedia: mediaRegistrations.length,
       todayCount,
       totalParticipation,
       totalAccompanied: [
@@ -236,10 +257,10 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       totalAccompaniments,
       totalSchools: new Set(registrations.map(r => r.school)).size,
       totalZones: new Set(registrations.map(r => r.zone)).size,
-      availableSchoolsCount: locations.reduce((acc, z) => acc + z.schools.length, 0),
-      availableZonesCount: locations.length,
-      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + qiraathRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + scoutTeamRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
-      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + qiraathRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + scoutTeamRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
+      availableSchoolsCount: dynamicLocations.reduce((acc, z) => acc + z.schools.length, 0),
+      availableZonesCount: dynamicLocations.length,
+      malesCount: studentMales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + qiraathRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + scoutTeamRegistrations.filter(r => r.gender?.toLowerCase() === "male").length + mediaRegistrations.filter(r => r.gender?.toLowerCase() === "male").length,
+      femalesCount: studentFemales + guestRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + yesianRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + localStaffRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + alumniRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + volunteerRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + awardeeRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + qiraathRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + scoutTeamRegistrations.filter(r => r.gender?.toLowerCase() === "female").length + mediaRegistrations.filter(r => r.gender?.toLowerCase() === "female").length,
       lastUpdated: lastSync,
       trendData,
       platformData: [
@@ -253,9 +274,10 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
         { name: 'Qiraath', value: qiraathRegistrations.length },
         { name: 'Drivers/Staff', value: driverStaffRegistrations.length },
         { name: 'Scout Team', value: scoutTeamRegistrations.length },
+        { name: 'Media', value: mediaRegistrations.length },
       ],
     };
-  }, [registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations, scoutTeamRegistrations, lastSync]);
+  }, [registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations, scoutTeamRegistrations, mediaRegistrations, lastSync]);
 
   const resetFilters = () => {
     setSearchTerm("");
@@ -283,6 +305,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     qiraathRegistrations,
     driverStaffRegistrations,
     scoutTeamRegistrations,
+    mediaRegistrations,
     stats,
     loading,
     lastSync,
@@ -301,7 +324,8 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     filterAwardType,
     setFilterAwardType,
     resetFilters,
-    filterOptions
+    filterOptions,
+    dynamicLocations
   };
 
   return (

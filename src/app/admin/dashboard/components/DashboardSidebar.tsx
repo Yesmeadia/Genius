@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Download, LogOut, ShieldCheck,
   CreditCard, User, Users2, BarChart3, GraduationCap,
   Truck, Trash2, Plus, Award, ScrollText, ChevronDown, ChevronRight,
-  ClipboardList, Settings, Briefcase, Box, CheckCircle, Scan, MessageSquare
+  ClipboardList, Settings, Briefcase, Box, CheckCircle, Scan, MessageSquare, MapPin, Camera
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -29,7 +29,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
   useEffect(() => {
     const categoryMapping = [
       { id: "management", hrefs: ["/admin/dashboard/students-data", "/admin/dashboard/guardian-data", "/admin/dashboard/guest-registry", "/admin/dashboard/yesian-network", "/admin/dashboard/alumni-achievers", "/admin/dashboard/awardee", "/admin/dashboard/qiraath"] },
-      { id: "personnel", hrefs: ["/admin/dashboard/local-staff", "/admin/dashboard/volunteers", "/admin/dashboard/scout-team", "/admin/dashboard/driver-staff"] },
+      { id: "personnel", hrefs: ["/admin/dashboard/local-staff", "/admin/dashboard/volunteers", "/admin/dashboard/scout-team", "/admin/dashboard/driver-staff", "/admin/dashboard/media"] },
       { id: "utilities", hrefs: ["/admin/dashboard/access-pass", "/admin/dashboard/certificates", "/admin/dashboard/reports", "/admin/dashboard/master-export", "/admin/dashboard/attendance-track"] },
       { id: "system", hrefs: ["/admin/dashboard/recycle-bin"] }
     ];
@@ -88,6 +88,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
         { id: "volunteers", label: "Volunteers", icon: <ShieldCheck size={18} />, href: "/admin/dashboard/volunteers" },
         { id: "scout-team", label: "Scout Team", icon: <ShieldCheck size={18} />, href: "/admin/dashboard/scout-team" },
         { id: "driver-staff", label: "Drivers & Staff", icon: <Truck size={18} />, href: "/admin/dashboard/driver-staff" },
+        { id: "media", label: "Media", icon: <Camera size={18} />, href: "/admin/dashboard/media" },
       ]
     },
     {
