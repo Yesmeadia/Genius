@@ -25,6 +25,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import JsBarcode from "jsbarcode";
 import { TransferRegistration } from "../../components/TransferRegistration";
+import { VoiceFeedbackCard } from "../../components/VoiceFeedbackCard";
+
 
 interface GuestEditForm {
   name: string;
@@ -459,6 +461,7 @@ export default function GuestProfilePage() {
                 )}
               </CardContent>
             </Card>
+            <VoiceFeedbackCard participantId={id as string} />
           </div>
         </div>
       </div>

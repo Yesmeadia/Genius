@@ -271,21 +271,27 @@ export default function Home() {
           style={{ backgroundImage: "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
       </div>
 
-      <div className="relative z-10 container mx-auto py-16 md:py-24 px-6 max-w-7xl">
-
-        {/* Header Section */}
-        <header className="hero-elements flex flex-col items-center text-center mb-16 md:mb-24">
-          <div className="flex flex-col items-center gap-8 mb-10">
-            <img src="/yeslogo.png" alt="YES INDIA" className="h-8 opacity-40 grayscale hover:grayscale-0 transition-all duration-700" />
-            <div className="relative">
-              <div className="absolute -inset-4 bg-indigo-500/5 blur-3xl rounded-full" />
-              <img src="/Genius.png" alt="Genius Jam" className="h-32 md:h-44 object-contain relative drop-shadow-[0_8px_30px_rgb(0,0,0,0.04)]" />
-            </div>
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 md:py-5 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
+        <div className="flex items-center gap-4 md:gap-6">
+          <img src="/yeslogo.png" alt="YES INDIA" className="h-5 md:h-6 opacity-40 grayscale hover:grayscale-0 transition-all duration-700" />
+          <div className="w-px h-6 bg-slate-200 hidden md:block" />
+          <img src="/Genius.png" alt="Genius Jam" className="h-8 md:h-10 object-contain drop-shadow-sm" />
+        </div>
+        <div className="flex items-center">
+          <div className="hidden md:flex items-center gap-2">
+            <h1 className="text-[9px] md:text-[10px] font-black tracking-[0.3em] md:tracking-[0.4em] text-slate-400 uppercase">
+              Official Registration Portal
+            </h1>
           </div>
-          <h1 className="text-xs font-normal tracking-[0.25em] text-slate-400 uppercase mt-2 mb-2">
-            Official Registration Portal
-          </h1>
-        </header>
+        </div>
+      </header>
+
+      <div className="relative z-10 container mx-auto pt-28 pb-16 md:pb-24 px-6 max-w-7xl">
+        <div className="hero-elements mb-10 text-center md:text-left">
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Select Registration Category</h2>
+          <p className="text-sm text-slate-500 mt-2">Choose the appropriate category to continue.</p>
+        </div>
 
         {settingsLoading ? (
           /* Premium Loading State */

@@ -27,6 +27,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import JsBarcode from "jsbarcode";
 import { TransferRegistration } from "../../components/TransferRegistration";
+import { VoiceFeedbackCard } from "../../components/VoiceFeedbackCard";
+
 
 interface AlumniEditForm {
   name: string;
@@ -816,6 +818,7 @@ export default function AlumniProfilePage() {
                 )}
               </CardContent>
             </Card>
+            <VoiceFeedbackCard participantId={id as string} />
           </div>
         </div>
       </div>

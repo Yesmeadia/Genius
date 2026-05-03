@@ -28,6 +28,8 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import JsBarcode from "jsbarcode";
 import { TransferRegistration } from "../../components/TransferRegistration";
+import { VoiceFeedbackCard } from "../../components/VoiceFeedbackCard";
+
 
 interface EditForm {
   name: string;
@@ -586,6 +588,7 @@ export default function DriverStaffProfilePage() {
                 )}
               </CardContent>
             </Card>
+            <VoiceFeedbackCard participantId={id as string} />
           </div>
         </div>
       </div>

@@ -15,8 +15,10 @@ export default function WelcomeOverlay({ record }: WelcomeOverlayProps) {
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ef4444 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
         
         <div className="relative bg-white rounded-[1.4rem] p-10">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 px-6 py-2 bg-red-600 rounded-b-2xl shadow-lg shadow-red-500/20">
-            <span className="text-[9px] font-black text-white uppercase tracking-[0.4em]">Verified</span>
+          <div className={`absolute top-0 left-1/2 -translate-x-1/2 px-6 py-2 rounded-b-2xl shadow-lg ${record.alreadyMarked ? 'bg-amber-500 shadow-amber-500/20' : 'bg-red-600 shadow-red-500/20'}`}>
+            <span className="text-[9px] font-black text-white uppercase tracking-[0.4em]">
+              {record.alreadyMarked ? 'Already Scanned' : 'Verified'}
+            </span>
           </div>
 
           <div className="relative mb-10 mt-4 flex justify-center">
@@ -32,15 +34,13 @@ export default function WelcomeOverlay({ record }: WelcomeOverlayProps) {
               </div>
               {/* Glowing Ring */}
               <div className="absolute -inset-4 border border-red-500/20 rounded-3xl animate-pulse" />
-              
-              <div className="absolute -bottom-3 -right-3 bg-emerald-500 text-white p-3.5 rounded-xl shadow-xl shadow-emerald-500/20 z-20 border-4 border-white transform rotate-3">
-                <CheckCircle2 size={24} />
-              </div>
             </div>
           </div>
 
           <div className="space-y-3">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.6em]">Identification Confirmed</p>
+            <p className={`text-[9px] font-black uppercase tracking-[0.6em] ${record.alreadyMarked ? 'text-amber-500' : 'text-slate-400'}`}>
+              {record.alreadyMarked ? 'Duplicate Scan Detected' : 'Identification Confirmed'}
+            </p>
             <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">
               {record.name}
             </h2>

@@ -20,6 +20,7 @@ export interface AttendanceRecord {
   school?: string;
   photoUrl?: string;
   attendance?: boolean;
+  alreadyMarked?: boolean;
 }
 
 export default function AttendancePage() {
@@ -70,7 +71,8 @@ export default function AttendancePage() {
   // Auto-search and mark logic
   useEffect(() => {
     const term = searchTerm.trim();
-    if (term.length === 8) {
+    // Validate: Exactly 8 chars, only alphanumeric (Firestore IDs)
+    if (term.length === 8 && /^[a-zA-Z0-9]+$/.test(term)) {
       autoMarkAttendance(term);
     }
   }, [searchTerm]);
@@ -128,7 +130,7 @@ export default function AttendancePage() {
         if (!match.attendance) {
           await markAttendance(match, true);
         } else {
-          showWelcome(match);
+          showWelcome({ ...match, alreadyMarked: true });
         }
         setSearchTerm("");
       }
@@ -169,13 +171,21 @@ export default function AttendancePage() {
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!searchTerm.trim()) return;
+    
+    const rawTerm = searchTerm.trim();
+    if (!rawTerm) return;
+
+    // Validate input to prevent Firestore query injection/errors
+    if (rawTerm.includes('/') || rawTerm.includes('\\') || rawTerm.length < 3) {
+      alert("Invalid search term. Please enter at least 3 characters and avoid special characters.");
+      return;
+    }
 
     setLoading(true);
     setResults([]);
     try {
       const allResults: AttendanceRecord[] = [];
-      const term = searchTerm.toLowerCase();
+      const term = rawTerm.toLowerCase();
 
       // For manual search, we still fetch more docs to allow name/mobile search
       await Promise.all(collections.map(async (coll) => {
@@ -212,25 +222,27 @@ export default function AttendancePage() {
   };
 
   const markAttendance = async (record: AttendanceRecord, isAuto: boolean = false) => {
+    if (record.attendance) {
+      if (!isAuto) alert("Participant is already marked present.");
+      return;
+    }
+
     setMarkingId(record.id);
     try {
       const docRef = doc(db, record.collection, record.id);
-      const isCurrentlyPresent = record.attendance === true;
 
       await updateDoc(docRef, {
-        attendance: !isCurrentlyPresent,
-        attendedAt: !isCurrentlyPresent ? serverTimestamp() : null
+        attendance: true,
+        attendedAt: serverTimestamp()
       });
 
-      const updatedRecord = { ...record, attendance: !isCurrentlyPresent };
+      const updatedRecord = { ...record, attendance: true };
 
       if (!isAuto) {
         setResults(prev => prev.map(r => r.id === record.id ? updatedRecord : r));
       }
 
-      if (!isCurrentlyPresent) {
-        showWelcome(updatedRecord);
-      }
+      showWelcome(updatedRecord);
     } catch (error) {
       console.error("Marking error:", error);
       alert("Failed to update attendance.");
@@ -255,28 +267,33 @@ export default function AttendancePage() {
 
       {lastMarked && <WelcomeOverlay record={lastMarked} />}
 
-      <div className="relative z-10 container mx-auto min-h-screen flex flex-col justify-center items-center py-20 px-6 max-w-4xl">
-        <header className="page-header flex flex-col items-center text-center mb-16">
-          <div className="flex flex-col items-center gap-8 mb-10">
-            <img src="/yeslogo.png" alt="YES INDIA" className="h-8 opacity-40 grayscale" />
-            <img src="/Genius.png" alt="Genius Jam" className="h-32 md:h-48 object-contain" />
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 md:py-5 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
+        <div className="flex items-center gap-4 md:gap-6">
+          <img src="/yeslogo.png" alt="YES INDIA" className="h-5 md:h-6 opacity-40 grayscale transition-all duration-700" />
+          <div className="w-px h-6 bg-slate-200 hidden md:block" />
+          <img src="/Genius.png" alt="Genius Jam" className="h-8 md:h-10 object-contain drop-shadow-sm" />
+        </div>
+        <div className="flex items-center">
+          <div className="hidden md:flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <h1 className="text-[9px] md:text-[10px] font-black tracking-[0.3em] md:tracking-[0.4em] text-slate-400 uppercase">
+              Neural Scanning Terminal
+            </h1>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <h1 className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
-                Neural Scanning Terminal
-              </h1>
-            </div>
-            <p className="text-slate-500 text-sm max-w-sm mx-auto font-medium">
-              System is primed and ready for <span className="text-red-600 font-black uppercase tracking-wider text-[10px]">Rapid Check-in</span>
-            </p>
-          </div>
-        </header>
+        </div>
+      </header>
+
+      <div className="relative z-10 w-full container mx-auto min-h-[calc(100vh-80px)] mt-20 flex flex-col justify-center items-center py-10 px-6 max-w-4xl">
+        <div className="page-header text-center w-full mb-10">
+          <p className="text-slate-500 text-sm font-medium">
+            System is primed and ready for <span className="text-red-600 font-black uppercase tracking-wider text-[10px]">Rapid Check-in</span>
+          </p>
+        </div>
 
         {/* Scanner Visualization */}
-        <div className="search-container mb-12 relative">
-          <div className="relative max-w-2xl mx-auto group">
+        <div className="search-container w-full mb-12 relative">
+          <div className="relative w-full max-w-2xl mx-auto group">
             {/* Viewfinder Corners */}
             <div className="absolute -top-4 -left-4 w-12 h-12 border-t-4 border-l-4 border-red-600 rounded-tl-xl opacity-20 group-focus-within:opacity-100 transition-opacity duration-500" />
             <div className="absolute -top-4 -right-4 w-12 h-12 border-t-4 border-r-4 border-red-600 rounded-tr-xl opacity-20 group-focus-within:opacity-100 transition-opacity duration-500" />
@@ -330,7 +347,7 @@ export default function AttendancePage() {
         </div>
 
         {/* Results Section */}
-        <div className="space-y-6 min-h-[300px]">
+        <div className="w-full max-w-2xl space-y-6 mt-8">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 gap-8">
               <div className="relative">

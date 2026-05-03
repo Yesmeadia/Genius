@@ -69,17 +69,23 @@ export default function DriverStaffRegistrationPage() {
           style={{ backgroundImage: "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
       </div>
 
-      <div className="relative z-10 container mx-auto py-12 md:py-20 px-6 max-w-7xl">
-
-        <header className="page-header flex flex-col items-center text-center mb-4 px-4">
-          <div className="flex flex-col items-center gap-8 mb-10">
-            <img src="/yeslogo.png" alt="YES INDIA" className="h-6 opacity-30 grayscale" />
-            <img src="/Genius.png" alt="Genius Jam" className="h-20 md:h-28 object-contain" />
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 md:py-5 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
+        <div className="flex items-center gap-4 md:gap-6">
+          <img src="/yeslogo.png" alt="YES INDIA" className="h-5 md:h-6 opacity-40 grayscale transition-all duration-700" />
+          <div className="w-px h-6 bg-slate-200 hidden md:block" />
+          <img src="/Genius.png" alt="Genius Jam" className="h-8 md:h-10 object-contain drop-shadow-sm" />
+        </div>
+        <div className="flex items-center">
+          <div className="hidden md:flex items-center gap-2">
+            <h1 className="text-[9px] md:text-[10px] font-black tracking-[0.3em] md:tracking-[0.4em] text-slate-400 uppercase">
+              Drivers & Staff Registration
+            </h1>
           </div>
-          <h1 className="text-xs font-black tracking-[0.25em] text-slate-400 uppercase mt-2 mb-2">
-            Drivers & Staff Registration
-          </h1>
-        </header>
+        </div>
+      </header>
+
+      <div className="relative z-10 container mx-auto pt-24 pb-12 md:pt-32 md:pb-20 px-6 max-w-7xl">
 
         {settingsLoading ? (
           <div className="flex flex-col items-center gap-4 py-20">

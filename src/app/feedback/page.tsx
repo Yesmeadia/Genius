@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { db, storage } from "@/lib/firebase";
-import { collection, doc, getDoc, getDocs, query, orderBy, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, orderBy, addDoc, serverTimestamp, where, limit, documentId } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -28,6 +28,7 @@ export default function FeedbackPage() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [hasExistingFeedback, setHasExistingFeedback] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [micPermission, setMicPermission] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,45 +123,39 @@ export default function FeedbackPage() {
 
   useEffect(() => {
     const term = searchTerm.trim();
-    if (!term) return;
-    // Debounce: barcode scanners type very fast, so wait 300ms after last char
+    if (!term || term.length < 8) return;
+
     const timer = setTimeout(() => {
       lookupParticipant(term);
-    }, 300);
+    }, 100); // Faster response once 8 digits are reached
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
   const lookupParticipant = async (id: string) => {
     const searchId = id.trim();
     if (!searchId) return;
+    
+    // Validate input to prevent Firestore query injection/errors
+    if (searchId.includes('/') || searchId.includes('\\') || searchId.length < 3) {
+      return;
+    }
+
     setLoading(true);
     setParticipant(null);
     try {
       for (const coll of collections) {
-        // 1. Try direct document ID match first (fast path)
-        const directRef = doc(db, coll.name, searchId);
-        const directSnap = await getDoc(directRef);
-        if (directSnap.exists()) {
-          const data = directSnap.data();
-          setParticipant({
-            id: directSnap.id,
-            name: data[coll.field] || data.name || data.studentName || "Unknown",
-            type: coll.label,
-            collection: coll.name,
-            photoUrl: data.photoUrl,
-          });
-          setLoading(false);
-          return;
-        }
-
-        // 2. Full collection scan — find doc whose ID contains the search string
-        const snap = await getDocs(query(collection(db, coll.name), orderBy("createdAt", "desc")));
-        const match = snap.docs.find(d =>
-          d.id === searchId ||
-          d.id.toLowerCase().includes(searchId.toLowerCase()) ||
-          (d.data()[coll.field] || "").toLowerCase().includes(searchId.toLowerCase())
+        // 1. Try prefix search on document ID (Matches barcode behavior)
+        const idQuery = query(
+          collection(db, coll.name),
+          where(documentId(), ">=", searchId),
+          where(documentId(), "<=", searchId + "\uf8ff"),
+          limit(1)
         );
-        if (match) {
+        
+        const idSnap = await getDocs(idQuery);
+        
+        if (!idSnap.empty) {
+          const match = idSnap.docs[0];
           const data = match.data();
           setParticipant({
             id: match.id,
@@ -172,8 +167,35 @@ export default function FeedbackPage() {
           setLoading(false);
           return;
         }
+
+        // 2. Optimized name search (using index prefix)
+        // Only do this if it's not a direct ID match
+        if (searchId.length >= 3) { // Only search by name if at least 3 chars
+          const nameQuery = query(
+            collection(db, coll.name),
+            where(coll.field, ">=", searchId),
+            where(coll.field, "<=", searchId + "\uf8ff"),
+            limit(1)
+          );
+          const nameSnap = await getDocs(nameQuery);
+          if (!nameSnap.empty) {
+            const match = nameSnap.docs[0];
+            const data = match.data();
+            setParticipant({
+              id: match.id,
+              name: data[coll.field] || data.name || data.studentName || "Unknown",
+              type: coll.label,
+              collection: coll.name,
+              photoUrl: data.photoUrl,
+            });
+            setLoading(false);
+            return;
+          }
+        }
       }
-      alert("No participant found. Please check the ID and try again.");
+      if (searchId.length >= 8) {
+        alert("No participant found for ID: " + searchId);
+      }
     } catch (error) {
       console.error("Lookup error:", error);
       alert("Connection error. Please try again.");
@@ -181,6 +203,27 @@ export default function FeedbackPage() {
       setLoading(false);
     }
   };
+
+  const checkExistingFeedback = async (participantId: string) => {
+    try {
+      const q = query(
+        collection(db, "feedback"),
+        where("participantId", "==", participantId)
+      );
+      const snap = await getDocs(q);
+      setHasExistingFeedback(!snap.empty);
+    } catch (error) {
+      console.error("Error checking feedback:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (participant) {
+      checkExistingFeedback(participant.id);
+    } else {
+      setHasExistingFeedback(false);
+    }
+  }, [participant]);
 
   const startRecording = async () => {
     try {
@@ -280,29 +323,34 @@ export default function FeedbackPage() {
           style={{ backgroundImage: "linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
       </div>
 
-      <div className="relative z-10 container mx-auto min-h-screen flex flex-col justify-center items-center py-6 px-4 sm:px-6 max-w-3xl">
-        <header className="page-header flex flex-col items-center text-center mb-10">
-          <div className="flex flex-col items-center gap-6 mb-8">
-            <img src="/yeslogo.png" alt="YES INDIA" className="h-6 opacity-40 grayscale hover:grayscale-0 transition-all duration-700" />
-            <img src="/Genius.png" alt="Genius Jam" className="h-20 md:h-28 object-contain" />
+      {/* Navigation Header */}
+      <header className="absolute top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 md:py-5 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
+        <div className="flex items-center gap-4 md:gap-6">
+          <img src="/yeslogo.png" alt="YES INDIA" className="h-5 md:h-6 opacity-40 grayscale transition-all duration-700" />
+          <div className="w-px h-6 bg-slate-200 hidden md:block" />
+          <img src="/Genius.png" alt="Genius Jam" className="h-8 md:h-10 object-contain drop-shadow-sm" />
+        </div>
+        <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-900 animate-pulse" />
+            <h1 className="text-[9px] md:text-[10px] font-black tracking-[0.3em] md:tracking-[0.4em] text-slate-400 uppercase">
+              Participant Feedback
+            </h1>
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
-              <h1 className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
-                Participant Feedback
-              </h1>
-            </div>
-            <p className="text-slate-500 text-sm font-medium">
-              Share your experience with us.
-            </p>
-          </div>
-        </header>
+        </div>
+      </header>
+
+      <div className="relative z-10 container mx-auto min-h-screen flex flex-col justify-center items-center pt-28 pb-6 px-4 sm:px-6 max-w-3xl">
+        <div className="text-center mb-8">
+          <p className="text-slate-500 text-sm md:text-base font-medium">
+            Share your experience with us.
+          </p>
+        </div>
 
         {!participant && !isSubmitted && (
           <div className="search-container w-full max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <form onSubmit={(e) => { e.preventDefault(); if (searchTerm.trim()) lookupParticipant(searchTerm.trim()); }} className="relative">
-              <div className="relative bg-white rounded-full flex items-center px-6 py-2 shadow-[0_2px_5px_0_rgba(0,0,0,0.16),0_2px_10px_0_rgba(0,0,0,0.12)] hover:shadow-[0_2px_8px_1px_rgba(0,0,0,0.2)] focus-within:shadow-[0_2px_8px_1px_rgba(0,0,0,0.2)] transition-shadow duration-200">
+              <div className="relative bg-white rounded-full flex items-center px-6 py-2 shadow-sm border border-slate-100 focus-within:border-slate-200 transition-all duration-200">
                 <div className="text-slate-400 shrink-0">
                   <Search size={22} strokeWidth={2} />
                 </div>
@@ -311,10 +359,10 @@ export default function FeedbackPage() {
                   placeholder="Enter ID to continue"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-12 bg-transparent border-0 text-base sm:text-lg font-normal px-4 text-slate-700 focus:ring-0 placeholder:text-slate-400"
+                  className="w-full h-12 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base sm:text-lg font-normal px-4 text-slate-700 placeholder:text-slate-400"
                   autoFocus
                 />
-                <button type="submit" className="shrink-0 p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors hidden sm:block">
+                <button type="submit" className="shrink-0 p-2 text-slate-400 hover:text-slate-900 rounded-full transition-colors hidden sm:block">
                   <CheckCircle2 size={24} strokeWidth={1.5} />
                 </button>
               </div>
@@ -330,13 +378,13 @@ export default function FeedbackPage() {
         )}
 
         {participant && (
-          <div className="participant-card w-full max-w-xl bg-white rounded-[24px] border border-slate-200 p-8 md:p-12 shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-500 space-y-10">
-            <div className="flex flex-col items-center text-center gap-5">
+          <div className="participant-card w-full max-w-xl bg-white/80 backdrop-blur-xl rounded-[32px] border border-white/40 p-6 md:p-10 shadow-2xl shadow-slate-200/40 animate-in fade-in slide-in-from-bottom-8 duration-500 space-y-8">
+            <div className="flex flex-col items-center text-center gap-4">
               <div className="h-24 w-24 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center">
                 {participant?.photoUrl ? (
                   <img src={participant.photoUrl} alt={participant?.name} className="h-full w-full object-cover" />
                 ) : (
-                  <User size={40} className="text-slate-400" strokeWidth={1.5} />
+                  <User size={32} className="text-slate-300" strokeWidth={1.5} />
                 )}
               </div>
 
@@ -346,143 +394,173 @@ export default function FeedbackPage() {
               </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="flex flex-col items-center gap-8 relative">
 
-                {!audioUrl ? (
-                  <div className="flex flex-col items-center gap-6 relative z-10 w-full mt-2">
-                    {isRecording ? (
-                      <div className="w-full bg-slate-50 border border-slate-200 rounded-full h-16 px-4 flex items-center justify-between shadow-sm animate-in zoom-in-95 duration-300">
-                        {/* Recording Timer & Indicator */}
-                        <div className="flex items-center gap-2 w-20 shrink-0">
-                          <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                          <span className="text-sm font-medium text-slate-700 tabular-nums">
-                            {formatTime(recordingTime)}
-                          </span>
-                        </div>
 
-                        {/* Central Waveform Visualizer */}
-                        <div className="flex-grow flex items-center justify-center gap-1 mx-4 h-full">
-                          {[...Array(24)].map((_, i) => (
-                            <div
-                              key={i}
-                              className="w-1 bg-red-400 rounded-full opacity-80"
-                              style={{
-                                height: '10px',
-                                animation: `wave ${0.3 + Math.random() * 0.4}s ease-in-out infinite alternate`,
-                                animationDelay: `${Math.random()}s`
-                              }}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Stop Button */}
-                        <button
-                          onClick={stopRecording}
-                          className="h-10 w-10 shrink-0 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors border border-red-100"
-                          title="Stop Recording"
-                        >
-                          <Square size={16} fill="currentColor" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>  
-                        {micPermission === "denied" ? (
-                          <div className="flex flex-col items-center gap-4 text-center w-full">
-                            <div className="h-16 w-16 rounded-full bg-red-50 border border-red-100 flex items-center justify-center">
-                              <Mic size={28} className="text-red-400" />
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold text-slate-800">Microphone Blocked</p>
-                              <p className="text-xs text-slate-500 max-w-[220px] leading-relaxed">
-                                Please allow microphone access in your browser settings, then tap below.
-                              </p>
-                            </div>
-                            <button
-                              onClick={requestMicPermission}
-                              className="h-10 px-6 rounded-full bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-                            >
-                              Allow Microphone
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={startRecording}
-                            className="relative h-20 w-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-md bg-white text-blue-600 border border-slate-100 hover:bg-slate-50 hover:scale-105 active:scale-95"
-                          >
-                            <Mic size={32} />
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
-                    {/* Voice Memo Card */}
-                    <div className="relative w-full rounded-[24px] overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 p-6 shadow-xl shadow-indigo-500/20 mb-5">
-                      {/* Decorative blurred orb inside card */}
-                      <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-                      <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-indigo-400/20 blur-2xl pointer-events-none" />
-
-                      <div className="relative flex items-center gap-4 mb-5">
-                        <div className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-                          <Waves size={22} className="text-white" />
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold text-sm">Voice Feedback</p>
-                          <p className="text-indigo-200 text-xs font-medium">{formatTime(recordingTime)} recorded</p>
-                        </div>
-                        <button
-                          onClick={resetRecording}
-                          className="ml-auto h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white/70 hover:text-white"
-                          title="Discard"
-                        >
-                          <Trash2 size={16} strokeWidth={1.5} />
-                        </button>
-                      </div>
-
-                      {/* Waveform Visualizer (static preview) */}
-                      <div className="flex items-center gap-1 h-10 mb-5">
-                        {[...Array(36)].map((_, i) => {
-                          const heights = [30, 55, 40, 80, 60, 45, 70, 35, 90, 50, 65, 40, 75, 45, 55, 85, 40, 60, 35, 70, 55, 80, 45, 65, 50, 40, 75, 30, 60, 85, 50, 40, 65, 45, 55, 70];
-                          return (
-                            <div
-                              key={i}
-                              className="flex-1 bg-white/50 rounded-full"
-                              style={{ height: `${heights[i] ?? 40}%` }}
-                            />
-                          );
-                        })}
-                      </div>
-
-                      {/* Playback Progress */}
-                      <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
-                        <div className="h-full w-2/3 bg-white/80 rounded-full" />
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={resetRecording}
-                        variant="outline"
-                        className="flex-1 h-12 rounded-full border-slate-200 text-slate-600 font-medium hover:bg-slate-50"
-                      >
-                        Re-record
-                      </Button>
-                      <Button
-                        onClick={submitFeedback}
-                        disabled={isUploading}
-                        className="flex-[2] h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-500/30 transition-all"
-                      >
-                        {isUploading ? <Loader2 className="animate-spin mr-2" size={16} /> : <CheckCircle2 className="mr-2" size={18} />}
-                        {isUploading ? "Submitting..." : "Submit Feedback"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
+            {hasExistingFeedback ? (
+              <div className="flex flex-col items-center gap-6 py-4 text-center animate-in fade-in zoom-in duration-500">
+                <div className="h-20 w-20 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 mb-2">
+                  <CheckCircle2 size={40} />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xl font-normal text-slate-900">Feedback Received</p>
+                  <p className="text-sm text-slate-500 font-medium max-w-[280px]">
+                    You have already submitted your voice feedback. Thank you!
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setParticipant(null);
+                    setSearchTerm("");
+                  }}
+                  variant="outline"
+                  className="h-11 px-8 rounded-full border-slate-200 text-slate-600 font-medium hover:bg-slate-50"
+                >
+                  Close
+                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-8">
+                <div className="flex flex-col items-center gap-8 relative">
+
+                  {!audioUrl ? (
+                    <div className="flex flex-col items-center gap-6 relative z-10 w-full mt-2">
+                      {isRecording ? (
+                        <div className="w-full bg-slate-50 border border-slate-200 rounded-full h-16 px-4 flex items-center justify-between shadow-sm animate-in zoom-in-95 duration-300">
+                          {/* Recording Timer & Indicator */}
+                          <div className="flex items-center gap-2 w-20 shrink-0">
+                            <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                            <span className="text-sm font-medium text-slate-700 tabular-nums">
+                              {formatTime(recordingTime)}
+                            </span>
+                          </div>
+
+                          {/* Central Waveform Visualizer - Reduced count for mobile */}
+                          <div className="flex-grow flex items-center justify-center gap-0.5 sm:gap-1 mx-2 sm:mx-4 h-full overflow-hidden">
+                            {[...Array(16)].map((_, i) => (
+                              <div
+                                key={i}
+                                className="w-1 bg-red-400 rounded-full opacity-80 shrink-0"
+                                style={{
+                                  height: '12px',
+                                  animation: `wave ${0.3 + Math.random() * 0.4}s ease-in-out infinite alternate`,
+                                  animationDelay: `${Math.random()}s`
+                                }}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Stop Button */}
+                          <button
+                            onClick={stopRecording}
+                            className="h-10 w-10 shrink-0 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors border border-red-100"
+                            title="Stop Recording"
+                          >
+                            <Square size={16} fill="currentColor" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          {micPermission === "denied" ? (
+                            <div className="flex flex-col items-center gap-4 text-center w-full">
+                              <div className="h-16 w-16 rounded-full bg-red-50 border border-red-100 flex items-center justify-center">
+                                <Mic size={28} className="text-red-400" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-sm font-semibold text-slate-800">Microphone Blocked</p>
+                                <p className="text-xs text-slate-500 max-w-[220px] leading-relaxed">
+                                  Please allow microphone access in your browser settings, then tap below.
+                                </p>
+                              </div>
+                              <button
+                                onClick={requestMicPermission}
+                                className="h-10 px-6 rounded-full bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                              >
+                                Allow Microphone
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={startRecording}
+                              className="relative h-20 w-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-md bg-white text-slate-600 border border-slate-100 hover:bg-slate-50 hover:scale-105 active:scale-95"
+                            >
+                              <Mic size={32} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
+                      {/* Premium Voice Memo Card */}
+                      <div className="relative w-full rounded-[28px] overflow-hidden bg-white border border-slate-100 shadow-xl shadow-slate-200/20 p-6 mb-6 group transition-all duration-500">
+                        {/* Decorative subtle background gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-500/5 to-slate-500/5 opacity-50" />
+
+                        <div className="relative flex items-center gap-4 mb-6">
+                          <div className="h-14 w-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-lg shadow-slate-200 group-hover:scale-105 transition-transform duration-500">
+                            <Volume2 size={24} />
+                          </div>
+                          <div className="flex-grow">
+                            <p className="text-slate-900 font-bold text-base tracking-tight">Recorded Feedback</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                              <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">{formatTime(recordingTime)} length</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={resetRecording}
+                            className="h-10 w-10 rounded-full bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all duration-300"
+                            title="Delete and Re-record"
+                          >
+                            <Trash2 size={18} strokeWidth={2} />
+                          </button>
+                        </div>
+
+                        {/* Animated Waveform Visualization */}
+                        <div className="relative h-16 w-full flex items-center justify-center gap-1.5 px-2 mb-2">
+                          {[...Array(40)].map((_, i) => {
+                            const heights = [30, 50, 40, 70, 90, 60, 45, 80, 55, 40, 70, 85, 50, 60, 40, 75, 95, 60, 50, 80, 70, 90, 55, 65, 40, 85, 75, 50, 60, 45, 80, 65, 55, 40, 70, 85, 60, 45, 55, 30];
+                            return (
+                              <div
+                                key={i}
+                                className="w-1 bg-slate-200 rounded-full transition-all duration-700 group-hover:bg-slate-400"
+                                style={{
+                                  height: `${heights[i]}%`,
+                                  opacity: 0.3 + (heights[i] / 150)
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Mobile-Optimized Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <Button
+                          onClick={resetRecording}
+                          variant="outline"
+                          className="flex-1 h-14 rounded-2xl border-slate-100 text-slate-500 font-bold uppercase text-[11px] tracking-widest hover:bg-slate-50 hover:text-slate-800 transition-all active:scale-[0.98]"
+                        >
+                          Discard & Redo
+                        </Button>
+                        <Button
+                          onClick={submitFeedback}
+                          disabled={isUploading}
+                          className="flex-[1.5] h-14 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[11px] tracking-widest shadow-xl shadow-slate-200 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+                        >
+                          {isUploading ? (
+                            <Loader2 className="animate-spin mr-3" size={18} />
+                          ) : (
+                            <CheckCircle2 className="mr-3" size={18} />
+                          )}
+                          {isUploading ? "Uploading..." : "Confirm & Submit"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
