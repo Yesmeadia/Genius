@@ -18,10 +18,10 @@ function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth(false);
-  
+
   const id = searchParams.get("id");
   const type = searchParams.get("type");
-  
+
 
 
 
@@ -111,7 +111,7 @@ function SuccessContent() {
               </h1>
 
               <p className="max-w-md text-base md:text-lg font-medium leading-relaxed text-slate-500 mb-8">
-                Your registration has been recorded successfully. We're excited to see you excel at the national talent series.
+                Your registration has been recorded successfully.
               </p>
 
 
