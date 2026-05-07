@@ -267,7 +267,7 @@ export async function generateYesianExportPDF(data: YesianRegistration[], title:
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(217, 119, 6); // Amber-600
-    
+
     if (zIndex > 0) {
       // Check if we need a new page or just some spacing
       if (currentY > 160) {
@@ -277,7 +277,7 @@ export async function generateYesianExportPDF(data: YesianRegistration[], title:
         currentY += 10;
       }
     }
-    
+
     doc.text(`Zone: ${zone} (${groupedData[zone].length} Members)`, 14, currentY);
     currentY += 5;
 
@@ -936,7 +936,8 @@ async function drawBadgeContent(
           : type === 'guardian' ? '/pass/Guardian.jpeg'
             : type === 'media' ? '/pass/Media.jpeg'
               : type === 'guest' ? '/pass/guest.png'
-                : '/pass/Crew.jpeg';
+                : type === 'driver-staff' ? '/pass/Escort.jpeg'
+                  : '/pass/Crew.jpeg';
   const bg = await getBase64ImageFromUrl(bgPath);
   if (bg) {
     const bgFormat = bgPath.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
@@ -954,7 +955,7 @@ async function drawBadgeContent(
   let photoX = 20;
   let photoY = 12;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media' || type === 'driver-staff') {
     photoW = 29.157;
     photoH = 36.425;
     photoX = 46.289;
@@ -969,7 +970,7 @@ async function drawBadgeContent(
   if (photoSrc) {
     const photo = await getBase64ImageFromUrl(photoSrc);
     if (photo) {
-      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'qiraath' || type === 'media') {
+      if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'qiraath' || type === 'media' || type === 'driver-staff') {
         const r = 7.69;
         const d = doc as any;
         // Robust PDF clipping using internal operators
@@ -994,7 +995,7 @@ async function drawBadgeContent(
       : fullName.length <= 20 ? 8
         : 7;
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media' || type === 'driver-staff') {
     doc.setFont(fontsLoaded.montserratSemiBold ? 'MontserratSemiBold' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratSemiBold) doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255);
@@ -1050,9 +1051,7 @@ async function drawBadgeContent(
     infoText = `${data.rank || ''} RANK | ${data.className || ''}\n${schoolName}`;
   }
   else if (type === 'driver-staff') {
-    infoText = data.staffType === 'DRIVER'
-      ? `DRIVER | ${data.vehicleType || ''}\n${data.vehicleNumber || ''}\nZONE: ${data.zone || ''}`
-      : `SUPPORT STAFF\nZONE: ${data.zone || ''}`;
+    infoText = `${data.zone || ''}`;
   }
   else if (type === 'guardian') {
     infoText = `STUDENT: ${data.studentName || ''}`;
@@ -1062,7 +1061,7 @@ async function drawBadgeContent(
   }
   else infoText = data.designation ? `${data.zone} | ${data.designation}` : data.zone || '';
 
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media' || type === 'driver-staff') {
     doc.setFontSize(7);
     doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
     if (!fontsLoaded.montserratMedium) doc.setFont('helvetica', 'bold');
@@ -1076,11 +1075,13 @@ async function drawBadgeContent(
       const { schoolName } = getLocationDetails(data.school, dynamicLocations);
       displayInfo = `${toTitleCase(schoolName)}`;
     } else if (type === 'yesian') {
-      displayInfo = "";
+      displayInfo = `${data.designation || ''}`;
     } else if (type === 'guardian') {
       displayInfo = `C/O: ${toTitleCase(data.studentName || '')}`;
     } else if (type === 'media') {
       displayInfo = "";
+    } else if (type === 'driver-staff') {
+      displayInfo = `${data.zone || ''}`;
     } else {
       // Awardee
       const { schoolName } = getLocationDetails(data.school, dynamicLocations);
@@ -1105,7 +1106,7 @@ async function drawBadgeContent(
 
   // ── 5. BARCODE + SHORT REF ID (centered) ─────────────────────
   const barcode = getBarcodeBase64(data.id);
-  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media') {
+  if (type === 'student' || type === 'local-staff' || type === 'awardee' || type === 'yesian' || type === 'guardian' || type === 'qiraath' || type === 'media' || type === 'driver-staff') {
     const bcW = 26;
     const bcH = 6;
     const bcX = W - bcW - 8.228; // right: 0.8228 cm
