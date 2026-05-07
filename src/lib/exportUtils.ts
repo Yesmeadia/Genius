@@ -251,23 +251,59 @@ export async function generateYesianExportPDF(data: YesianRegistration[], title:
   const doc = new jsPDF({ orientation: "landscape" });
   await addHeader(doc, title);
 
-  const tableData = data.map((reg, index) => [
-    index + 1,
-    reg.name,
-    reg.designation,
-    reg.zone,
-    reg.whatsappNumber
-  ]);
+  // Group data by zone
+  const groupedData = data.reduce((acc, reg) => {
+    const zone = reg.zone || "N/A";
+    if (!acc[zone]) acc[zone] = [];
+    acc[zone].push(reg);
+    return acc;
+  }, {} as Record<string, YesianRegistration[]>);
 
-  autoTable(doc, {
-    startY: 50,
-    head: [["#", "Member Name", "Designation", "Zone", "WhatsApp"]],
-    body: tableData,
-    theme: "grid",
-    headStyles: { fillColor: [217, 119, 6], textColor: [255, 255, 255], fontSize: 8 },
-    styles: { fontSize: 7, cellPadding: 2 },
-    didDrawPage: (data) => addFooter(doc, data)
+  const zones = Object.keys(groupedData).sort();
+  let currentY = 50;
+
+  zones.forEach((zone, zIndex) => {
+    // Add zone header
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(217, 119, 6); // Amber-600
+    
+    if (zIndex > 0) {
+      // Check if we need a new page or just some spacing
+      if (currentY > 160) {
+        doc.addPage();
+        currentY = 20;
+      } else {
+        currentY += 10;
+      }
+    }
+    
+    doc.text(`Zone: ${zone} (${groupedData[zone].length} Members)`, 14, currentY);
+    currentY += 5;
+
+    const tableData = groupedData[zone]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((reg, index) => [
+        index + 1,
+        reg.name,
+        reg.designation,
+        reg.whatsappNumber
+      ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [["#", "Member Name", "Designation", "WhatsApp"]],
+      body: tableData,
+      theme: "grid",
+      headStyles: { fillColor: [217, 119, 6], textColor: [255, 255, 255], fontSize: 8 },
+      styles: { fontSize: 7, cellPadding: 2 },
+      margin: { left: 14, right: 14 },
+      didDrawPage: (data) => addFooter(doc, data)
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY;
   });
+
   triggerDownload(doc, filename);
 }
 
