@@ -43,12 +43,27 @@ export default function PrintDataPage() {
       ...qiraathRegistrations.map(r => ({ ...r, category: "Qiraath", displayName: `${r.name} (Qiraath)` }))
     ];
 
-    allPeople.forEach(person => {
-      if (!person.school) return;
-      if (!schoolMap[person.school]) {
-        schoolMap[person.school] = [];
+    // Helper to find school ID from name if it's not already an ID
+    const resolveSchoolId = (s: string) => {
+      if (!s) return "direct";
+      // Check if it's already a valid ID
+      for (const zone of locations) {
+        if (zone.schools.some(sch => sch.id === s)) return s;
       }
-      schoolMap[person.school].push({
+      // Try to find ID by name
+      for (const zone of locations) {
+        const found = zone.schools.find(sch => sch.name === s);
+        if (found) return found.id;
+      }
+      return s; // Fallback to original (might be a custom name)
+    };
+
+    allPeople.forEach(person => {
+      const sId = resolveSchoolId(person.school);
+      if (!schoolMap[sId]) {
+        schoolMap[sId] = [];
+      }
+      schoolMap[sId].push({
         ...person,
         studentName: person.displayName // Map to expected field in PDF generator
       });
@@ -57,12 +72,16 @@ export default function PrintDataPage() {
     return Object.entries(schoolMap)
       .map(([schoolId, people]) => ({
         id: schoolId,
-        name: getSchoolName(schoolId),
+        name: schoolId === "direct" ? "Direct Registrations" : getSchoolName(schoolId),
         count: people.length,
         people: people.sort((a, b) => (a.studentName || "").localeCompare(b.studentName || ""))
       }))
       .filter(school => school.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => {
+        if (a.id === "direct") return 1;
+        if (b.id === "direct") return -1;
+        return a.name.localeCompare(b.name);
+      });
   }, [registrations, localStaffRegistrations, volunteerRegistrations, scoutTeamRegistrations, alumniRegistrations, awardeeRegistrations, qiraathRegistrations, searchTerm]);
 
   const handlePrint = async (school: any) => {
@@ -78,14 +97,28 @@ export default function PrintDataPage() {
           <p className="text-slate-500 text-sm mt-1">Generate attendance and distribution checklists grouped by campus.</p>
         </div>
         
-        <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <Input 
-            placeholder="Search campus..." 
-            className="pl-10 h-11 rounded-2xl border-slate-200 bg-white shadow-sm focus:ring-indigo-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Button 
+            onClick={async () => {
+              const allPeople = schoolsWithData.flatMap(s => s.people);
+              await generateChecklistPDF(allPeople, "Comprehensive Event Checklist", "Consolidated_Checklist");
+            }}
+            variant="outline"
+            className="h-11 rounded-2xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50 gap-2 font-normal shadow-sm transition-all duration-300"
+          >
+            <Printer size={18} className="text-indigo-600" />
+            Print All Campuses
+          </Button>
+
+          <div className="relative flex-1 md:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <Input 
+              placeholder="Search campus..." 
+              className="pl-10 h-11 rounded-2xl border-slate-200 bg-white shadow-sm focus:ring-indigo-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 

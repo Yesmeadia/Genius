@@ -9,7 +9,8 @@ export default function MasterExportPage() {
     guestRegistrations, 
     yesianRegistrations, 
     localStaffRegistrations,
-    awardeeRegistrations
+    awardeeRegistrations,
+    driverStaffRegistrations
   } = useDashboardData();
 
   return (
@@ -20,6 +21,7 @@ export default function MasterExportPage() {
         yesianRegistrations={yesianRegistrations}
         localStaffRegistrations={localStaffRegistrations}
         awardeeRegistrations={awardeeRegistrations}
+        driverStaffRegistrations={driverStaffRegistrations}
       />
     </div>
   );

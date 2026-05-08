@@ -242,15 +242,25 @@ export function DriverStaffDataTable({
                     )}
                   </TableCell>
                   <TableCell className="py-4 text-right pr-6">
-                    <Link href={`/admin/dashboard/driver-staff/${reg.id}`}>
+                    <div className="flex items-center justify-end gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => generateBatchAccessPasses([reg], `${reg.name.replace(/\s+/g, '_')}_Pass`, 'driver-staff')}
                         className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-all"
                       >
-                        View Profile
+                        <ShieldCheck size={14} className="mr-1.5" /> Pass
                       </Button>
-                    </Link>
+                      <Link href={`/admin/dashboard/driver-staff/${reg.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
+                        >
+                          View Profile
+                        </Button>
+                      </Link>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

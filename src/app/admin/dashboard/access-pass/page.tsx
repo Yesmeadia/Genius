@@ -14,7 +14,8 @@ export default function AccessPassPage() {
     qiraathRegistrations,
     mediaRegistrations,
     alumniRegistrations,
-    volunteerRegistrations
+    volunteerRegistrations,
+    driverStaffRegistrations
   } = useDashboardData();
 
   return (
@@ -30,6 +31,7 @@ export default function AccessPassPage() {
         mediaRegistrations={mediaRegistrations}
         alumniRegistrations={alumniRegistrations}
         volunteerRegistrations={volunteerRegistrations}
+        driverStaffRegistrations={driverStaffRegistrations}
       />
     </div>
   );

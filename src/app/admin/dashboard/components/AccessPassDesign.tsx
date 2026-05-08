@@ -4,7 +4,7 @@ import { locations, Zone } from "@/data/locations";
 import JsBarcode from "jsbarcode";
 import { useRef, useEffect } from "react";
 
-export type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath' | 'media';
+export type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath' | 'media' | 'driver-staff';
 
 export interface AccessPassDesignProps {
   registration: any;
@@ -26,7 +26,8 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
             : passType === 'guardian' ? '/pass/Guardian.jpeg'
               : passType === 'media' ? '/pass/Media.jpeg'
                 : passType === 'guest' ? '/pass/guest.png'
-                  : '/pass/Crew.jpeg'; // officials.png used for yesian & local-staff
+                  : passType === 'driver-staff' ? '/pass/Escout.jpeg'
+                    : '/pass/Crew.jpeg'; // officials.png used for yesian & local-staff
 
   const getLocationDetails = (schoolId: string) => {
     for (const zone of activeLocations) {
@@ -51,12 +52,12 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
   const rawFullName = registration
     ? (passType === 'student' ? registration.studentName : passType === 'guardian' ? registration.guardianName : registration.name) || ''
     : 'FULL NAME';
-  const fullName = (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? toTitleCase(rawFullName) : rawFullName;
+  const fullName = (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') ? toTitleCase(rawFullName) : rawFullName;
 
   // Detail line
   let infoLine = '';
   if (registration) {
-    if (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') {
+    if (passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') {
       if (passType === 'student') {
         const { schoolName } = getLocationDetails(registration?.school);
         infoLine = `${toTitleCase(schoolName)}`;
@@ -69,6 +70,8 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
         infoLine = `C/O: ${toTitleCase(registration?.studentName || '')}`;
       } else if (passType === 'media') {
         infoLine = ``;
+      } else if (passType === 'driver-staff') {
+        infoLine = `${registration.staffType}${registration.vehicleNumber ? ` | ${registration.vehicleNumber}` : ''}`;
       } else {
         // Awardee / Qiraath
         const { schoolName } = getLocationDetails(registration?.school);
@@ -83,7 +86,7 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
   }
 
   // Photo
-  const photoUrl = (passType === 'student' || passType === 'yesian' || passType === 'local-staff' || passType === 'awardee' || passType === 'media') ? registration?.photoUrl : null;
+  const photoUrl = (passType === 'student' || passType === 'yesian' || passType === 'local-staff' || passType === 'awardee' || passType === 'media' || passType === 'driver-staff') ? registration?.photoUrl : null;
 
   // Barcode
   useEffect(() => {
@@ -122,7 +125,7 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
         {/* ── PHOTO ── */}
         <div
           className="absolute overflow-hidden object-cover"
-          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
+          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') ? {
             top: '42.64%', // 51.168mm / 120mm
             left: '54.45%', // 46.289mm / 85mm
             width: '34.3%', // 29.157mm / 85mm
@@ -149,7 +152,7 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
         {/* ── INFO SECTION ── */}
         <div
           className="absolute flex flex-col justify-start gap-0"
-          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
+          style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') ? {
             top: passType === 'guardian' ? '44.46%' : '36.96%', // 53.354mm / 120mm vs 44.354mm / 120mm
             left: passType === 'guardian' ? '0' : '13.83%',
             right: passType === 'guardian' ? '0' : '48%',
@@ -164,8 +167,8 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
         >
           {/* NAME */}
           <p
-            className={`leading-tight tracking-tight truncate ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? 'text-white' : 'font-black uppercase text-slate-900'}`}
-            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
+            className={`leading-tight tracking-tight truncate ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') ? 'text-white' : 'font-black uppercase text-slate-900'}`}
+            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') ? {
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 600, // SemiBold
               fontSize: fullName.length > 25 ? 'clamp(8px, 3vw, 11px)' 
@@ -179,8 +182,8 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
 
           {/*SCHOOL */}
           <p
-            className={`leading-tight truncate whitespace-pre-line ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? 'text-slate-200' : 'font-bold uppercase tracking-wide mt-0.5'}`}
-            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') ? {
+            className={`leading-tight truncate whitespace-pre-line ${(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') ? 'text-slate-200' : 'font-bold uppercase tracking-wide mt-0.5'}`}
+            style={(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') ? {
               fontFamily: 'Montserrat, sans-serif',
               fontWeight: 500, // Medium
               fontSize: 'clamp(6px, 2.5vw, 12px)'
@@ -204,7 +207,7 @@ export function AccessPassDesign({ registration, passType, customLocations }: Ac
         </div>
 
         {/* BARCODE FOR STUDENT/STAFF/AWARDEE/OFFICIAL */}
-        {(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media') && (
+        {(passType === 'student' || passType === 'local-staff' || passType === 'awardee' || passType === 'yesian' || passType === 'guardian' || passType === 'qiraath' || passType === 'media' || passType === 'driver-staff') && (
           <div className="absolute flex flex-col items-center" style={{ bottom: '8.88%', right: '9.68%', width: '30.58%' }}>
             <svg ref={barcodeRef} className="w-full" />
             <p className="text-black font-bold font-mono tracking-widest mt-[2px]" style={{ fontSize: 'clamp(5px, 1.5vw, 7px)' }}>

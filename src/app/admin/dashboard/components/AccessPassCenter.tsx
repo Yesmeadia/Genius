@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, User, Zap, School, Archive, ArrowRight, ShieldCheck, Trophy, MoreHorizontal, X } from "lucide-react";
 import { AccessPassDesign } from "./AccessPassDesign";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration, QiraathRegistration, MediaRegistration, VolunteerRegistration, AlumniRegistration } from "../types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, ScoutTeamRegistration, AwardeeRegistration, QiraathRegistration, MediaRegistration, VolunteerRegistration, AlumniRegistration, DriverStaffRegistration } from "../types";
 import { useDashboardData } from "./DashboardDataContext";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -24,9 +24,10 @@ interface AccessPassCenterProps {
     mediaRegistrations: MediaRegistration[];
     volunteerRegistrations: VolunteerRegistration[];
     alumniRegistrations: AlumniRegistration[];
+    driverStaffRegistrations: DriverStaffRegistration[];
 }
 
-type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath' | 'media';
+type PassType = 'student' | 'guest' | 'yesian' | 'local-staff' | 'awardee' | 'guardian' | 'qiraath' | 'media' | 'driver-staff';
 
 const PASS_META: Record<PassType, { label: string; plural: string; color: string; bg: string; }> = {
     student: { label: 'Delegate', plural: 'Delegates', color: 'text-orange-600', bg: 'bg-orange-600' },
@@ -37,6 +38,7 @@ const PASS_META: Record<PassType, { label: string; plural: string; color: string
     'guardian': { label: 'Guardian', plural: 'Guardians', color: 'text-pink-600', bg: 'bg-pink-600' },
     'qiraath': { label: 'Qiraath', plural: 'Qiraath', color: 'text-emerald-600', bg: 'bg-emerald-600' },
     'media': { label: 'Media', plural: 'Media', color: 'text-indigo-600', bg: 'bg-indigo-600' },
+    'driver-staff': { label: 'Driver/Staff', plural: 'Drivers & Staff', color: 'text-slate-600', bg: 'bg-slate-600' },
 };
 
 export default function AccessPassCenter({
@@ -49,7 +51,8 @@ export default function AccessPassCenter({
     qiraathRegistrations,
     mediaRegistrations,
     volunteerRegistrations,
-    alumniRegistrations
+    alumniRegistrations,
+    driverStaffRegistrations
 }: AccessPassCenterProps) {
     const { dynamicLocations } = useDashboardData();
     const [passType, setPassType] = useState<PassType>('student');
@@ -67,6 +70,7 @@ export default function AccessPassCenter({
         if (passType === 'awardee') return awardeeRegistrations;
         if (passType === 'qiraath') return qiraathRegistrations;
         if (passType === 'media') return mediaRegistrations;
+        if (passType === 'driver-staff') return driverStaffRegistrations;
         if (passType === 'guardian') {
             const guardians: any[] = [];
             const allWithAcc = [
