@@ -100,6 +100,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
         { id: "pass", label: "Access Pass", icon: <CreditCard size={18} />, href: "/admin/dashboard/access-pass" },
         { id: "certificates", label: "Certificates", icon: <ScrollText size={18} />, href: "/admin/dashboard/certificates" },
         { id: "reports", label: "Reports", icon: <BarChart3 size={18} />, href: "/admin/dashboard/reports" },
+        { id: "print-data", label: "Print Data", icon: <ScrollText size={18} />, href: "/admin/dashboard/print-data" },
         { id: "attendance", label: "Attendance Log", icon: <CheckCircle size={18} />, href: "/admin/dashboard/attendance-track" },
         { id: "feedback", label: "Feedback", icon: <MessageSquare size={18} />, href: "/admin/dashboard/feedback" },
         { id: "export", label: "Export Center", icon: <Download size={18} />, href: "/admin/dashboard/master-export" },

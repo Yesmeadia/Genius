@@ -17,6 +17,124 @@ import {
   ScoutTeamRegistration
 } from "@/app/admin/dashboard/types";
 
+export async function generateChecklistPDF(
+  data: (Registration | any)[],
+  schoolName: string,
+  filename: string
+) {
+  if (data.length === 0) return alert("No records found.");
+
+  const doc = new jsPDF({ orientation: "portrait" });
+  await addHeader(doc, schoolName);
+
+  // Define Category Order as requested: Students (Delegates) first, then others
+  const categoryOrder = ["Student", "Awardee", "Qiraath", "Volunteer", "Scout", "Alumni", "Staff"];
+  const categoryTitles: Record<string, string> = {
+    "Student": "STUDENTS (DELEGATES)",
+    "Awardee": "AWARDEES",
+    "Qiraath": "QIRAATH PARTICIPANTS",
+    "Volunteer": "VOLUNTEERS",
+    "Scout": "SCOUT TEAM",
+    "Alumni": "ALUMNI ACHIEVERS",
+    "Staff": "STAFFS & OTHERS"
+  };
+
+  // Group data by category
+  const groupedData: Record<string, any[]> = {};
+  data.forEach(reg => {
+    const cat = reg.category || "Other";
+    if (!groupedData[cat]) groupedData[cat] = [];
+    groupedData[cat].push(reg);
+  });
+
+  // Sort categories according to the defined order
+  const sortedCategories = Object.keys(groupedData).sort((a, b) => {
+    const idxA = categoryOrder.indexOf(a);
+    const idxB = categoryOrder.indexOf(b);
+    if (idxA === -1 && idxB === -1) return a.localeCompare(b);
+    if (idxA === -1) return 1;
+    if (idxB === -1) return -1;
+    return idxA - idxB;
+  });
+
+  let currentY = 50;
+
+  for (const cat of sortedCategories) {
+    const catData = groupedData[cat];
+    const title = categoryTitles[cat] || `${cat.toUpperCase()}S`;
+
+    // Page break check if header won't fit well
+    if (currentY > 240) { // Adjusted for Portrait
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59);
+    doc.text(title, 14, currentY);
+    currentY += 6;
+
+    // Sort by class then by name
+    const sortedData = catData.sort((a, b) => {
+      const aClass = a.className || "N/A";
+      const bClass = b.className || "N/A";
+      const aNum = parseInt(aClass) || 999;
+      const bNum = parseInt(bClass) || 999;
+      
+      if (aNum !== bNum) return aNum - bNum;
+      if (aClass !== bClass) return aClass.localeCompare(bClass);
+      return (a.studentName || "").localeCompare(b.studentName || "");
+    });
+
+    const tableData = sortedData.map((reg, index) => {
+      // Clean up name if it has the category suffix (redundant with header)
+      let cleanName = reg.studentName || "";
+      if (cat !== "Student") {
+        cleanName = cleanName.replace(` (${cat})`, "");
+      }
+
+      return [
+        index + 1,
+        cleanName,
+        reg.className || "-",
+        "", // Badge
+        "", // Arrival
+        "", // Lunch
+        "", // Spell 2
+        "", // Departure
+        ""  // Certificate
+      ];
+    });
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [["#", "Name", "Class", "Badge", "Arrival", "Lunch", "Spell 2", "Depart", "Cert."]],
+      body: tableData,
+      theme: "grid",
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontSize: 8, halign: 'center' },
+      styles: { fontSize: 7, cellPadding: 1.5, minCellHeight: 10 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 15, halign: 'center' },
+        4: { cellWidth: 15, halign: 'center' },
+        5: { cellWidth: 15, halign: 'center' },
+        6: { cellWidth: 18, halign: 'center' },
+        7: { cellWidth: 15, halign: 'center' },
+        8: { cellWidth: 15, halign: 'center' }
+      },
+      margin: { top: 20 },
+      didDrawPage: (data) => addFooter(doc, data)
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 12;
+  }
+
+  triggerDownload(doc, filename);
+}
+
 export async function generateClassGenderSummaryPDF(
   data: (Registration | AlumniRegistration | VolunteerRegistration | AwardeeRegistration | QiraathRegistration | ScoutTeamRegistration | any)[],
   title: string,
