@@ -17,6 +17,70 @@ import {
   ScoutTeamRegistration
 } from "@/app/admin/dashboard/types";
 
+export async function generateClassGenderSummaryPDF(
+  data: (Registration | AlumniRegistration | VolunteerRegistration | AwardeeRegistration | QiraathRegistration | ScoutTeamRegistration | any)[],
+  title: string,
+  filename: string
+) {
+  if (data.length === 0) return alert("No records found.");
+
+  const doc = new jsPDF({ orientation: "portrait" });
+  await addHeader(doc, title);
+
+  // Group by class and then gender
+  const classMap: Record<string, { Male: number; Female: number; Total: number }> = {};
+  
+  data.forEach(reg => {
+    const cls = reg.className || "N/A";
+    const gender = reg.gender?.toLowerCase() === "male" ? "Male" : 
+                   reg.gender?.toLowerCase() === "female" ? "Female" : "Other";
+    
+    if (!classMap[cls]) {
+      classMap[cls] = { Male: 0, Female: 0, Total: 0 };
+    }
+    
+    if (gender === "Male") classMap[cls].Male++;
+    else if (gender === "Female") classMap[cls].Female++;
+    classMap[cls].Total++;
+  });
+
+  const sortedClasses = Object.keys(classMap).sort((a, b) => {
+    const aNum = parseInt(a) || 999;
+    const bNum = parseInt(b) || 999;
+    if (aNum !== bNum) return aNum - bNum;
+    return a.localeCompare(b);
+  });
+
+  const tableData = sortedClasses.map((cls, index) => [
+    index + 1,
+    cls,
+    classMap[cls].Male,
+    classMap[cls].Female,
+    classMap[cls].Total
+  ]);
+
+  const totals = sortedClasses.reduce((acc, cls) => {
+    acc.Male += classMap[cls].Male;
+    acc.Female += classMap[cls].Female;
+    acc.Total += classMap[cls].Total;
+    return acc;
+  }, { Male: 0, Female: 0, Total: 0 });
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Class / Grade", "Male Students", "Female Students", "Total Students"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontSize: 10 },
+    styles: { fontSize: 9, cellPadding: 3 },
+    foot: [["", "GRAND TOTAL", totals.Male, totals.Female, totals.Total]],
+    footStyles: { fillColor: [241, 245, 249], textColor: [30, 41, 59], fontStyle: "bold" },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+
+  triggerDownload(doc, filename);
+}
+
 /** Robust filename sanitization for cross-browser compatibility */
 const sanitizeFilename = (filename: string): string => {
   return filename
@@ -792,7 +856,59 @@ export async function generateStrategicReportPDF(
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
 
-  // 8. OTHER CATEGORIES SUMMARY
+  // 8. OVERALL DISTRIBUTION BY CLASS AND GENDER (All Categories)
+  const classGenderMap: Record<string, { Male: number; Female: number; Total: number }> = {};
+  const allWithClass = [...registrations, ...alumni, ...volunteers, ...awardees, ...qiraath, ...scoutTeam];
+  
+  allWithClass.forEach(r => {
+    const cls = (r as any).className || "N/A";
+    const gender = (r as any).gender?.toLowerCase() === "male" ? "Male" : 
+                   (r as any).gender?.toLowerCase() === "female" ? "Female" : "Other";
+    if (!classGenderMap[cls]) classGenderMap[cls] = { Male: 0, Female: 0, Total: 0 };
+    if (gender === "Male") classGenderMap[cls].Male++;
+    else if (gender === "Female") classGenderMap[cls].Female++;
+    classGenderMap[cls].Total++;
+  });
+
+  const sortedCls = Object.keys(classGenderMap).sort((a, b) => {
+    const aNum = parseInt(a) || 999;
+    const bNum = parseInt(b) || 999;
+    if (aNum !== bNum) return aNum - bNum;
+    return a.localeCompare(b);
+  });
+
+  const classGenderBody = sortedCls.map((cls, index) => [
+    index + 1,
+    cls,
+    classGenderMap[cls].Male,
+    classGenderMap[cls].Female,
+    classGenderMap[cls].Total
+  ]);
+
+  if (currentY > 230) { doc.addPage(); currentY = 20; }
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("8. Participant Distribution by Class and Gender", 14, currentY);
+
+  autoTable(doc, {
+    startY: currentY + 5,
+    head: [["#", "Class / Grade", "Male Count", "Female Count", "Total Count"]],
+    body: classGenderBody as any[][],
+    theme: "striped",
+    headStyles: { fillColor: [79, 70, 229], fontSize: 9 },
+    styles: { fontSize: 8 },
+    foot: [["", "TOTAL",
+      Object.values(classGenderMap).reduce((a, b) => a + b.Male, 0),
+      Object.values(classGenderMap).reduce((a, b) => a + b.Female, 0),
+      allWithClass.length
+    ]],
+    footStyles: { fillColor: [245, 243, 255], textColor: [79, 70, 229], fontStyle: "bold" },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+
+  currentY = (doc as any).lastAutoTable.finalY + 15;
+
+  // 9. SUPPLEMENTAL CATEGORIES SUMMARY
   const otherCategoriesBody = [
     ["Guests", guests.length],
     ["Alumni Achievers", alumni.length],
@@ -806,7 +922,7 @@ export async function generateStrategicReportPDF(
   if (currentY > 230) { doc.addPage(); currentY = 20; }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("8. Supplemental Categories Participation", 14, currentY);
+  doc.text("9. Supplemental Categories Participation", 14, currentY);
 
   autoTable(doc, {
     startY: currentY + 5,
@@ -820,7 +936,7 @@ export async function generateStrategicReportPDF(
 
   currentY = (doc as any).lastAutoTable.finalY + 15;
 
-  // 9. ACCOMPANIMENT DISTRIBUTION BY ZONE
+  // 10. ACCOMPANIMENT DISTRIBUTION BY ZONE
   const accZoneMap: any = {};
   [registrations, alumni, volunteers, awardees, qiraath, scoutTeam].forEach(list => {
     list.forEach((r: any) => {
@@ -851,7 +967,7 @@ export async function generateStrategicReportPDF(
   if (currentY > 230) { doc.addPage(); currentY = 20; }
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("9. Accompaniment (Guardian) Gender Distribution by Zone", 14, currentY);
+  doc.text("10. Accompaniment (Guardian) Gender Distribution by Zone", 14, currentY);
 
   autoTable(doc, {
     startY: currentY + 5,

@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { generateStrategicReportPDF } from "@/lib/exportUtils";
+import { generateStrategicReportPDF, generateClassGenderSummaryPDF } from "@/lib/exportUtils";
 
 interface ReportsCenterProps {
   registrations: Registration[];
@@ -327,6 +327,21 @@ export function ReportsCenter({
     }
   };
 
+  const handleClassGenderExport = async () => {
+    try {
+      setIsExporting(true);
+      // Combine all types that have a class field for a comprehensive report
+      const { s, a, v, aw, q, sc } = filteredData;
+      const classData = [...s, ...a, ...v, ...aw, ...q, ...sc];
+      await generateClassGenderSummaryPDF(classData, "CLASS-WISE GENDER DISTRIBUTION", `Class_Gender_Report_${new Date().getTime()}`);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Page Header */}
@@ -426,7 +441,20 @@ export function ReportsCenter({
             ) : (
               <Download size={16} />
             )}
-            {isExporting ? "Generating..." : "Strategic Report PDF"}
+            {isExporting ? "Generating..." : "Strategic Report"}
+          </Button>
+
+          <Button 
+            className="h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-normal shadow-lg shadow-emerald-100"
+            onClick={handleClassGenderExport}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Download size={16} />
+            )}
+            {isExporting ? "Generating..." : "Class-Gender Report"}
           </Button>
         </div>
       </div>
