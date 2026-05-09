@@ -22,7 +22,8 @@ import {
   AwardeeRegistration,
   QiraathRegistration,
   DriverStaffRegistration,
-  ScoutTeamRegistration
+  ScoutTeamRegistration,
+  MediaRegistration
 } from "../types";
 import { locations } from "@/data/locations";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { generateStrategicReportPDF, generateClassGenderSummaryPDF } from "@/lib/exportUtils";
+import { generateStrategicReportPDF, generateClassGenderSummaryPDF, generateSchoolSummaryExcel } from "@/lib/exportUtils";
 
 interface ReportsCenterProps {
   registrations: Registration[];
@@ -46,6 +47,7 @@ interface ReportsCenterProps {
   qiraathRegistrations: QiraathRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
   scoutTeamRegistrations: ScoutTeamRegistration[];
+  mediaRegistrations: MediaRegistration[];
   stats: any;
 }
 
@@ -62,6 +64,7 @@ export function ReportsCenter({
   qiraathRegistrations,
   driverStaffRegistrations,
   scoutTeamRegistrations,
+  mediaRegistrations,
   stats 
 }: ReportsCenterProps) {
   const [selectedZone, setSelectedZone] = useState<string>("all");
@@ -90,6 +93,7 @@ export function ReportsCenter({
     let q = [...qiraathRegistrations];
     let d = [...driverStaffRegistrations];
     let sc = [...scoutTeamRegistrations];
+    let m = [...mediaRegistrations];
 
     if (selectedZone !== "all") {
       s = s.filter(r => r.zone === selectedZone);
@@ -101,6 +105,7 @@ export function ReportsCenter({
       q = q.filter(r => r.zone === selectedZone);
       d = d.filter(r => r.zone === selectedZone);
       sc = sc.filter(r => r.zone === selectedZone);
+      // Media currently has no zone field, keeping it as is or filtered if added later
     }
 
     if (selectedSchool !== "all") {
@@ -124,6 +129,7 @@ export function ReportsCenter({
       if (selectedType !== "Qiraath") q = [];
       if (selectedType !== "Driver") d = [];
       if (selectedType !== "Scout") sc = [];
+      if (selectedType !== "Media") m = [];
     }
 
     if (selectedAccompaniment !== "all") {
@@ -136,21 +142,21 @@ export function ReportsCenter({
       sc = sc.filter(r => !!r.withParent === wantAcc);
       // Others don't have accompaniment, so clear them if we want with accompaniment
       if (wantAcc) {
-        st = []; g = []; y = []; d = [];
+        st = []; g = []; y = []; d = []; m = [];
       }
     }
 
     if (selectedAwardeeType !== "all") {
       aw = aw.filter(r => r.selectionType === selectedAwardeeType);
       // Clear others as they are not awardees
-      s = []; st = []; g = []; y = []; a = []; v = []; q = []; d = []; sc = [];
+      s = []; st = []; g = []; y = []; a = []; v = []; q = []; d = []; sc = []; m = [];
     }
 
-    return { s, st, g, y, a, v, aw, q, d, sc };
-  }, [selectedZone, selectedSchool, selectedType, selectedAccompaniment, selectedAwardeeType, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations, scoutTeamRegistrations]);
+    return { s, st, g, y, a, v, aw, q, d, sc, m };
+  }, [selectedZone, selectedSchool, selectedType, selectedAccompaniment, selectedAwardeeType, registrations, localStaffRegistrations, guestRegistrations, yesianRegistrations, alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations, driverStaffRegistrations, scoutTeamRegistrations, mediaRegistrations]);
 
   const reportData = useMemo(() => {
-    const { s, st, g, y, a, v, aw, q, d, sc } = filteredData;
+    const { s, st, g, y, a, v, aw, q, d, sc, m } = filteredData;
     const allPeople = [
       ...s.map((r: any) => ({ ...r, type: 'Student' })),
       ...g.map((r: any) => ({ ...r, type: 'Guest' })),
@@ -162,6 +168,7 @@ export function ReportsCenter({
       ...q.map((r: any) => ({ ...r, type: 'Qiraath' })),
       ...d.map((r: any) => ({ ...r, type: 'Driver' })),
       ...sc.map((r: any) => ({ ...r, type: 'Scout' })),
+      ...m.map((r: any) => ({ ...r, type: 'Media' })),
     ];
 
     // 1. Gender Distribution (Unified)
@@ -317,8 +324,8 @@ export function ReportsCenter({
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      const { s, st, g, y, a, v, aw, q, d, sc } = filteredData;
-      await generateStrategicReportPDF(s, st, y, g, a, v, aw, q, d, sc);
+      const { s, st, g, y, a, v, aw, q, d, sc, m } = filteredData;
+      await generateStrategicReportPDF(s, st, y, g, a, v, aw, q, d, sc, m);
     } catch (e) {
       console.error(e);
       alert("Failed to generate PDF. Please try again.");
@@ -337,6 +344,21 @@ export function ReportsCenter({
     } catch (e) {
       console.error(e);
       alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleSchoolSummaryExcelExport = async () => {
+    try {
+      setIsExporting(true);
+      // Aggregate data from all relevant student categories
+      const { s, a, v, aw, q, sc } = filteredData;
+      const combinedData = [...s, ...a, ...v, ...aw, ...q, ...sc];
+      generateSchoolSummaryExcel(combinedData, `School_Summary_${new Date().getTime()}`);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to generate Excel. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -387,6 +409,7 @@ export function ReportsCenter({
               <SelectItem value="Qiraath">Qiraath</SelectItem>
               <SelectItem value="Driver">Drivers/Support</SelectItem>
               <SelectItem value="Scout">Scout Team</SelectItem>
+              <SelectItem value="Media">Media Personnel</SelectItem>
             </SelectContent>
           </Select>
 
@@ -455,6 +478,19 @@ export function ReportsCenter({
               <Download size={16} />
             )}
             {isExporting ? "Generating..." : "Class-Gender Report"}
+          </Button>
+
+          <Button 
+            className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white gap-2 font-normal shadow-lg shadow-blue-100"
+            onClick={handleSchoolSummaryExcelExport}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Download size={16} />
+            )}
+            {isExporting ? "Generating..." : "Export School Summary (Excel)"}
           </Button>
         </div>
       </div>

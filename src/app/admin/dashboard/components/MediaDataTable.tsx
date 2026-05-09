@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, RotateCcw, User, Phone, MapPin, Camera } from "lucide-react";
+import { Search, Download, RotateCcw, User, Phone, MapPin, Camera, ShieldCheck, CreditCard } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter } from "lucide-react";
 import { MediaRegistration } from "../types";
 import Link from "next/link";
+import { generateMediaExportPDF, generateBatchAccessPasses } from "@/lib/exportUtils";
 
 interface MediaDataTableProps {
   data: MediaRegistration[];
@@ -102,12 +103,20 @@ export function MediaDataTable({
 
             <Button 
               onClick={() => {
-                // Future: Add Media specific PDF export if needed
-                alert("Media Export coming soon");
+                const pdfTitle = "Media Personnel Registry";
+                const pdfFilename = isFiltered ? "media_personnel_filtered" : "media_personnel_master";
+                generateMediaExportPDF(data, pdfTitle, pdfFilename);
               }}
               className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
             >
               <Download size={14} className="mr-2" /> Export PDF
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => generateBatchAccessPasses(data, 'Media_Access_Passes', 'media')}
+              className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold text-indigo-600 border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-all rounded-xl shadow-sm"
+            >
+              <CreditCard size={14} className="mr-2" /> Batch Passes
             </Button>
           </div>
         </div>
@@ -210,15 +219,25 @@ export function MediaDataTable({
                     )}
                   </TableCell>
                   <TableCell className="py-4 text-right pr-6">
-                    <Link href={`/admin/dashboard/media/${reg.id}`}>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => generateBatchAccessPasses([reg], `${reg.name.replace(/\s+/g, '_')}_Pass`, 'media')}
                         className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-xl transition-all"
                       >
-                        View Profile
+                        <ShieldCheck size={14} className="mr-1.5" /> Pass
                       </Button>
-                    </Link>
+                      <Link href={`/admin/dashboard/media/${reg.id}`}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
+                        >
+                          View Profile
+                        </Button>
+                      </Link>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

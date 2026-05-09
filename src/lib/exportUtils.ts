@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import * as XLSX from "xlsx";
 import { locations, Zone } from "@/data/locations";
 import {
   Registration,
@@ -14,7 +15,8 @@ import {
   AwardeeRegistration,
   QiraathRegistration,
   DriverStaffRegistration,
-  ScoutTeamRegistration
+  ScoutTeamRegistration,
+  MediaRegistration
 } from "@/app/admin/dashboard/types";
 
 export async function generateChecklistPDF(
@@ -177,6 +179,99 @@ export async function generateChecklistPDF(
   }
 
   triggerDownload(doc, filename);
+}
+
+export function generateSchoolSummaryExcel(
+  data: (Registration | AlumniRegistration | VolunteerRegistration | AwardeeRegistration | QiraathRegistration | ScoutTeamRegistration | any)[],
+  filename: string
+) {
+  if (data.length === 0) return alert("No records found.");
+
+  // Group by School Name and Zone to avoid duplicates if some records use ID and others use Name
+  const schoolSummary: Record<string, { schoolName: string; zoneName: string; male: number; female: number; total: number }> = {};
+
+  data.forEach(reg => {
+    const rawSchool = reg.school || "Other";
+    const locDetails = getLocationDetails(rawSchool);
+    
+    // Use canonical name from locations data if available, otherwise fallback to raw value
+    const schoolName = locDetails.schoolName.trim();
+    const zoneName = (locDetails.zoneName || reg.zone || "N/A").trim();
+    
+    // Normalize key to prevent duplicates due to case or spacing
+    const key = `${schoolName.toLowerCase()}_${zoneName.toLowerCase()}`;
+    
+    if (!schoolSummary[key]) {
+      schoolSummary[key] = {
+        schoolName,
+        zoneName,
+        male: 0,
+        female: 0,
+        total: 0
+      };
+    }
+    
+    const gender = reg.gender?.toLowerCase() || "";
+    if (gender === "male") schoolSummary[key].male++;
+    else if (gender === "female") schoolSummary[key].female++;
+    
+    schoolSummary[key].total++;
+  });
+
+  const sortedSummary = Object.values(schoolSummary).sort((a, b) => {
+    const zoneCompare = (a.zoneName || "").localeCompare(b.zoneName || "");
+    if (zoneCompare !== 0) return zoneCompare;
+    return (a.schoolName || "").localeCompare(b.schoolName || "");
+  });
+
+  // Calculate Grand Totals
+  const grandTotal = sortedSummary.reduce((acc, curr) => {
+    acc.male += curr.male;
+    acc.female += curr.female;
+    acc.total += curr.total;
+    return acc;
+  }, { male: 0, female: 0, total: 0 });
+
+  const excelData = sortedSummary.map((item, index) => ({
+    "SL no": index + 1,
+    "School Name": item.schoolName,
+    "Zone": item.zoneName,
+    "Male Students (All categories)": item.male,
+    "Female (All categories)": item.female,
+    "Total": item.total
+  }));
+
+  // Append Grand Total Row
+  excelData.push({
+    "SL no": null as any,
+    "School Name": "GRAND TOTAL",
+    "Zone": "",
+    "Male Students (All categories)": grandTotal.male,
+    "Female (All categories)": grandTotal.female,
+    "Total": grandTotal.total
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  
+  // Set column widths
+  const wscols = [
+    { wch: 8 },  // SL no
+    { wch: 40 }, // School Name
+    { wch: 20 }, // Zone
+    { wch: 25 }, // Male Students
+    { wch: 20 }, // Female
+    { wch: 10 }  // Total
+  ];
+  worksheet["!cols"] = wscols;
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "School Summary");
+
+  // Generate buffer
+  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  
+  saveAs(blob, `${filename}.xlsx`);
 }
 
 export async function generateClassGenderSummaryPDF(
@@ -728,6 +823,35 @@ export async function generateDriverStaffExportPDF(data: DriverStaffRegistration
   triggerDownload(doc, filename);
 }
 
+/**
+ * Media Registration PDF
+ */
+export async function generateMediaExportPDF(data: MediaRegistration[], title: string, filename: string) {
+  if (data.length === 0) return alert("No records found.");
+  const doc = new jsPDF({ orientation: "landscape" });
+  await addHeader(doc, title);
+
+  const tableData = data.map((reg, index) => [
+    index + 1,
+    reg.name,
+    reg.gender || "N/A",
+    reg.agency || "N/A",
+    reg.designation || "N/A",
+    reg.whatsappNumber || "N/A"
+  ]);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["#", "Name", "Gender", "Agency", "Designation", "WhatsApp"]],
+    body: tableData,
+    theme: "grid",
+    headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontSize: 8 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    didDrawPage: (data) => addFooter(doc, data)
+  });
+  triggerDownload(doc, filename);
+}
+
 
 export async function generateStrategicReportPDF(
   registrations: Registration[],
@@ -739,7 +863,8 @@ export async function generateStrategicReportPDF(
   awardees: AwardeeRegistration[],
   qiraath: QiraathRegistration[],
   drivers: DriverStaffRegistration[],
-  scoutTeam: ScoutTeamRegistration[]
+  scoutTeam: ScoutTeamRegistration[],
+  media: MediaRegistration[]
 ) {
   const doc = new jsPDF({ orientation: "portrait" });
   const title = "STRATEGIC PARTICIPATION REPORT";
@@ -762,9 +887,10 @@ export async function generateStrategicReportPDF(
     ["8. Qiraath Participants", qiraath.length],
     ["9. Drivers & Support Staff", drivers.length],
     ["10. Scout Team Members", scoutTeam.length],
-    ["11. Accompaniments (Guardians)", totalAcc],
+    ["11. Media Personnel", media.length],
+    ["12. Accompaniments (Guardians)", totalAcc],
   ];
-  const totalPeople = registrations.length + localStaff.length + yesians.length + guests.length + alumni.length + volunteers.length + awardees.length + qiraath.length + drivers.length + scoutTeam.length + totalAcc;
+  const totalPeople = registrations.length + localStaff.length + yesians.length + guests.length + alumni.length + volunteers.length + awardees.length + qiraath.length + drivers.length + scoutTeam.length + media.length + totalAcc;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);

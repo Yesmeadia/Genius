@@ -15,6 +15,7 @@ export default function ReportsPage() {
     qiraathRegistrations,
     driverStaffRegistrations,
     scoutTeamRegistrations,
+    mediaRegistrations,
     stats 
   } = useDashboardData();
 
@@ -31,6 +32,7 @@ export default function ReportsPage() {
         qiraathRegistrations={qiraathRegistrations}
         driverStaffRegistrations={driverStaffRegistrations}
         scoutTeamRegistrations={scoutTeamRegistrations}
+        mediaRegistrations={mediaRegistrations}
         stats={stats}
       />
     </div>

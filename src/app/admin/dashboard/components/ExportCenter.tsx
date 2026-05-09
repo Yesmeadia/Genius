@@ -6,6 +6,7 @@ import {
   generateYesianExportPDF,
   generateLocalStaffExportPDF,
   generateDriverStaffExportPDF,
+  generateMediaExportPDF,
   generateZipBackup
 } from "@/lib/exportUtils";
 import { generateParticipationCertificate } from "@/lib/certificateUtils";
@@ -13,8 +14,8 @@ import { locations } from "@/data/locations";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap, FileArchive, Award, ScrollText, Truck } from "lucide-react";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, AwardeeRegistration, DriverStaffRegistration } from "../types";
+import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap, FileArchive, Award, ScrollText, Truck, Camera } from "lucide-react";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, AwardeeRegistration, DriverStaffRegistration, MediaRegistration } from "../types";
 
 interface ExportCenterProps {
   registrations: Registration[];
@@ -23,9 +24,10 @@ interface ExportCenterProps {
   localStaffRegistrations: LocalStaffRegistration[];
   awardeeRegistrations: AwardeeRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
+  mediaRegistrations: MediaRegistration[];
 }
 
-export function ExportCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, awardeeRegistrations, driverStaffRegistrations }: ExportCenterProps) {
+export function ExportCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, awardeeRegistrations, driverStaffRegistrations, mediaRegistrations }: ExportCenterProps) {
   const [selectedZone, setSelectedZone] = useState("all");
   const [selectedSchool, setSelectedSchool] = useState("all");
   const [selectedClass, setSelectedClass] = useState("all");
@@ -426,6 +428,40 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
               <Button
                 onClick={() => generateBatchAccessPasses(driverStaffRegistrations, "passes_drivers", 'driver-staff')}
                 className="w-full h-9 font-black rounded-lg bg-slate-600 text-white hover:bg-slate-700 shadow-lg shadow-slate-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <CreditCard className="mr-2 h-3 w-3" /> Access Passes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Media Export */}
+        <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-indigo-50/20 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-indigo-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
+          <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <Camera size={18} className="text-indigo-600" />
+              </div>
+              <div className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                {mediaRegistrations.length} Media
+              </div>
+            </div>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Media Registry</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">News agencies & journalists.</p>
+
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button
+                onClick={() => generateMediaExportPDF(mediaRegistrations, "Media Personnel Report", "genius_jam_media")}
+                className="w-full h-9 font-black rounded-lg bg-indigo-900 text-white hover:bg-indigo-800 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <Download className="mr-2 h-3 w-3" /> PDF Registry
+              </Button>
+              <Button
+                onClick={() => generateBatchAccessPasses(mediaRegistrations, "passes_media", 'media')}
+                className="w-full h-9 font-black rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all uppercase tracking-widest text-[8px]"
               >
                 <CreditCard className="mr-2 h-3 w-3" /> Access Passes
               </Button>
