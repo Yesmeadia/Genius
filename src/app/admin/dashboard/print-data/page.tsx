@@ -6,8 +6,8 @@ import { locations } from "@/data/locations";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Printer, School, Users, FileText, CheckSquare } from "lucide-react";
-import { generateChecklistPDF } from "@/lib/exportUtils";
+import { Search, Printer, School, Users, FileText, CheckSquare, FileSpreadsheet } from "lucide-react";
+import { generateChecklistPDF, generateSchoolExcelIndividual, generateSchoolSummaryExcel } from "@/lib/exportUtils";
 
 export default function PrintDataPage() {
   const { 
@@ -89,6 +89,17 @@ export default function PrintDataPage() {
     await generateChecklistPDF(school.people, school.name, filename);
   };
 
+  const handleSchoolExcel = (school: any) => {
+    const filename = `Excel_${school.name.replace(/\s+/g, '_')}`;
+    generateSchoolExcelIndividual(school.people, school.name, filename);
+  };
+
+  const handleAllSchoolsExcel = () => {
+    // Flatten all people across all schools for the consolidated summary
+    const allPeople = schoolsWithData.flatMap(s => s.people);
+    generateSchoolSummaryExcel(allPeople, `All_Schools_Summary_${new Date().getTime()}`);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -97,7 +108,7 @@ export default function PrintDataPage() {
           <p className="text-slate-500 text-sm mt-1">Generate attendance and distribution checklists grouped by campus.</p>
         </div>
         
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <Button 
             onClick={async () => {
               const allPeople = schoolsWithData.flatMap(s => s.people);
@@ -108,6 +119,15 @@ export default function PrintDataPage() {
           >
             <Printer size={18} className="text-indigo-600" />
             Print All Campuses
+          </Button>
+
+          <Button 
+            onClick={handleAllSchoolsExcel}
+            variant="outline"
+            className="h-11 rounded-2xl border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 gap-2 font-normal shadow-sm transition-all duration-300"
+          >
+            <FileSpreadsheet size={18} className="text-emerald-600" />
+            Export All Schools (Excel)
           </Button>
 
           <div className="relative flex-1 md:w-72">
@@ -139,7 +159,7 @@ export default function PrintDataPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col gap-4 mt-2">
+              <div className="flex flex-col gap-3 mt-2">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Users size={14} />
                   <span>Includes students, staff, and participants</span>
@@ -158,10 +178,19 @@ export default function PrintDataPage() {
 
                 <Button 
                   onClick={() => handlePrint(school)}
-                  className="w-full h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-normal shadow-lg shadow-indigo-100 mt-2 transition-all duration-300"
+                  className="w-full h-11 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-normal shadow-lg shadow-indigo-100 transition-all duration-300"
                 >
                   <Printer size={18} />
                   Print Checklist PDF
+                </Button>
+
+                <Button 
+                  onClick={() => handleSchoolExcel(school)}
+                  variant="outline"
+                  className="w-full h-11 rounded-2xl border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 gap-2 font-normal shadow-sm transition-all duration-300"
+                >
+                  <FileSpreadsheet size={18} className="text-emerald-600" />
+                  Export School Excel
                 </Button>
               </div>
             </CardContent>

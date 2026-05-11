@@ -58,13 +58,28 @@ export async function generateChecklistPDF(
 
   for (const sId of sortedSchoolIds) {
     const schoolData = schoolGroups[sId];
-    const schoolName = getSchoolName(sId);
+    const schoolName = sId === "Other" ? "Direct Registrations" : getSchoolName(sId);
 
     if (isMultiSchool) {
       if (currentY > 50) {
         doc.addPage();
         currentY = 20;
       }
+
+      // --- School Name Banner ---
+      const pageWidth = doc.internal.pageSize.getWidth();
+      doc.setFillColor(30, 41, 59); // slate-900
+      doc.roundedRect(14, currentY, pageWidth - 28, 14, 3, 3, "F");
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255, 255, 255);
+      doc.text(schoolName.toUpperCase(), 20, currentY + 9.5);
+      // Participant count badge (right-aligned)
+      const countLabel = `${schoolData.length} Participants`;
+      const countW = doc.getTextWidth(countLabel);
+      doc.text(countLabel, pageWidth - 14 - countW, currentY + 9.5);
+      doc.setTextColor(30, 41, 59); // reset
+      currentY += 20;
     }
 
     // 2. Group school data by category
@@ -271,6 +286,71 @@ export function generateSchoolSummaryExcel(
   const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
   const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   
+  saveAs(blob, `${filename}.xlsx`);
+}
+
+/**
+ * Individual School Excel Export
+ * Generates a per-school breakdown: category × gender
+ */
+export function generateSchoolExcelIndividual(
+  people: any[],
+  schoolName: string,
+  filename: string
+) {
+  if (people.length === 0) return alert("No records found for this school.");
+
+  const categoryOrder = ["Student", "Awardee", "Qiraath", "Volunteer", "Scout", "Alumni", "Staff", "Other"];
+
+  // Group by category
+  const catMap: Record<string, { male: number; female: number; total: number }> = {};
+  people.forEach(p => {
+    const cat = p.category || "Other";
+    if (!catMap[cat]) catMap[cat] = { male: 0, female: 0, total: 0 };
+    const g = p.gender?.toLowerCase() || "";
+    if (g === "male") catMap[cat].male++;
+    else if (g === "female") catMap[cat].female++;
+    catMap[cat].total++;
+  });
+
+  const sortedCats = Object.keys(catMap).sort((a, b) => {
+    const ia = categoryOrder.indexOf(a);
+    const ib = categoryOrder.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+
+  const grandTotals = sortedCats.reduce(
+    (acc, cat) => { acc.male += catMap[cat].male; acc.female += catMap[cat].female; acc.total += catMap[cat].total; return acc; },
+    { male: 0, female: 0, total: 0 }
+  );
+
+  const excelData = sortedCats.map((cat, i) => ({
+    "SL No": i + 1,
+    "Category": cat,
+    "Male": catMap[cat].male,
+    "Female": catMap[cat].female,
+    "Total": catMap[cat].total
+  }));
+
+  excelData.push({
+    "SL No": null as any,
+    "Category": "GRAND TOTAL",
+    "Male": grandTotals.male,
+    "Female": grandTotals.female,
+    "Total": grandTotals.total
+  });
+
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  ws["!cols"] = [{ wch: 8 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, schoolName.substring(0, 31));
+
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   saveAs(blob, `${filename}.xlsx`);
 }
 
