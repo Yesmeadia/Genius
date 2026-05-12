@@ -51,7 +51,7 @@ export default function GSuitPage() {
     hostWhatsapp: "",
     venue: "",
     location: "",
-    locationLink: "",
+    locationLink: "https://maps.app.goo.gl/pgipQb5wyDokJqMJ7",
     hotelLocationLink: ""
   });
 
@@ -85,7 +85,7 @@ export default function GSuitPage() {
       hostWhatsapp: guest.hostWhatsapp || "919000000000",
       venue: guest.venue || "SKICC",
       location: guest.location || "SRINAGAR",
-      locationLink: guest.locationLink || "https://maps.google.com",
+      locationLink: guest.locationLink || "https://maps.app.goo.gl/pgipQb5wyDokJqMJ7",
       hotelLocationLink: guest.hotelLocationLink || "https://maps.google.com"
     });
   };
