@@ -267,6 +267,123 @@ export function generateSchoolSummaryExcel(
 }
 
 /**
+ * Yesian Members Excel Export
+ */
+export function generateYesianExcel(data: YesianRegistration[], filename: string) {
+  if (data.length === 0) return alert("No Yesian records found.");
+
+  const sorted = [...data].sort((a, b) => {
+    if (a.zone !== b.zone) return a.zone.localeCompare(b.zone);
+    return a.name.localeCompare(b.name);
+  });
+
+  const excelData = sorted.map((reg, i) => ({
+    "SL No": i + 1,
+    "Name": reg.name,
+    "Gender": reg.gender || "-",
+    "Designation": reg.designation || "-",
+    "Zone": reg.zone || "-",
+    "WhatsApp": reg.whatsappNumber || "-",
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  ws["!cols"] = [
+    { wch: 8 },  // SL No
+    { wch: 28 }, // Name
+    { wch: 10 }, // Gender
+    { wch: 25 }, // Designation
+    { wch: 20 }, // Zone
+    { wch: 18 }, // WhatsApp
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Yesians");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  saveAs(blob, `${filename}.xlsx`);
+}
+
+/**
+ * Local Staff Excel Export
+ */
+export function generateLocalStaffExcel(data: LocalStaffRegistration[], filename: string) {
+  if (data.length === 0) return alert("No Local Staff records found.");
+
+  const sorted = [...data].sort((a, b) => {
+    if (a.zone !== b.zone) return a.zone.localeCompare(b.zone);
+    return a.name.localeCompare(b.name);
+  });
+
+  const excelData = sorted.map((reg, i) => ({
+    "SL No": i + 1,
+    "Name": reg.name,
+    "Gender": reg.gender || "-",
+    "Role": reg.role || "-",
+    "School": getSchoolName(reg.school),
+    "Zone": reg.zone || "-",
+    "WhatsApp": reg.whatsappNumber || "-",
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  ws["!cols"] = [
+    { wch: 8 },  // SL No
+    { wch: 28 }, // Name
+    { wch: 10 }, // Gender
+    { wch: 18 }, // Role
+    { wch: 38 }, // School
+    { wch: 20 }, // Zone
+    { wch: 18 }, // WhatsApp
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Local Staff");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  saveAs(blob, `${filename}.xlsx`);
+}
+
+/**
+ * Driver & Support Staff Excel Export
+ */
+export function generateDriverStaffExcel(data: DriverStaffRegistration[], filename: string) {
+  if (data.length === 0) return alert("No Driver/Staff records found.");
+
+  const sorted = [...data].sort((a, b) => {
+    if (a.staffType !== b.staffType) return a.staffType.localeCompare(b.staffType);
+    return a.name.localeCompare(b.name);
+  });
+
+  const excelData = sorted.map((reg, i) => ({
+    "SL No": i + 1,
+    "Name": reg.name,
+    "Gender": reg.gender || "-",
+    "Staff Type": reg.staffType || "-",
+    "Vehicle No": reg.vehicleNumber || "-",
+    "Vehicle Type": reg.vehicleType || "-",
+    "Zone": reg.zone || "-",
+    "WhatsApp": reg.whatsappNumber || "-",
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  ws["!cols"] = [
+    { wch: 8 },  // SL No
+    { wch: 28 }, // Name
+    { wch: 10 }, // Gender
+    { wch: 18 }, // Staff Type
+    { wch: 15 }, // Vehicle No
+    { wch: 18 }, // Vehicle Type
+    { wch: 20 }, // Zone
+    { wch: 18 }, // WhatsApp
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Driver Staff");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  saveAs(blob, `${filename}.xlsx`);
+}
+
+/**
  * Individual School Excel Export
  * Generates a full participant list for a specific school
  */

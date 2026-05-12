@@ -47,7 +47,10 @@ export default function GSuitPage() {
     room: "",
     hostName: "",
     hostPhone: "",
-    hostWhatsapp: ""
+    hostWhatsapp: "",
+    venue: "",
+    location: "",
+    locationLink: ""
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,7 +80,10 @@ export default function GSuitPage() {
       room: guest.room || "",
       hostName: guest.hostName || "Mr. Fazlurahman",
       hostPhone: guest.hostPhone || "+91 90000 00000",
-      hostWhatsapp: guest.hostWhatsapp || "919000000000"
+      hostWhatsapp: guest.hostWhatsapp || "919000000000",
+      venue: guest.venue || "SKICC",
+      location: guest.location || "SRINAGAR",
+      locationLink: guest.locationLink || "https://maps.google.com"
     });
   };
 
@@ -270,6 +276,46 @@ export default function GSuitPage() {
                     value={formData.hostName}
                     onChange={(e) => setFormData({...formData, hostName: e.target.value})}
                     className="pl-12 h-12 bg-slate-50 border-none rounded-xl font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Event Venue</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <Input 
+                      placeholder="e.g. SKICC" 
+                      value={formData.venue}
+                      onChange={(e) => setFormData({...formData, venue: e.target.value})}
+                      className="pl-10 h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Event Location</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                    <Input 
+                      placeholder="e.g. SRINAGAR" 
+                      value={formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      className="pl-10 h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Location Map URL</label>
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                  <Input 
+                    placeholder="Paste Google Maps link here..." 
+                    value={formData.locationLink}
+                    onChange={(e) => setFormData({...formData, locationLink: e.target.value})}
+                    className="pl-10 h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
                   />
                 </div>
               </div>

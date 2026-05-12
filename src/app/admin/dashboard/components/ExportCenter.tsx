@@ -9,7 +9,10 @@ import {
   generateMediaExportPDF,
   generateAwardeeExportPDF,
   generateZipBackup,
-  generateSchoolSummaryExcel
+  generateSchoolSummaryExcel,
+  generateYesianExcel,
+  generateLocalStaffExcel,
+  generateDriverStaffExcel
 } from "@/lib/exportUtils";
 import { generateParticipationCertificate } from "@/lib/certificateUtils";
 import { locations } from "@/data/locations";
@@ -419,6 +422,12 @@ export function ExportCenter({
                 <Download className="mr-2 h-3 w-3" /> PDF Roster
               </Button>
               <Button
+                onClick={() => generateYesianExcel(yesianRegistrations, "genius_jam_yesians")}
+                className="w-full h-9 font-black rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <FileText className="mr-2 h-3 w-3" /> Excel Export
+              </Button>
+              <Button
                 onClick={() => generateBatchAccessPasses(yesianRegistrations, "passes_yesians", 'yesian')}
                 className="w-full h-9 font-black rounded-lg bg-amber-600 text-white hover:bg-amber-700 shadow-lg shadow-amber-100 transition-all uppercase tracking-widest text-[8px]"
               >
@@ -453,6 +462,12 @@ export function ExportCenter({
                 <Download className="mr-2 h-3 w-3" /> PDF Registry
               </Button>
               <Button
+                onClick={() => generateLocalStaffExcel(localStaffRegistrations, "genius_jam_local_staff")}
+                className="w-full h-9 font-black rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <FileText className="mr-2 h-3 w-3" /> Excel Export
+              </Button>
+              <Button
                 onClick={() => generateBatchAccessPasses(localStaffRegistrations, "passes_local_staff", 'local-staff')}
                 className="w-full h-9 font-black rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-lg shadow-sky-100 transition-all uppercase tracking-widest text-[8px]"
               >
@@ -485,6 +500,12 @@ export function ExportCenter({
                 className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]"
               >
                 <Download className="mr-2 h-3 w-3" /> PDF Registry
+              </Button>
+              <Button
+                onClick={() => generateDriverStaffExcel(driverStaffRegistrations, "genius_jam_drivers")}
+                className="w-full h-9 font-black rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <FileText className="mr-2 h-3 w-3" /> Excel Export
               </Button>
               <Button
                 onClick={() => generateBatchAccessPasses(driverStaffRegistrations, "passes_drivers", 'driver-staff')}
