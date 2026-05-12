@@ -299,7 +299,7 @@ async function drawRoomBadge(doc: jsPDF, data: any, fontsLoaded: any) {
 
   if (phoneIcon) doc.addImage(phoneIcon, 'PNG', leftX + 1, leftContactLinksY, iconSize, iconSize);
   doc.textWithLink(' Phone', leftX + 1 + iconSize, leftTextY, { url: `tel:${contactPhone}` });
-  
+
   if (waIcon) doc.addImage(waIcon, 'PNG', leftX + 8.5, leftContactLinksY, iconSize, iconSize);
   doc.textWithLink(' WhatsApp', leftX + 8.5 + iconSize, leftTextY, { url: `https://wa.me/${contactWhatsapp}` });
 

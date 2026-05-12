@@ -142,35 +142,37 @@ export default function GSuitPage() {
       
       {/* HEADER SECTION */}
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-6 gsuit-card bg-white p-8 rounded-[32px] shadow-sm border border-slate-50">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 gsuit-card bg-white p-6 lg:p-8 rounded-[32px] shadow-sm border border-slate-50">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">GSuit (Guest Rooms)</h1>
-          <p className="text-slate-500 font-medium">Total {guestRegistrations.length} guest records found</p>
+          <h1 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">GSuit (Guest Rooms)</h1>
+          <p className="text-slate-500 font-medium text-sm lg:text-base">Total {guestRegistrations.length} guest records found</p>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-grow md:w-80">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="relative flex-grow w-full lg:w-80">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <Input 
               placeholder="Search guests, phone or room..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all font-medium"
+              className="pl-12 h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all font-medium w-full"
             />
           </div>
-          <Button 
-            onClick={handleExportExcel}
-            variant="outline"
-            className="h-12 px-6 border-slate-200 text-slate-600 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all active:scale-95"
-          >
-            <Download size={18} className="mr-2" /> Excel
-          </Button>
-          <Button 
-            onClick={handleIssueAll}
-            className="h-12 px-6 bg-slate-900 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all active:scale-95"
-          >
-            <Printer size={18} className="mr-2" /> Issue All
-          </Button>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button 
+              onClick={handleExportExcel}
+              variant="outline"
+              className="h-12 flex-1 sm:flex-initial px-6 border-slate-200 text-slate-600 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all active:scale-95"
+            >
+              <Download size={18} className="mr-2 shrink-0" /> Excel
+            </Button>
+            <Button 
+              onClick={handleIssueAll}
+              className="h-12 flex-1 sm:flex-initial px-6 bg-slate-900 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all active:scale-95"
+            >
+              <Printer size={18} className="mr-2 shrink-0" /> Issue All
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -192,22 +194,22 @@ export default function GSuitPage() {
         ) : filteredGuests.length > 0 ? (
           filteredGuests.map(guest => (
             <div key={guest.id} className="bg-white rounded-[24px] shadow-xl shadow-slate-100/50 border border-slate-50 overflow-hidden hover:border-emerald-100 transition-all group">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center p-6 lg:p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center p-6 lg:p-4">
                 
                 {/* Guest Profile */}
                 <div className="lg:col-span-3 min-w-0">
                   <div className="min-w-0">
-                    <h3 className="text-base font-black text-slate-900 truncate">{guest.name}</h3>
-                    <div className="flex items-center gap-1.5 text-slate-400 mt-0.5">
-                      <Phone size={10} />
-                      <span className="text-[10px] font-mono">{guest.whatsappNumber}</span>
+                    <h3 className="text-base lg:text-lg font-black text-slate-900 truncate leading-tight">{guest.name}</h3>
+                    <div className="flex items-center gap-1.5 text-slate-400 mt-1">
+                      <Phone size={12} className="shrink-0" />
+                      <span className="text-xs font-mono tracking-tight">{guest.whatsappNumber}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Address */}
                 <div className="lg:col-span-3">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 bg-slate-50/50 lg:bg-transparent p-3 lg:p-0 rounded-xl">
                     <MapPin className="text-slate-300 shrink-0 mt-0.5" size={14} />
                     <p className="text-xs text-slate-500 line-clamp-2 font-medium leading-relaxed">
                       {guest.address || "No address provided"}
@@ -219,38 +221,37 @@ export default function GSuitPage() {
                 <div className="lg:col-span-3">
                   <div 
                     onClick={() => handleOpenEdit(guest)}
-                    className={`flex flex-col gap-1 p-2 rounded-xl cursor-pointer transition-all border ${guest.room ? 'bg-emerald-50/50 border-emerald-100/50 hover:bg-emerald-50' : 'bg-slate-50/50 border-slate-100/50 hover:bg-slate-50'}`}
+                    className={`flex flex-col gap-1.5 p-3 rounded-xl cursor-pointer transition-all border ${guest.room ? 'bg-emerald-50/50 border-emerald-100/50 hover:bg-emerald-50' : 'bg-slate-50 border-slate-100 hover:bg-slate-100'}`}
                   >
                     <div className="flex items-center gap-2">
-                      <Bed size={14} className={guest.room ? "text-emerald-600" : "text-slate-400"} />
+                      <Bed size={16} className={guest.room ? "text-emerald-600" : "text-slate-400"} />
                       <span className={`text-xs font-black ${guest.room ? "text-emerald-700" : "text-slate-400 italic"}`}>
                         {guest.room || "Assign Room"}
                       </span>
                     </div>
                     {guest.hostName && (
-                      <div className="flex items-center gap-1 text-[9px] font-bold text-slate-400 pl-5">
-                        <UserCheck size={10} />
-                        <span>{guest.hostName}</span>
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 pl-6 border-l border-slate-100 ml-2">
+                        <span>Host: {guest.hostName}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="lg:col-span-3 flex items-center justify-end gap-2">
+                <div className="lg:col-span-3 flex items-center justify-between lg:justify-end gap-3 mt-2 lg:mt-0 pt-4 lg:pt-0 border-t lg:border-none border-slate-50">
                   <Button 
                     onClick={() => handleIssuePass(guest)}
                     variant="ghost"
-                    className="h-9 px-4 rounded-xl text-emerald-600 hover:bg-emerald-50 font-bold uppercase text-[9px] tracking-widest"
+                    className="h-10 flex-1 lg:flex-initial px-4 rounded-xl text-emerald-600 hover:bg-emerald-50 font-bold uppercase text-[10px] tracking-widest transition-colors"
                   >
-                    <Download size={14} className="mr-2" /> Pass
+                    <Download size={16} className="mr-2" /> Issue Pass
                   </Button>
                   <Button 
                     onClick={() => handleOpenEdit(guest)}
                     variant="ghost"
-                    className="h-9 w-9 p-0 rounded-xl text-slate-400 hover:bg-slate-50"
+                    className="h-10 w-10 p-0 rounded-xl text-slate-400 hover:bg-slate-50 lg:flex shrink-0"
                   >
-                    <ChevronRight size={18} />
+                    <ChevronRight size={20} />
                   </Button>
                 </div>
 
@@ -270,21 +271,22 @@ export default function GSuitPage() {
 
       {/* EDIT MODAL */}
       <Dialog open={!!selectedGuest} onOpenChange={() => setSelectedGuest(null)}>
-        <DialogContent className="sm:max-w-[500px] rounded-[32px] border-none shadow-2xl p-0 overflow-hidden font-figtree">
-          <div className="bg-slate-900 p-8 text-white">
+        <DialogContent className="sm:max-w-[800px] w-[95vw] rounded-[32px] border-none shadow-2xl p-0 overflow-hidden font-figtree flex flex-col">
+          <div className="bg-slate-900 p-6 lg:p-8 text-white shrink-0">
             <DialogHeader>
               <div className="w-12 h-12 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400 mb-4">
                 <Bed size={24} />
               </div>
-              <DialogTitle className="text-2xl font-black">Accommodation Details</DialogTitle>
-              <DialogDescription className="text-slate-400 font-medium pt-1">
+              <DialogTitle className="text-xl lg:text-2xl font-black leading-tight">Accommodation Details</DialogTitle>
+              <DialogDescription className="text-slate-400 font-medium pt-1 text-sm">
                 Set up stay details for {selectedGuest?.name}
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="p-8 space-y-6 bg-white">
+          <div className="p-6 lg:p-8 space-y-6 bg-white flex-grow">
             <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hotel / Room Name</label>
                 <div className="relative">
@@ -310,6 +312,7 @@ export default function GSuitPage() {
                   />
                 </div>
               </div>
+            </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -338,12 +341,13 @@ export default function GSuitPage() {
                 </div>
               </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Venue Map URL</label>
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <Input 
-                    placeholder="Paste Venue Google Maps link here..." 
+                    placeholder="Paste Venue link..." 
                     value={formData.locationLink}
                     onChange={(e) => setFormData({...formData, locationLink: e.target.value})}
                     className="pl-10 h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
@@ -356,13 +360,14 @@ export default function GSuitPage() {
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <Input 
-                    placeholder="Paste Hotel Google Maps link here..." 
+                    placeholder="Paste Hotel link..." 
                     value={formData.hotelLocationLink}
                     onChange={(e) => setFormData({...formData, hotelLocationLink: e.target.value})}
                     className="pl-10 h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
                   />
                 </div>
               </div>
+            </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -392,18 +397,18 @@ export default function GSuitPage() {
               </div>
             </div>
 
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-4 flex flex-row gap-2">
               <Button 
                 variant="ghost" 
                 onClick={() => setSelectedGuest(null)}
-                className="h-12 px-6 rounded-xl font-bold text-slate-400 hover:bg-slate-50"
+                className="h-12 flex-1 rounded-xl font-bold text-slate-400 hover:bg-slate-50"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleUpdateAccommodation}
                 disabled={isUpdating}
-                className="h-12 px-8 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-100"
+                className="h-12 flex-[2] bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-all active:scale-95 shadow-lg shadow-emerald-100"
               >
                 {isUpdating ? <RefreshCcw size={18} className="animate-spin mr-2" /> : <CheckCircle2 size={18} className="mr-2" />}
                 Save Details
