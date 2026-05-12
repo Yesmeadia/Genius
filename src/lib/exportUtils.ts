@@ -49,7 +49,7 @@ export async function generateChecklistPDF(
     schoolGroups[sId].push(reg);
   });
 
-  const sortedSchoolIds = Object.keys(schoolGroups).sort((a, b) => 
+  const sortedSchoolIds = Object.keys(schoolGroups).sort((a, b) =>
     getSchoolName(a).localeCompare(getSchoolName(b))
   );
 
@@ -74,10 +74,6 @@ export async function generateChecklistPDF(
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
       doc.text(schoolName.toUpperCase(), 20, currentY + 9.5);
-      // Participant count badge (right-aligned)
-      const countLabel = `${schoolData.length} Participants`;
-      const countW = doc.getTextWidth(countLabel);
-      doc.text(countLabel, pageWidth - 14 - countW, currentY + 9.5);
       doc.setTextColor(30, 41, 59); // reset
       currentY += 20;
     }
@@ -127,11 +123,9 @@ export async function generateChecklistPDF(
       });
 
       const tableData = sortedData.map((reg, index) => {
-        let cleanName = reg.studentName || "";
-        if (cat !== "Student") {
-          cleanName = cleanName.replace(` (${cat})`, "");
-        }
-        
+        // Strip any category suffix like "(Staff)" from the display name
+        const cleanName = (reg.studentName || "").replace(/\s*\([^)]*\)$/, "");
+
         // Base row data
         const row = [
           index + 1,
@@ -152,7 +146,7 @@ export async function generateChecklistPDF(
         return row;
       });
 
-      const head = isStaff 
+      const head = isStaff
         ? [["#", "Name", "Badge", "Arrival", "Lunch", "Spell 2", "Depart", "Cert."]]
         : [["#", "Name", "Class", "Badge", "Arrival", "Lunch", "Spell 2", "Depart", "Cert."]];
 
@@ -197,101 +191,84 @@ export async function generateChecklistPDF(
 }
 
 export function generateSchoolSummaryExcel(
-  data: (Registration | AlumniRegistration | VolunteerRegistration | AwardeeRegistration | QiraathRegistration | ScoutTeamRegistration | any)[],
+  data: any[],
   filename: string
 ) {
   if (data.length === 0) return alert("No records found.");
 
-  // Group by School Name and Zone to avoid duplicates if some records use ID and others use Name
-  const schoolSummary: Record<string, { schoolName: string; zoneName: string; male: number; female: number; total: number }> = {};
+  const categoryPriority = ["Student", "Awardee", "Qiraath", "Volunteer", "Scout", "Alumni", "Staff", "Other"];
 
-  data.forEach(reg => {
-    const rawSchool = reg.school || "Other";
-    const locDetails = getLocationDetails(rawSchool);
-    
-    // Use canonical name from locations data if available, otherwise fallback to raw value
-    const schoolName = locDetails.schoolName.trim();
-    const zoneName = (locDetails.zoneName || reg.zone || "N/A").trim();
-    
-    // Normalize key to prevent duplicates due to case or spacing
-    const key = `${schoolName.toLowerCase()}_${zoneName.toLowerCase()}`;
-    
-    if (!schoolSummary[key]) {
-      schoolSummary[key] = {
-        schoolName,
-        zoneName,
-        male: 0,
-        female: 0,
-        total: 0
-      };
-    }
-    
-    const gender = reg.gender?.toLowerCase() || "";
-    if (gender === "male") schoolSummary[key].male++;
-    else if (gender === "female") schoolSummary[key].female++;
-    
-    schoolSummary[key].total++;
+  const sortedData = [...data].sort((a, b) => {
+    // 1. Category Priority
+    const catA = a.category || "Other";
+    const catB = b.category || "Other";
+    const idxA = categoryPriority.indexOf(catA);
+    const idxB = categoryPriority.indexOf(catB);
+    const priorityA = idxA === -1 ? 99 : idxA;
+    const priorityB = idxB === -1 ? 99 : idxB;
+    if (priorityA !== priorityB) return priorityA - priorityB;
+
+    // 2. Class Sort
+    const classA = a.className || "";
+    const classB = b.className || "";
+    const numA = parseInt(classA) || 999;
+    const numB = parseInt(classB) || 999;
+    if (numA !== numB) return numA - numB;
+    if (classA !== classB) return classA.localeCompare(classB);
+
+    // 3. Name Sort
+    const nameA = (a.displayName || a.studentName || a.name || "").toLowerCase();
+    const nameB = (b.displayName || b.studentName || b.name || "").toLowerCase();
+    return nameA.localeCompare(nameB);
   });
 
-  const sortedSummary = Object.values(schoolSummary).sort((a, b) => {
-    const zoneCompare = (a.zoneName || "").localeCompare(b.zoneName || "");
-    if (zoneCompare !== 0) return zoneCompare;
-    return (a.schoolName || "").localeCompare(b.schoolName || "");
-  });
+  const excelData = sortedData.map((reg, index) => {
+    const loc = getLocationDetails(reg.school);
+    const rawName = reg.displayName || reg.studentName || reg.volunteerName || reg.name || "-";
+    const cleanName = rawName.replace(/\s*\([^)]*\)$/, "");
 
-  // Calculate Grand Totals
-  const grandTotal = sortedSummary.reduce((acc, curr) => {
-    acc.male += curr.male;
-    acc.female += curr.female;
-    acc.total += curr.total;
-    return acc;
-  }, { male: 0, female: 0, total: 0 });
-
-  const excelData = sortedSummary.map((item, index) => ({
-    "SL no": index + 1,
-    "School Name": item.schoolName,
-    "Zone": item.zoneName,
-    "Male Students (All categories)": item.male,
-    "Female (All categories)": item.female,
-    "Total": item.total
-  }));
-
-  // Append Grand Total Row
-  excelData.push({
-    "SL no": null as any,
-    "School Name": "GRAND TOTAL",
-    "Zone": "",
-    "Male Students (All categories)": grandTotal.male,
-    "Female (All categories)": grandTotal.female,
-    "Total": grandTotal.total
+    return {
+      "SL No": index + 1,
+      "Name": cleanName,
+      "Category": reg.category === "Student" ? "Delegate" : (reg.category || "Other"),
+      "Gender": reg.gender || "-",
+      "Class": reg.className || "-",
+      "Parentage": reg.parentage || "-",
+      "School": loc.schoolName || reg.school || "-",
+      "Zone": loc.zoneName || reg.zone || "-",
+      "With Guardian": reg.withParent ? "Yes" : "No",
+      "Contact": reg.mobileNumber || reg.whatsappNumber || "-"
+    };
   });
 
   const worksheet = XLSX.utils.json_to_sheet(excelData);
-  
+
   // Set column widths
   const wscols = [
-    { wch: 8 },  // SL no
-    { wch: 40 }, // School Name
+    { wch: 8 },  // SL No
+    { wch: 30 }, // Name
+    { wch: 15 }, // Category
+    { wch: 10 }, // Gender
+    { wch: 10 }, // Class
+    { wch: 25 }, // Parentage
+    { wch: 40 }, // School
     { wch: 20 }, // Zone
-    { wch: 25 }, // Male Students
-    { wch: 20 }, // Female
-    { wch: 10 }  // Total
+    { wch: 15 }, // With Guardian
+    { wch: 20 }  // Contact
   ];
   worksheet["!cols"] = wscols;
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "School Summary");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "All Participants");
 
-  // Generate buffer
   const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
   const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  
   saveAs(blob, `${filename}.xlsx`);
 }
 
 /**
  * Individual School Excel Export
- * Generates a per-school breakdown: category × gender
+ * Generates a full participant list for a specific school
  */
 export function generateSchoolExcelIndividual(
   people: any[],
@@ -300,54 +277,64 @@ export function generateSchoolExcelIndividual(
 ) {
   if (people.length === 0) return alert("No records found for this school.");
 
-  const categoryOrder = ["Student", "Awardee", "Qiraath", "Volunteer", "Scout", "Alumni", "Staff", "Other"];
+  const categoryPriority = ["Student", "Awardee", "Qiraath", "Volunteer", "Scout", "Alumni", "Staff", "Other"];
 
-  // Group by category
-  const catMap: Record<string, { male: number; female: number; total: number }> = {};
-  people.forEach(p => {
-    const cat = p.category || "Other";
-    if (!catMap[cat]) catMap[cat] = { male: 0, female: 0, total: 0 };
-    const g = p.gender?.toLowerCase() || "";
-    if (g === "male") catMap[cat].male++;
-    else if (g === "female") catMap[cat].female++;
-    catMap[cat].total++;
+  const sortedPeople = [...people].sort((a, b) => {
+    // 1. Category Priority
+    const catA = a.category || "Other";
+    const catB = b.category || "Other";
+    const idxA = categoryPriority.indexOf(catA);
+    const idxB = categoryPriority.indexOf(catB);
+    const priorityA = idxA === -1 ? 99 : idxA;
+    const priorityB = idxB === -1 ? 99 : idxB;
+    if (priorityA !== priorityB) return priorityA - priorityB;
+
+    // 2. Class Sort
+    const classA = a.className || "";
+    const classB = b.className || "";
+    const numA = parseInt(classA) || 999;
+    const numB = parseInt(classB) || 999;
+    if (numA !== numB) return numA - numB;
+    if (classA !== classB) return classA.localeCompare(classB);
+
+    // 3. Name Sort
+    const nameA = (a.displayName || a.studentName || a.name || "").toLowerCase();
+    const nameB = (b.displayName || b.studentName || b.name || "").toLowerCase();
+    return nameA.localeCompare(nameB);
   });
 
-  const sortedCats = Object.keys(catMap).sort((a, b) => {
-    const ia = categoryOrder.indexOf(a);
-    const ib = categoryOrder.indexOf(b);
-    if (ia === -1 && ib === -1) return a.localeCompare(b);
-    if (ia === -1) return 1;
-    if (ib === -1) return -1;
-    return ia - ib;
-  });
+  const excelData = sortedPeople.map((reg, index) => {
+    const rawName = reg.displayName || reg.studentName || reg.volunteerName || reg.name || "-";
+    const cleanName = rawName.replace(/\s*\([^)]*\)$/, "");
 
-  const grandTotals = sortedCats.reduce(
-    (acc, cat) => { acc.male += catMap[cat].male; acc.female += catMap[cat].female; acc.total += catMap[cat].total; return acc; },
-    { male: 0, female: 0, total: 0 }
-  );
-
-  const excelData = sortedCats.map((cat, i) => ({
-    "SL No": i + 1,
-    "Category": cat,
-    "Male": catMap[cat].male,
-    "Female": catMap[cat].female,
-    "Total": catMap[cat].total
-  }));
-
-  excelData.push({
-    "SL No": null as any,
-    "Category": "GRAND TOTAL",
-    "Male": grandTotals.male,
-    "Female": grandTotals.female,
-    "Total": grandTotals.total
+    return {
+      "SL No": index + 1,
+      "Name": cleanName,
+      "Category": reg.category === "Student" ? "Delegate" : (reg.category || "Other"),
+      "Gender": reg.gender || "-",
+      "Class": reg.className || "-",
+      "Parentage": reg.parentage || "-",
+      "Zone": reg.zone || "-",
+      "With Guardian": reg.withParent ? "Yes" : "No",
+      "Contact": reg.mobileNumber || reg.whatsappNumber || "-"
+    };
   });
 
   const ws = XLSX.utils.json_to_sheet(excelData);
-  ws["!cols"] = [{ wch: 8 }, { wch: 28 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+  ws["!cols"] = [
+    { wch: 8 },  // SL No
+    { wch: 30 }, // Name
+    { wch: 15 }, // Category
+    { wch: 10 }, // Gender
+    { wch: 10 }, // Class
+    { wch: 25 }, // Parentage
+    { wch: 20 }, // Zone
+    { wch: 15 }, // With Guardian
+    { wch: 20 }  // Contact
+  ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, schoolName.substring(0, 31));
+  XLSX.utils.book_append_sheet(wb, ws, "Participants");
 
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -366,16 +353,16 @@ export async function generateClassGenderSummaryPDF(
 
   // Group by class and then gender
   const classMap: Record<string, { Male: number; Female: number; Total: number }> = {};
-  
+
   data.forEach(reg => {
     const cls = reg.className || "N/A";
-    const gender = reg.gender?.toLowerCase() === "male" ? "Male" : 
-                   reg.gender?.toLowerCase() === "female" ? "Female" : "Other";
-    
+    const gender = reg.gender?.toLowerCase() === "male" ? "Male" :
+      reg.gender?.toLowerCase() === "female" ? "Female" : "Other";
+
     if (!classMap[cls]) {
       classMap[cls] = { Male: 0, Female: 0, Total: 0 };
     }
-    
+
     if (gender === "Male") classMap[cls].Male++;
     else if (gender === "Female") classMap[cls].Female++;
     classMap[cls].Total++;
@@ -517,7 +504,7 @@ const getFontBase64 = async (path: string): Promise<string | null> => {
  * Standard Student Registration PDF
  */
 export async function generateRegistrationPDF(
-  data: Registration[],
+  data: any[],
   title: string,
   filename: string
 ) {
@@ -529,12 +516,14 @@ export async function generateRegistrationPDF(
   const tableData = data.map((reg, index) => {
     let guardianInfo = reg.parentName || "-";
     if (reg.accompaniments && reg.accompaniments.length > 0) {
-      guardianInfo = reg.accompaniments.map(a => `${a.name} (${a.relation})`).join(", ");
+      guardianInfo = reg.accompaniments.map((a: any) => `${a.name} (${a.relation})`).join(", ");
     }
+
+    const displayName = reg.studentName || reg.volunteerName || reg.name || "Unknown";
 
     return [
       index + 1,
-      reg.studentName,
+      displayName,
       (reg as any).type || "Student",
       reg.gender,
       reg.parentage,
@@ -780,7 +769,7 @@ export async function generateVolunteerExportPDF(data: VolunteerRegistration[], 
   const tableData = data.map((reg, index) => {
     let guardianInfo = "-";
     if (reg.accompaniments && reg.accompaniments.length > 0) {
-      guardianInfo = reg.accompaniments.map(a => `${a.name} (${a.relation})`).join(", ");
+      guardianInfo = reg.accompaniments.map((a: any) => `${a.name} (${a.relation})`).join(", ");
     }
 
     return [
@@ -1227,11 +1216,11 @@ export async function generateStrategicReportPDF(
   // 8. OVERALL DISTRIBUTION BY CLASS AND GENDER (All Categories)
   const classGenderMap: Record<string, { Male: number; Female: number; Total: number }> = {};
   const allWithClass = [...registrations, ...alumni, ...volunteers, ...awardees, ...qiraath, ...scoutTeam];
-  
+
   allWithClass.forEach(r => {
     const cls = (r as any).className || "N/A";
-    const gender = (r as any).gender?.toLowerCase() === "male" ? "Male" : 
-                   (r as any).gender?.toLowerCase() === "female" ? "Female" : "Other";
+    const gender = (r as any).gender?.toLowerCase() === "male" ? "Male" :
+      (r as any).gender?.toLowerCase() === "female" ? "Female" : "Other";
     if (!classGenderMap[cls]) classGenderMap[cls] = { Male: 0, Female: 0, Total: 0 };
     if (gender === "Male") classGenderMap[cls].Male++;
     else if (gender === "Female") classGenderMap[cls].Female++;
@@ -1405,8 +1394,8 @@ function toTitleCase(str: string): string {
 async function drawBadgeContent(
   doc: jsPDF,
   data: any,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' | 'media',
-  fontsLoaded: { kalash: boolean; montserratSemiBold: boolean; montserratMedium: boolean },
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' | 'media' | 'gsuit',
+  fontsLoaded: { kalash: boolean; montserratSemiBold: boolean; montserratMedium: boolean; bebas: boolean },
   dynamicLocations?: Zone[]
 ) {
   const W = doc.internal.pageSize.width;   // 85mm
@@ -1420,8 +1409,9 @@ async function drawBadgeContent(
           : type === 'guardian' ? '/pass/Guardian.jpeg'
             : type === 'media' ? '/pass/Media.jpeg'
               : type === 'guest' ? '/pass/guest.png'
-                : type === 'driver-staff' ? '/pass/Escort.jpeg'
-                  : '/pass/Crew.jpeg';
+                : type === 'gsuit' ? (data.room ? '/gsuit/room.jpeg' : '/gsuit/no_room.jpeg')
+                  : type === 'driver-staff' ? '/pass/Escort.jpeg'
+                    : '/pass/Crew.jpeg';
   const bg = await getBase64ImageFromUrl(bgPath);
   if (bg) {
     const bgFormat = bgPath.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG';
@@ -1432,8 +1422,9 @@ async function drawBadgeContent(
     doc.rect(0, 0, W, H, 'F');
   }
 
-  // ── 2. PHOTO (right-aligned, with top margin from header) ─────
-  const splitY = 67;  // taller header gives more space before footer content
+  // ── 2. STANDARD PASS CONTENT (Only for non-gsuit types) ──
+  if (type !== 'gsuit') {
+    const splitY = 67;  // taller header gives more space before footer content
   let photoW = 34;
   let photoH = 46;
   let photoX = 20;
@@ -1608,8 +1599,92 @@ async function drawBadgeContent(
     if (barcode) doc.addImage(barcode, 'PNG', bcX, bcY, bcW, bcH);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(4.5);
-    doc.setTextColor(80, 80, 80);
-    doc.text(data.id.substring(0, 8).toUpperCase(), W / 2, bcY + bcH + 1.5, { align: 'center' });
+      doc.setTextColor(80, 80, 80);
+      doc.text(data.id.substring(0, 8).toUpperCase(), W / 2, bcY + bcH + 1.5, { align: 'center' });
+    }
+  }
+
+  // ── GSuit Specific Data Overlays ──
+  if (type === 'gsuit') {
+    const fullName = (data.name || 'GUEST NAME').toUpperCase();
+    const hotelName = (data.room || 'HOTEL KASHMIRI FLOWER').toUpperCase();
+    const contactName = data.hostName || "Mr. Fazlurahman";
+    const contactPhone = data.hostPhone || "+919000000000";
+    const contactWhatsapp = data.hostWhatsapp || "919000000000";
+
+    // Guest Name using Bebas Neue
+    doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
+    doc.setFontSize(20.72);
+    doc.setTextColor(255, 255, 255);
+    doc.text(fullName, 42.0, 7.5);
+    // Adjusted positioning as requested (Left: 42.0mm, Top: 7.5mm)
+
+    doc.setTextColor(0, 74, 128); // Blue color for content
+    doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', "normal");
+
+    if (data.room) {
+      // Venue
+      doc.setTextColor(0, 74, 128);
+      doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
+      doc.setFontSize(11.89);
+      doc.text("SKICC _ SRINAGAR", 42, 26);
+
+      doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', "normal");
+      doc.setTextColor(225, 29, 72); // Rose-600
+      doc.setFontSize(7.5);
+      doc.text(`• ${contactName}`, 42, 39);
+
+      // Link areas (PDF links)
+      doc.link(45, 41, 6, 4, { url: `tel:${contactPhone}` });
+      doc.link(52, 41, 6, 4, { url: `https://wa.me/${contactWhatsapp}` });
+
+      // Accommodation
+      doc.setTextColor(0, 74, 128);
+      doc.setFontSize(9);
+      doc.text(hotelName, 76, 26, { maxWidth: 35 });
+
+      doc.setTextColor(225, 29, 72); // Rose-600
+      doc.setFontSize(7.5);
+      doc.text(`• ${contactName}`, 76, 39);
+
+      // Link areas
+      doc.link(80, 41, 6, 4, { url: `tel:${contactPhone}` });
+      doc.link(87, 41, 6, 4, { url: `https://wa.me/${contactWhatsapp}` });
+    } else {
+      // Venue Only
+      doc.setTextColor(0, 74, 128);
+      doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
+      doc.setFontSize(11.89);
+      doc.text("SKICC _ SRINAGAR", 42, 32);
+
+      doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', "normal");
+      doc.setTextColor(225, 29, 72);
+      doc.setFontSize(7.5);
+      doc.text(`• ${contactName}`, 82, 32);
+
+      // Link areas
+      doc.link(85, 34, 8, 5, { url: `tel:${contactPhone}` });
+      doc.link(95, 34, 8, 5, { url: `https://wa.me/${contactWhatsapp}` });
+    }
+
+    // Bottom Barcode
+    const bBcW = 20;
+    const bBcH = 6;
+    const bBcX = W - bBcW - 6;
+    const bBcY = H - bBcH - 6;
+    const bBarcode = getBarcodeBase64(data.id.substring(0, 8).toUpperCase());
+    if (bBarcode) doc.addImage(bBarcode, 'PNG', bBcX, bBcY, bBcW, bBcH);
+
+    // Left Vertical Barcode
+    const vBcW = 30;
+    const vBcH = 6;
+    const vBcX = 8;
+    const vBcY = 12;
+    const vBarcode = getBarcodeBase64(data.id);
+    if (vBarcode) {
+      // Rotate 90 degrees for vertical placement
+      doc.addImage(vBarcode, 'PNG', vBcX, vBcY, vBcW, vBcH, undefined, 'FAST', 90);
+    }
   }
 }
 
@@ -1618,16 +1693,17 @@ async function drawBadgeContent(
 export async function generateBatchAccessPasses(
   data: any[],
   filename: string,
-  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' | 'media' = 'student',
+  type: 'student' | 'guest' | 'yesian' | 'local-staff' | 'alumni-achiever' | 'volunteer' | 'awardee' | 'qiraath' | 'driver-staff' | 'guardian' | 'media' | 'gsuit' = 'student',
   dynamicLocations?: Zone[]
 ) {
   if (data.length === 0) return alert("No records found.");
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [85, 120] });
+  const format = type === 'gsuit' ? [120, 55] : [85, 120];
+  const doc = new jsPDF({ orientation: type === 'gsuit' ? "landscape" : "portrait", unit: "mm", format: format as any });
   const yesLogo = await getBase64ImageFromUrl("/yeslogo.png");
   const geniusLogo = await getBase64ImageFromUrl("/Genius.png");
 
-  // Load and register the custom Kalash font
-  let fontsLoaded = { kalash: false, montserratSemiBold: false, montserratMedium: false };
+  // Load and register fonts
+  let fontsLoaded = { kalash: false, montserratSemiBold: false, montserratMedium: false, bebas: false };
   const kalashBase64 = await getFontBase64('/fonts/KalashRegular.ttf');
   if (kalashBase64) {
     try {
@@ -1658,8 +1734,20 @@ export async function generateBatchAccessPasses(
     } catch (e) { }
   }
 
+  const bebasB64 = await getFontBase64('/fonts/Bebas-Regular.ttf');
+  if (bebasB64) {
+    try {
+      doc.addFileToVFS('Bebas-Regular.ttf', bebasB64);
+      doc.addFont('Bebas-Regular.ttf', 'BebasNeue', 'normal');
+      fontsLoaded.bebas = true;
+    } catch (e) { }
+  }
+
   for (let i = 0; i < data.length; i++) {
-    if (i > 0) doc.addPage([85, 120], "portrait");
+    if (i > 0) {
+      const format = type === 'gsuit' ? [120, 55] : [85, 120];
+      doc.addPage(format as any, type === 'gsuit' ? "landscape" : "portrait");
+    }
     await drawBadgeContent(doc, data[i], type, fontsLoaded, dynamicLocations);
   }
   triggerDownload(doc, filename);

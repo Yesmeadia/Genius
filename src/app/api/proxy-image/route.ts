@@ -8,9 +8,16 @@ export async function GET(request: Request) {
     return new NextResponse('Missing url parameter', { status: 400 });
   }
 
-  // Security: Only allow proxying from Firebase Storage to prevent SSRF
-  if (!imageUrl.startsWith('https://firebasestorage.googleapis.com/')) {
-    return new NextResponse('Unauthorized image source', { status: 403 });
+  // Security: Only allow proxying from authorized sources to prevent SSRF
+  const allowedDomains = [
+    'https://firebasestorage.googleapis.com/',
+    'https://fonts.gstatic.com/'
+  ];
+  
+  const isAllowed = allowedDomains.some(domain => imageUrl.startsWith(domain));
+
+  if (!isAllowed) {
+    return new NextResponse('Unauthorized source', { status: 403 });
   }
 
   try {

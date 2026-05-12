@@ -35,6 +35,10 @@ export interface GuestRegistration {
   photoUrl?: string;
   attendance?: boolean;
   attendedAt?: any;
+  room?: string;
+  hostName?: string;
+  hostPhone?: string;
+  hostWhatsapp?: string;
 }
 
 export interface YesianRegistration {

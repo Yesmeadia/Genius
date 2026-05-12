@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Download, LogOut, ShieldCheck,
   CreditCard, User, Users2, BarChart3, GraduationCap,
   Truck, Trash2, Plus, Award, ScrollText, ChevronDown, ChevronRight,
-  ClipboardList, Settings, Briefcase, Box, CheckCircle, Scan, MessageSquare, MapPin, Camera
+  ClipboardList, Settings, Briefcase, Box, CheckCircle, Scan, MessageSquare, MapPin, Camera, Bed
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -30,7 +30,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
     const categoryMapping = [
       { id: "management", hrefs: ["/admin/dashboard/students-data", "/admin/dashboard/guardian-data", "/admin/dashboard/guest-registry", "/admin/dashboard/yesian-network", "/admin/dashboard/alumni-achievers", "/admin/dashboard/awardee", "/admin/dashboard/qiraath"] },
       { id: "personnel", hrefs: ["/admin/dashboard/local-staff", "/admin/dashboard/volunteers", "/admin/dashboard/scout-team", "/admin/dashboard/driver-staff", "/admin/dashboard/media"] },
-      { id: "utilities", hrefs: ["/admin/dashboard/access-pass", "/admin/dashboard/certificates", "/admin/dashboard/reports", "/admin/dashboard/master-export", "/admin/dashboard/attendance-track"] },
+      { id: "utilities", hrefs: ["/admin/dashboard/access-pass", "/admin/dashboard/certificates", "/admin/dashboard/reports", "/admin/dashboard/master-export", "/admin/dashboard/attendance-track", "/admin/dashboard/gsuit"] },
       { id: "system", hrefs: ["/admin/dashboard/recycle-bin"] }
     ];
 
@@ -97,6 +97,7 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
       color: "emerald",
       icon: <Box size={18} />,
       items: [
+        { id: "gsuit", label: "GSuit", icon: <Bed size={18} />, href: "/admin/dashboard/gsuit" },
         { id: "pass", label: "Access Pass", icon: <CreditCard size={18} />, href: "/admin/dashboard/access-pass" },
         { id: "certificates", label: "Certificates", icon: <ScrollText size={18} />, href: "/admin/dashboard/certificates" },
         { id: "reports", label: "Reports", icon: <BarChart3 size={18} />, href: "/admin/dashboard/reports" },

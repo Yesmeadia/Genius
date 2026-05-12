@@ -11,7 +11,11 @@ export default function MasterExportPage() {
     localStaffRegistrations,
     awardeeRegistrations,
     driverStaffRegistrations,
-    mediaRegistrations
+    mediaRegistrations,
+    alumniRegistrations,
+    volunteerRegistrations,
+    qiraathRegistrations,
+    scoutTeamRegistrations
   } = useDashboardData();
 
   return (
@@ -24,6 +28,10 @@ export default function MasterExportPage() {
         awardeeRegistrations={awardeeRegistrations}
         driverStaffRegistrations={driverStaffRegistrations}
         mediaRegistrations={mediaRegistrations}
+        alumniRegistrations={alumniRegistrations}
+        volunteerRegistrations={volunteerRegistrations}
+        qiraathRegistrations={qiraathRegistrations}
+        scoutTeamRegistrations={scoutTeamRegistrations}
       />
     </div>
   );

@@ -55,6 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     // Guests
     if (pathname.startsWith("/admin/dashboard/guest-registry")) return "Guest Registry";
     if (pathname.startsWith("/admin/dashboard/guest/")) return "Guest Profile";
+    if (pathname.startsWith("/admin/dashboard/gsuit")) return "GSuit Management";
     
     // Yesians
     if (pathname.startsWith("/admin/dashboard/yesian-network")) return "Yesian Network";

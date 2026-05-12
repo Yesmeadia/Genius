@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, RotateCcw, User, Phone, MapPin, Award, ShieldCheck } from "lucide-react";
+import { Search, Download, RotateCcw, User, Phone, MapPin, Award, ShieldCheck, Archive, Loader2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { AwardeeRegistration } from "../types";
 import Link from "next/link";
 import { locations } from "@/data/locations";
-import { generateBatchAccessPasses } from "@/lib/exportUtils";
+import { generateBatchAccessPasses, generateZipBackup } from "@/lib/exportUtils";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter } from "lucide-react";
@@ -62,6 +62,8 @@ export function AwardeeDataTable({
 }: AwardeeDataTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [backupProgress, setBackupProgress] = useState("");
   const totalPages = Math.ceil(data.length / itemsPerPage);
 
   const getSchoolName = (schoolId: string) => {
@@ -184,6 +186,36 @@ export function AwardeeDataTable({
               className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold text-violet-600 border-violet-100 bg-violet-50 hover:bg-violet-100 transition-all rounded-xl shadow-sm"
             >
               <ShieldCheck size={14} className="mr-2" /> Batch Passes
+            </Button>
+            <Button
+              variant="outline"
+              disabled={isBackingUp}
+              onClick={async () => {
+                setIsBackingUp(true);
+                try {
+                  const timestamp = new Date().toISOString().split('T')[0];
+                  await generateZipBackup(data, `Awardee Backup ${timestamp}`, `awardee_backup_${timestamp}`, (msg) => setBackupProgress(msg));
+                } catch (error) {
+                  console.error("Backup failed", error);
+                  alert("Backup failed. Please try again.");
+                } finally {
+                  setIsBackingUp(false);
+                  setBackupProgress("");
+                }
+              }}
+              className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold text-amber-600 border-amber-100 bg-amber-50 hover:bg-amber-100 transition-all rounded-xl shadow-sm"
+            >
+              {isBackingUp ? (
+                <>
+                  <Loader2 size={14} className="mr-2 animate-spin" />
+                  <span className="max-w-[100px] truncate">{backupProgress || "Backing up..."}</span>
+                </>
+              ) : (
+                <>
+                  <Archive size={14} className="mr-2" />
+                  Back Up Data
+                </>
+              )}
             </Button>
           </div>
         </div>

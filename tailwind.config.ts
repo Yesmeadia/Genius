@@ -12,6 +12,7 @@ const config: Config = {
 		extend: {
 			fontFamily: {
 				figtree: ["var(--font-figtree)", "sans-serif"],
+				bebas: ["var(--font-bebas-neue)", "sans-serif"],
 			},
 			colors: {
 				background: 'hsl(var(--background))',

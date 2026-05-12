@@ -46,6 +46,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@fontsource/bebas-neue": "^5.2.7",
     "@types/jsbarcode": "^3.11.4",
     "@types/node": "^20",
     "@types/react": "^19",

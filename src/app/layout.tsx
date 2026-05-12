@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Figtree } from "next/font/google";
+import { Figtree, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -8,6 +8,12 @@ const figtree = Figtree({
   subsets: ["latin"],
   weight: ["400", "500", "700", "900"],
   variable: "--font-figtree",
+});
+
+const bebasNeue = Bebas_Neue({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-bebas-neue",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${figtree.variable} font-figtree antialiased`} suppressHydrationWarning>
+      <body className={`${figtree.variable} ${bebasNeue.variable} font-figtree antialiased`} suppressHydrationWarning>
         {/* Cache Bust */}
         <Providers>
           <ScrollToTop />

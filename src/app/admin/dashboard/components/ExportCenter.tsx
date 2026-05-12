@@ -7,7 +7,9 @@ import {
   generateLocalStaffExportPDF,
   generateDriverStaffExportPDF,
   generateMediaExportPDF,
-  generateZipBackup
+  generateAwardeeExportPDF,
+  generateZipBackup,
+  generateSchoolSummaryExcel
 } from "@/lib/exportUtils";
 import { generateParticipationCertificate } from "@/lib/certificateUtils";
 import { locations } from "@/data/locations";
@@ -15,7 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, FileText, MapPin, School, Archive, CreditCard, User, Zap, FileArchive, Award, ScrollText, Truck, Camera } from "lucide-react";
-import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, AwardeeRegistration, DriverStaffRegistration, MediaRegistration } from "../types";
+import { Registration, GuestRegistration, YesianRegistration, LocalStaffRegistration, AwardeeRegistration, DriverStaffRegistration, MediaRegistration, AlumniRegistration, VolunteerRegistration, QiraathRegistration, ScoutTeamRegistration } from "../types";
 
 interface ExportCenterProps {
   registrations: Registration[];
@@ -25,13 +27,30 @@ interface ExportCenterProps {
   awardeeRegistrations: AwardeeRegistration[];
   driverStaffRegistrations: DriverStaffRegistration[];
   mediaRegistrations: MediaRegistration[];
+  alumniRegistrations: AlumniRegistration[];
+  volunteerRegistrations: VolunteerRegistration[];
+  qiraathRegistrations: QiraathRegistration[];
+  scoutTeamRegistrations: ScoutTeamRegistration[];
 }
 
-export function ExportCenter({ registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations, awardeeRegistrations, driverStaffRegistrations, mediaRegistrations }: ExportCenterProps) {
+export function ExportCenter({
+  registrations,
+  guestRegistrations,
+  yesianRegistrations,
+  localStaffRegistrations,
+  awardeeRegistrations,
+  driverStaffRegistrations,
+  mediaRegistrations,
+  alumniRegistrations,
+  volunteerRegistrations,
+  qiraathRegistrations,
+  scoutTeamRegistrations
+}: ExportCenterProps) {
   const [selectedZone, setSelectedZone] = useState("all");
   const [selectedSchool, setSelectedSchool] = useState("all");
   const [selectedClass, setSelectedClass] = useState("all");
   const [isZipping, setIsZipping] = useState(false);
+  const [isAwardeeZipping, setIsAwardeeZipping] = useState(false);
   const [isCertifying, setIsCertifying] = useState(false);
 
   const filterOptions = useMemo(() => {
@@ -74,15 +93,28 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
   };
 
   const handleGeneratePDF = async (type: 'zone' | 'school' | 'class' | 'all') => {
-    let dataToExport = registrations;
+    let dataToExport: any[] = registrations;
     let title = "Master Registration Report";
     let filenameSuffix = "all";
 
     if (type === 'zone') {
       if (!selectedZone || selectedZone === 'all') return alert("Please select a zone before generating a report.");
-      dataToExport = registrations.filter(r => r.zone === selectedZone);
-      title = `Zone Report: ${selectedZone}`;
-      filenameSuffix = `zone_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+      
+      const allRegistriesInZone = [
+        ...registrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Student' })),
+        ...yesianRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Yesian' })),
+        ...localStaffRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Staff' })),
+        ...awardeeRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Awardee' })),
+        ...driverStaffRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Driver/Staff' })),
+        ...alumniRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Alumni' })),
+        ...volunteerRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Volunteer' })),
+        ...qiraathRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Qiraath' })),
+        ...scoutTeamRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, type: 'Scout' })),
+      ];
+
+      dataToExport = allRegistriesInZone;
+      title = `Zone Consolidated Report: ${selectedZone}`;
+      filenameSuffix = `zone_consolidated_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
     } else if (type === 'school') {
       if (!selectedSchool || selectedSchool === 'all') return alert("Please select a school before generating a report.");
       dataToExport = registrations.filter(r => r.school === selectedSchool);
@@ -96,6 +128,32 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
     }
 
     await generateRegistrationPDF(dataToExport, title, `genius_jam_${filenameSuffix}`);
+  };
+  
+  const handleGenerateExcel = async (type: 'zone' | 'all') => {
+    let dataToExport: any[] = registrations;
+    let filenameSuffix = "all";
+
+    if (type === 'zone') {
+      if (!selectedZone || selectedZone === 'all') return alert("Please select a zone before generating a report.");
+      
+      const allRegistriesInZone = [
+        ...registrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Student' })),
+        ...yesianRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Yesian' })),
+        ...localStaffRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Staff' })),
+        ...awardeeRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Awardee' })),
+        ...driverStaffRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Driver/Staff' })),
+        ...alumniRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Alumni' })),
+        ...volunteerRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Volunteer' })),
+        ...qiraathRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Qiraath' })),
+        ...scoutTeamRegistrations.filter(r => r.zone === selectedZone).map(r => ({ ...r, category: 'Scout' })),
+      ];
+
+      dataToExport = allRegistriesInZone;
+      filenameSuffix = `zone_consolidated_${selectedZone.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+    }
+
+    await generateSchoolSummaryExcel(dataToExport, `genius_jam_${filenameSuffix}`);
   };
 
   const handleGeneratePasses = async (type: 'zone' | 'school' | 'class') => {
@@ -178,6 +236,9 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
             <div className="flex flex-col gap-2 mt-auto">
               <Button onClick={() => handleGeneratePDF('zone')} className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]">
                 <Download className="mr-2 h-3 w-3" /> PDF Report
+              </Button>
+              <Button onClick={() => handleGenerateExcel('zone')} className="w-full h-9 font-black rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all uppercase tracking-widest text-[8px]">
+                <FileText className="mr-2 h-3 w-3" /> Master Excel
               </Button>
               <Button onClick={() => handleGeneratePasses('zone')} className="w-full h-9 font-black rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all uppercase tracking-widest text-[8px]">
                 <CreditCard className="mr-2 h-3 w-3" /> Access Passes
@@ -464,6 +525,46 @@ export function ExportCenter({ registrations, guestRegistrations, yesianRegistra
                 className="w-full h-9 font-black rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all uppercase tracking-widest text-[8px]"
               >
                 <CreditCard className="mr-2 h-3 w-3" /> Access Passes
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Awardee Export */}
+        <Card className="border border-slate-100 shadow-sm rounded-[32px] overflow-hidden bg-violet-50/30 relative group transition-all duration-500 hover:shadow-xl hover:translate-y-[-4px]">
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-violet-500 blur-[80px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
+          <div className="absolute inset-px rounded-[31px] border border-white opacity-60 pointer-events-none z-10" />
+
+          <CardContent className="p-5 relative z-20 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-100 shadow-sm group-hover:rotate-12 transition-transform duration-500">
+                <Award size={18} className="text-violet-700" />
+              </div>
+              <div className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-[9px] font-black uppercase">
+                {awardeeRegistrations.length} Awardees
+              </div>
+            </div>
+            <h3 className="text-base font-black text-slate-900 mb-0.5">Awardee Ledger</h3>
+            <p className="text-[11px] font-medium text-slate-500 mb-4 max-w-[200px] leading-relaxed line-clamp-1">Rank holders & achievers.</p>
+
+            <div className="flex flex-col gap-2 mt-auto">
+              <Button
+                onClick={() => generateAwardeeExportPDF(awardeeRegistrations, "Awardee Selection Registry", "awardee_registry")}
+                className="w-full h-9 font-black rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <Download className="mr-2 h-3 w-3" /> PDF Report
+              </Button>
+              <Button
+                disabled={isAwardeeZipping}
+                onClick={() => {
+                  setIsAwardeeZipping(true);
+                  generateZipBackup(awardeeRegistrations, "Awardee Registry Backup", "awardee_backup")
+                    .finally(() => setIsAwardeeZipping(false));
+                }}
+                className="w-full h-9 font-black rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 transition-all uppercase tracking-widest text-[8px]"
+              >
+                <FileArchive className={`mr-2 h-3 w-3 ${isAwardeeZipping ? 'animate-bounce' : ''}`} />
+                {isAwardeeZipping ? 'Zipping...' : 'Download ZIP Backup'}
               </Button>
             </div>
           </CardContent>
