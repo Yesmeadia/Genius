@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useDashboardData } from "../components/DashboardDataContext";
 import { generateGSuitPassPDF, generateBatchGSuitPasses } from "@/lib/gsuitExportUtils";
+import { generateRoomPassPDF, generateBatchRoomPasses, generateRoomExcel } from "@/lib/gsuitRoomExportUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,8 @@ export default function GSuitPage() {
     hostWhatsapp: "",
     venue: "",
     location: "",
-    locationLink: ""
+    locationLink: "",
+    hotelLocationLink: ""
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -83,7 +85,8 @@ export default function GSuitPage() {
       hostWhatsapp: guest.hostWhatsapp || "919000000000",
       venue: guest.venue || "SKICC",
       location: guest.location || "SRINAGAR",
-      locationLink: guest.locationLink || "https://maps.google.com"
+      locationLink: guest.locationLink || "https://maps.google.com",
+      hotelLocationLink: guest.hotelLocationLink || "https://maps.google.com"
     });
   };
 
@@ -105,12 +108,33 @@ export default function GSuitPage() {
   };
 
   const handleIssuePass = async (guest: any) => {
-    await generateGSuitPassPDF(guest);
+    if (guest.room) {
+      await generateRoomPassPDF(guest);
+    } else {
+      await generateGSuitPassPDF(guest);
+    }
   };
 
   const handleIssueAll = async () => {
     if (filteredGuests.length === 0) return;
-    await generateBatchGSuitPasses(filteredGuests);
+    
+    // Split into room and no-room for better batch processing if they use different templates
+    const roomGuests = filteredGuests.filter(g => g.room);
+    const noRoomGuests = filteredGuests.filter(g => !g.room);
+
+    if (roomGuests.length > 0) {
+      await generateBatchRoomPasses(roomGuests);
+    }
+    
+    if (noRoomGuests.length > 0) {
+      await generateBatchGSuitPasses(noRoomGuests);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (filteredGuests.length === 0) return;
+    const roomGuests = filteredGuests.filter(g => g.room);
+    generateRoomExcel(roomGuests.length > 0 ? roomGuests : filteredGuests);
   };
 
   return (
@@ -134,6 +158,13 @@ export default function GSuitPage() {
               className="pl-12 h-12 bg-slate-50 border-none rounded-xl focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all font-medium"
             />
           </div>
+          <Button 
+            onClick={handleExportExcel}
+            variant="outline"
+            className="h-12 px-6 border-slate-200 text-slate-600 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-50 transition-all active:scale-95"
+          >
+            <Download size={18} className="mr-2" /> Excel
+          </Button>
           <Button 
             onClick={handleIssueAll}
             className="h-12 px-6 bg-slate-900 text-white rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all active:scale-95"
@@ -308,13 +339,26 @@ export default function GSuitPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Location Map URL</label>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Venue Map URL</label>
                 <div className="relative">
                   <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <Input 
-                    placeholder="Paste Google Maps link here..." 
+                    placeholder="Paste Venue Google Maps link here..." 
                     value={formData.locationLink}
                     onChange={(e) => setFormData({...formData, locationLink: e.target.value})}
+                    className="pl-10 h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hotel Map URL</label>
+                <div className="relative">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                  <Input 
+                    placeholder="Paste Hotel Google Maps link here..." 
+                    value={formData.hotelLocationLink}
+                    onChange={(e) => setFormData({...formData, hotelLocationLink: e.target.value})}
                     className="pl-10 h-12 bg-slate-50 border-none rounded-xl font-bold text-xs"
                   />
                 </div>

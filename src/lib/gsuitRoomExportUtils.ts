@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import JsBarcode from "jsbarcode";
-import { Zone, locations } from "@/data/locations";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 /** Robust filename sanitization */
 const sanitizeFilename = (filename: string): string => {
@@ -109,9 +110,9 @@ const getFontBase64 = async (path: string): Promise<string | null> => {
 };
 
 /**
- * Generate GSuit Guest Access Pass
+ * Generate specialized GSuit Guest Access Pass (With Room)
  */
-export async function generateGSuitPassPDF(data: any) {
+export async function generateRoomPassPDF(data: any) {
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
@@ -149,15 +150,15 @@ export async function generateGSuitPassPDF(data: any) {
   }
 
   // Draw Content
-  await drawGSuitBadge(doc, data, fontsLoaded);
+  await drawRoomBadge(doc, data, fontsLoaded);
 
-  triggerDownload(doc, `GSuit_Pass_${data.name || 'Guest'}`);
+  triggerDownload(doc, `RoomPass_${data.name || 'Guest'}`);
 }
 
 /**
- * Batch Generate GSuit Passes
+ * Batch Generate Room Passes
  */
-export async function generateBatchGSuitPasses(data: any[]) {
+export async function generateBatchRoomPasses(data: any[]) {
   if (data.length === 0) return;
 
   const doc = new jsPDF({
@@ -197,28 +198,54 @@ export async function generateBatchGSuitPasses(data: any[]) {
 
   for (let i = 0; i < data.length; i++) {
     if (i > 0) doc.addPage([120, 55], "landscape");
-    await drawGSuitBadge(doc, data[i], fontsLoaded);
+    await drawRoomBadge(doc, data[i], fontsLoaded);
   }
 
-  triggerDownload(doc, `GSuit_Batch_Passes`);
+  triggerDownload(doc, `Room_Batch_Passes`);
 }
 
 /**
- * Internal function to draw the GSuit badge content
+ * Generate Excel list of Guest Room assignments
  */
-async function drawGSuitBadge(doc: jsPDF, data: any, fontsLoaded: any) {
+export function generateRoomExcel(data: any[], filename: string = "Guest_Room_Assignments") {
+  if (data.length === 0) return;
+
+  const excelData = data.map((reg, index) => ({
+    "SL No": index + 1,
+    "Guest Name": reg.name || "-",
+    "Room / Hotel": reg.room || "-",
+    "Host Name": reg.hostName || "-",
+    "Host Contact": reg.hostPhone || "-",
+    "Host WhatsApp": reg.hostWhatsapp || "-",
+    "Venue": reg.venue || "SKICC",
+    "Venue Link": reg.locationLink || "-",
+    "Hotel Link": reg.hotelLocationLink || "-",
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Room Assignments");
+
+  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  saveAs(blob, `${filename}.xlsx`);
+}
+
+/**
+ * Specialized draw function for Room badges
+ */
+async function drawRoomBadge(doc: jsPDF, data: any, fontsLoaded: any) {
   // Pre-load Lucide icons as PNG
   const [phoneIcon, waIcon] = await Promise.all([
     getSvgIconBase64(PHONE_SVG, 64),
     getSvgIconBase64(WHATSAPP_SVG, 64),
   ]);
-  const iconSize = 1.5; // mm — icon rendered at 1.5×1.5 mm in the PDF
+  const iconSize = 1.0; // mm — icon rendered at 1.0×1.0 mm in the PDF
   const W = 120;
   const H = 55;
 
-  // 1. Background
-  const bgPath = data.room ? '/gsuit/room.jpeg' : '/gsuit/no_room.jpeg';
-  const bg = await getBase64ImageFromUrl(bgPath);
+  // 1. Background (Force room template)
+  const bg = await getBase64ImageFromUrl('/gsuit/room.jpeg');
   if (bg) {
     doc.addImage(bg, 'JPEG', 0, 0, W, H);
   }
@@ -230,7 +257,7 @@ async function drawGSuitBadge(doc: jsPDF, data: any, fontsLoaded: any) {
   const contactPhone = data.hostPhone || "+919000000000";
   const contactWhatsapp = data.hostWhatsapp || "919000000000";
 
-  // 3. Guest Name (Strictly Bebas Neue 400 preferred)
+  // 3. Guest Name
   doc.setTextColor(255, 255, 255);
   if (fontsLoaded.bebas) {
     doc.setFont('BebasNeue', 'normal');
@@ -239,138 +266,96 @@ async function drawGSuitBadge(doc: jsPDF, data: any, fontsLoaded: any) {
   } else {
     doc.setFont("helvetica", "bold");
   }
-
   doc.setFontSize(12);
   doc.text(fullName, 60, 10.6);
 
-  // 4. Content Logic
+  // 4. Content Layout
   doc.setTextColor(0, 74, 128);
-  if (data.room) {
-    // Venue Only part
-    doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
-    doc.setFontSize(11.89);
-    const vName = (data.venue || "SKICC _ SRINAGAR").toUpperCase();
-    doc.text(vName, 40, 16.5, { maxWidth: 35 });
 
-    // Location Link under Venue
-    doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
-    doc.setFontSize(4.5);
-    doc.setTextColor(0, 74, 128);
-    doc.textWithLink('Tap Here For Location', 42, 20, { url: data.locationLink || "https://maps.google.com" });
+  // Left: Venue Info
+  doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
+  doc.setFontSize(9.5);
+  const vName = (data.venue || "SKICC _ SRINAGAR").toUpperCase();
+  doc.text(vName, 48, 26.5, { maxWidth: 35 });
 
-    // Host & Room Info (Right Box)
-    doc.setTextColor(0, 74, 128);
-    doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
-    doc.setFontSize(9.5);
-    doc.text(hotelName, 80, 35, { maxWidth: 35 });
+  doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
+  doc.setFontSize(4.5);
+  doc.setTextColor(0, 74, 128);
+  doc.textWithLink('Tap Here For Location', 49, 29, { url: data.locationLink || "https://maps.google.com" });
 
-    doc.setFontSize(6);
-    doc.text("Get in Touch", 76, 35);
+  // Left side duplication of contact info
+  const leftX = 49.5;
+  doc.setFontSize(5);
+  doc.text("Get in Touch", leftX, 32);
 
-    doc.setTextColor(225, 29, 72);
-    doc.setFontSize(7.5);
-    doc.text(`• ${contactName}`, 76, 38.5);
+  doc.setTextColor(225, 29, 72);
+  doc.setFontSize(5);
+  doc.text(`• ${contactName}`, leftX, 34);
 
-    // Contact Links — horizontal row (room layout)
-    doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
-    doc.setFontSize(4.5);
-    doc.setTextColor(0, 74, 128);
-    const rowY = 20;       // icon top Y
-    const textY = rowY + iconSize - 0.15; // text baseline aligned to icon
-    // Phone
-    if (phoneIcon) doc.addImage(phoneIcon, 'PNG', 78, rowY, iconSize, iconSize);
-    doc.textWithLink(' Phone', 78 + iconSize, textY, { url: `tel:${contactPhone}` });
-    // WhatsApp (offset ~19mm after phone start)
-    if (waIcon) doc.addImage(waIcon, 'PNG', 95, rowY, iconSize, iconSize);
-    doc.textWithLink(' WhatsApp', 95 + iconSize, textY, { url: `https://wa.me/${contactWhatsapp}` });
+  doc.setTextColor(0, 74, 128);
+  doc.setFontSize(3.5);
+  const leftContactLinksY = 35.0;
+  const leftTextY = leftContactLinksY + iconSize - 0.15;
 
-    // Removed Location Link from here
-  } else {
-    // Venue Only layout
-    doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
-    doc.setFontSize(11.89);
-    const vName2 = (data.venue || "SKICC _ SRINAGAR").toUpperCase();
-    doc.text(vName2, 45, 29, { maxWidth: 30 });
+  if (phoneIcon) doc.addImage(phoneIcon, 'PNG', leftX + 1, leftContactLinksY, iconSize, iconSize);
+  doc.textWithLink(' Phone', leftX + 1 + iconSize, leftTextY, { url: `tel:${contactPhone}` });
+  
+  if (waIcon) doc.addImage(waIcon, 'PNG', leftX + 8.5, leftContactLinksY, iconSize, iconSize);
+  doc.textWithLink(' WhatsApp', leftX + 8.5 + iconSize, leftTextY, { url: `https://wa.me/${contactWhatsapp}` });
 
-    // Location Link under Venue
-    doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
-    doc.setFontSize(4.5);
-    doc.setTextColor(0, 74, 128); // Blue to match "Get in Touch"
-    doc.textWithLink('Tap Here For Location', 47, 32.5, { url: data.locationLink || "https://maps.google.com" });
+  // Removed duplication logic from here and moved above
 
-    doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', "normal");
-    doc.setTextColor(0, 74, 128); // Blue
-    doc.setFontSize(6);
-    doc.text("Get in Touch", 76, 27);
+  doc.setTextColor(0, 74, 128); // Reset color for right side
 
-    doc.setTextColor(225, 29, 72);
-    doc.setFontSize(6.5);
-    doc.text(`• ${contactName}`, 76, 30);
+  // Right: Hotel/Room Info
+  doc.setTextColor(0, 74, 128);
+  doc.setFont(fontsLoaded.bebas ? 'BebasNeue' : 'helvetica', "normal");
+  doc.setFontSize(9.5);
+  doc.text(hotelName, 81, 26.5, { maxWidth: 35 });
 
-    // Contact Links — horizontal row (no-room layout)
-    doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
-    doc.setFontSize(4.5);
-    doc.setTextColor(0, 74, 128);
-    const rowY2 = 31;      // icon top Y
-    const textY2 = rowY2 + iconSize - 0.15; // text baseline
-    // Phone
-    if (phoneIcon) doc.addImage(phoneIcon, 'PNG', 78, rowY2, iconSize, iconSize);
-    doc.textWithLink(' Phone', 78 + iconSize, textY2, { url: `tel:${contactPhone}` });
-    // WhatsApp (offset ~19mm after phone start)
-    if (waIcon) doc.addImage(waIcon, 'PNG', 95, rowY2, iconSize, iconSize);
-    doc.textWithLink(' WhatsApp', 95 + iconSize, textY2, { url: `https://wa.me/${contactWhatsapp}` });
+  // Hotel Location Link (New Addition)
+  doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
+  doc.setFontSize(4.5);
+  doc.textWithLink('Tap Here For Location', 81.5, 29, { url: data.hotelLocationLink || "https://maps.google.com" });
 
-    // Removed Location Link from here
-  }
+  // Contact Info
+  doc.setFontSize(5);
+  doc.text("Get in Touch", 81, 32);
+
+  doc.setTextColor(225, 29, 72);
+  doc.setFontSize(5);
+  doc.text(`• ${contactName}`, 81, 34);
+
+  // Contact Links (Icons + Links)
+  doc.setFont(fontsLoaded.montserratMedium ? 'MontserratMedium' : 'helvetica', 'normal');
+  doc.setFontSize(3.5);
+  doc.setTextColor(0, 74, 128);
+  const rowY = 35.0;
+  const textY = rowY + iconSize - 0.15;
+
+  if (phoneIcon) doc.addImage(phoneIcon, 'PNG', 83.5, rowY, iconSize, iconSize);
+  doc.textWithLink(' Phone', 83.5 + iconSize, textY, { url: `tel:${contactPhone}` });
+
+  if (waIcon) doc.addImage(waIcon, 'PNG', 91, rowY, iconSize, iconSize);
+  doc.textWithLink(' WhatsApp', 91 + iconSize, textY, { url: `https://wa.me/${contactWhatsapp}` });
 
   // 5. Barcodes
-
-  // Bottom-Right Horizontal Barcode (small, with ID text underneath)
-  const bBcW = 18; // width
-  const bBcH = 4;  // height
-
-  const bBarcode = getBarcodeBase64(
-    data.id.substring(0, 8).toUpperCase()
-  );
+  const bBcW = 18;
+  const bBcH = 4;
+  const bBarcode = getBarcodeBase64(data.id.substring(0, 8).toUpperCase());
 
   if (bBarcode) {
-    doc.addImage(
-      bBarcode,
-      'PNG',
-      85, // X position
-      44, // Y position
-      bBcW,
-      bBcH
-    );
-    // ID text underneath the barcode
+    doc.addImage(bBarcode, 'PNG', 85, 44, bBcW, bBcH);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(4);
     doc.setTextColor(80, 80, 80);
-    doc.text(
-      data.id.substring(0, 8).toUpperCase(),
-      85 + bBcW / 2, // centered under barcode
-      44 + bBcH + 1.5,
-      { align: 'center' }
-    );
+    doc.text(data.id.substring(0, 8).toUpperCase(), 85 + bBcW / 2, 44 + bBcH + 1.5, { align: 'center' });
   }
 
-  // Left Vertical Barcode (rotated 90°, tall — spans ~35mm of height)
-  const vBcW = 28; // becomes visible HEIGHT after 90° rotation
-  const vBcH = 5;  // becomes visible WIDTH after 90° rotation
-
+  const vBcW = 28;
+  const vBcH = 5;
   const vBarcode = getBarcodeBase64(data.id);
-
   if (vBarcode) {
-    doc.addImage(
-      vBarcode,
-      'PNG',
-      12,
-      40,  // Y position (more space from top)
-      vBcW,
-      vBcH,
-      undefined,
-      'FAST',
-      90   // Rotate 90° → barcode runs vertically top to bottom
-    );
+    doc.addImage(vBarcode, 'PNG', 12, 40, vBcW, vBcH, undefined, 'FAST', 90);
   }
 }
