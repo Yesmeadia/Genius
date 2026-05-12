@@ -49,7 +49,7 @@ export default function GSuitPage() {
     hostName: "",
     hostPhone: "",
     hostWhatsapp: "",
-    venue: "",
+    venue: "SKICC _ SRINAGAR",
     location: "",
     locationLink: "https://maps.app.goo.gl/pgipQb5wyDokJqMJ7",
     hotelLocationLink: ""
@@ -83,8 +83,8 @@ export default function GSuitPage() {
       hostName: guest.hostName || "Mr. Fazlurahman",
       hostPhone: guest.hostPhone || "+91 90000 00000",
       hostWhatsapp: guest.hostWhatsapp || "919000000000",
-      venue: guest.venue || "SKICC",
-      location: guest.location || "SRINAGAR",
+      venue: guest.venue || "SKICC _ SRINAGAR",
+      location: guest.location || "",
       locationLink: guest.locationLink || "https://maps.app.goo.gl/pgipQb5wyDokJqMJ7",
       hotelLocationLink: guest.hotelLocationLink || "https://maps.google.com"
     });
