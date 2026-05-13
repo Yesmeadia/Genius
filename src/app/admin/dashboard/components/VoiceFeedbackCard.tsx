@@ -12,7 +12,8 @@ interface Feedback {
   participantId: string;
   participantName: string;
   participantType: string;
-  audioUrl: string;
+  audioUrl?: string;
+  textFeedback?: string;
   createdAt: Timestamp | Date;
   status: string;
 }
@@ -47,7 +48,7 @@ export function VoiceFeedbackCard({ participantId }: VoiceFeedbackCardProps) {
           return timeB - timeA;
         });
 
-        setFeedbackList(feedbackData.slice(0, 1));
+        setFeedbackList(feedbackData);
       } catch (error) {
         console.error("Error fetching feedback:", error);
       } finally {
@@ -60,9 +61,21 @@ export function VoiceFeedbackCard({ participantId }: VoiceFeedbackCardProps) {
     }
   }, [participantId]);
 
+  const markReviewed = async (id: string) => {
+    try {
+      import("firebase/firestore").then(async ({ doc, updateDoc }) => {
+        await updateDoc(doc(db, "feedback", id), { status: 'reviewed' });
+        setFeedbackList(prev => prev.map(f => f.id === id ? { ...f, status: 'reviewed' } : f));
+      });
+    } catch (error) {
+      console.error("Mark error:", error);
+    }
+  };
+
   const togglePlay = (id: string, url: string) => {
     if (playingId === id) {
       audio?.pause();
+      markReviewed(id);
       setPlayingId(null);
     } else {
       if (audio) {
@@ -70,7 +83,10 @@ export function VoiceFeedbackCard({ participantId }: VoiceFeedbackCardProps) {
       }
       const newAudio = new Audio(url);
       newAudio.play();
-      newAudio.onended = () => setPlayingId(null);
+      newAudio.onended = () => {
+        markReviewed(id);
+        setPlayingId(null);
+      };
       setAudio(newAudio);
       setPlayingId(id);
     }
@@ -113,55 +129,76 @@ export function VoiceFeedbackCard({ participantId }: VoiceFeedbackCardProps) {
       <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
         <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-            <Mic size={22} />
+            <MessageSquare size={22} />
           </div>
-          Voice Feedback
+          Participant Feedback
         </CardTitle>
         <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">
-          Most recent recording
+          Most recent feedback entry
         </CardDescription>
       </CardHeader>
       <CardContent className="p-8 space-y-6">
         {feedbackList.map((feedback) => (
           <div key={feedback.id} className="relative group">
             <div className="relative w-full rounded-[24px] overflow-hidden bg-gradient-to-br from-indigo-500/5 to-violet-500/5 border border-slate-100 p-5 transition-all duration-300">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => togglePlay(feedback.id, feedback.audioUrl)}
-                  className="h-12 w-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-200 hover:scale-105 active:scale-95 transition-all"
-                >
-                  {playingId === feedback.id ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
-                </button>
-                
-                <div className="flex-grow min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-slate-800">Voice Note</span>
-                    <Badge variant="outline" className="text-[9px] h-4 uppercase tracking-tighter border-indigo-100 bg-indigo-50/30 text-indigo-600">
-                      {feedback.status}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-400 font-medium">
-                    <div className="flex items-center gap-1">
-                      <Calendar size={12} />
-                      {formatDate(feedback.createdAt)}
+              {feedback.audioUrl ? (
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => togglePlay(feedback.id, feedback.audioUrl!)}
+                    className="h-12 w-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-200 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    {playingId === feedback.id ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
+                  </button>
+                  
+                  <div className="flex-grow min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold text-slate-800">Voice Note</span>
+                      <Badge variant="outline" className="text-[9px] h-4 uppercase tracking-tighter border-indigo-100 bg-indigo-50/30 text-indigo-600">
+                        {feedback.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-400 font-medium">
+                      <div className="flex items-center gap-1">
+                        <Calendar size={12} />
+                        {formatDate(feedback.createdAt)}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-1 h-8 px-2">
-                   {[...Array(12)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`w-0.5 rounded-full transition-all duration-500 ${playingId === feedback.id ? 'bg-indigo-500 animate-wave' : 'bg-indigo-200'}`}
-                      style={{ 
-                        height: playingId === feedback.id ? `${20 + Math.random() * 80}%` : '40%',
-                        animationDelay: `${i * 0.1}s`,
-                        animationDuration: '0.4s'
-                      }}
-                    />
-                  ))}
+                  <div className="flex items-center gap-1 h-8 px-2">
+                     {[...Array(12)].map((_, i) => (
+                      <div 
+                        key={i} 
+                        className={`w-0.5 rounded-full transition-all duration-500 ${playingId === feedback.id ? 'bg-indigo-500 animate-wave' : 'bg-indigo-200'}`}
+                        style={{ 
+                          height: playingId === feedback.id ? `${20 + Math.random() * 80}%` : '40%',
+                          animationDelay: `${i * 0.1}s`,
+                          animationDuration: '0.4s'
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : feedback.textFeedback ? (
+                <div className="space-y-3" onClick={() => feedback.status === 'new' && markReviewed(feedback.id)}>
+                   <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-2">
+                       <MessageSquare size={16} className="text-indigo-500" />
+                       <span className="text-sm font-semibold text-slate-800">Text Feedback</span>
+                     </div>
+                     <Badge variant="outline" className="text-[9px] h-4 uppercase tracking-tighter border-indigo-100 bg-indigo-50/30 text-indigo-600">
+                       {feedback.status}
+                     </Badge>
+                   </div>
+                   <p className="text-sm text-slate-600 leading-relaxed italic">
+                     "{feedback.textFeedback}"
+                   </p>
+                   <div className="flex items-center gap-1 text-xs text-slate-400 font-medium pt-1">
+                      <Calendar size={12} />
+                      {formatDate(feedback.createdAt)}
+                   </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ))}

@@ -9,6 +9,7 @@ import {
   MessageSquare, Play, Pause, Trash2, Calendar, User,
   Tag, Download, Loader2, CheckCircle2, Clock, Volume2, Search, Filter, RefreshCcw, Waves, Mic
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,22 +17,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDashboardData } from "../components/DashboardDataContext";
 import { locations } from "@/data/locations";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 interface Feedback {
   id: string;
   participantId: string;
   participantName: string;
   participantType: string;
-  audioUrl: string;
+  audioUrl?: string;
+  textFeedback?: string;
   createdAt: any;
   status: 'new' | 'reviewed';
 }
 
 export default function FeedbackAdminPage() {
+  const router = useRouter();
   const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<'voice' | 'text'>('voice');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -98,15 +104,13 @@ export default function FeedbackAdminPage() {
   const togglePlay = (id: string, url: string) => {
     if (playingId === id) {
       audioRef.current?.pause();
+      markReviewed(id);
       setPlayingId(null);
     } else {
       if (audioRef.current) {
         audioRef.current.src = url;
         audioRef.current.play();
         setPlayingId(id);
-
-        // Mark as reviewed when played
-        markReviewed(id);
       }
     }
   };
@@ -138,13 +142,44 @@ export default function FeedbackAdminPage() {
     }).format(date);
   };
 
-  const filteredFeedback = feedbackList.filter(f =>
-    f.participantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.participantType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const downloadExcel = () => {
+    const exportData = filteredFeedback.map(f => {
+      const pData: any = participantMap.get(f.participantId);
+      const zone = pData?.zone || "-";
+      const rawSchool = pData?.school || pData?.schoolName || pData?.designation || pData?.address || "-";
+      const displaySchool = getSchoolName(rawSchool) !== rawSchool ? getSchoolName(rawSchool) : rawSchool;
+
+      return {
+        'Timestamp': formatDate(f.createdAt),
+        'Participant Name': f.participantName,
+        'Category': f.participantType,
+        'Campus/School': displaySchool,
+        'Zone': zone,
+        'Designation/Class': pData?.designation || pData?.className || "-",
+        'Feedback Type': f.audioUrl ? 'Voice' : 'Text',
+        'Feedback Content': f.audioUrl || f.textFeedback || "-",
+        'Status': f.status,
+        'Attendance': pData?.attendance ? 'Present' : 'Absent'
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Feedback");
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(data, `GeniusJam_Feedback_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const filteredFeedback = feedbackList.filter(f => {
+    const matchesSearch = f.participantName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.participantType.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTab = activeTab === 'voice' ? !!f.audioUrl : !!f.textFeedback;
+    return matchesSearch && matchesTab;
+  });
 
   return (
-    <div ref={containerRef} className="p-6 md:p-10 max-w-7xl mx-auto">
+    <div ref={containerRef} className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-6">
       <div className="bg-white rounded-[24px] shadow-sm border border-slate-100 overflow-hidden">
 
         {/* Header Controls */}
@@ -160,6 +195,24 @@ export default function FeedbackAdminPage() {
           </div>
 
           <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+              <button
+                onClick={() => setActiveTab('voice')}
+                className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'voice' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Voice
+              </button>
+              <button
+                onClick={() => setActiveTab('text')}
+                className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === 'text' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                Text
+              </button>
+            </div>
+            <Button onClick={downloadExcel} variant="outline" className="h-10 px-4 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold uppercase tracking-widest text-indigo-600 transition-all shadow-sm flex items-center gap-2">
+              <Download size={14} />
+              Export Excel
+            </Button>
             <Button onClick={fetchFeedback} variant="outline" className="h-10 px-4 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold uppercase tracking-widest text-slate-600 transition-all shadow-sm flex items-center gap-2">
               <RefreshCcw size={14} className={`${loading ? "animate-spin" : ""}`} />
               Refresh
@@ -169,7 +222,10 @@ export default function FeedbackAdminPage() {
 
         <audio
           ref={audioRef}
-          onEnded={() => setPlayingId(null)}
+          onEnded={() => {
+            if (playingId) markReviewed(playingId);
+            setPlayingId(null);
+          }}
           className="hidden"
         />
 
@@ -193,9 +249,11 @@ export default function FeedbackAdminPage() {
                   <TableHead className="py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest h-auto align-bottom pb-4">
                     Designation
                   </TableHead>
-                  <TableHead className="py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[240px] h-auto align-bottom pb-4">
-                    Voice Memo
-                  </TableHead>
+                  {activeTab === 'voice' && (
+                    <TableHead className="py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[240px] h-auto align-bottom pb-4">
+                      Audio Player
+                    </TableHead>
+                  )}
                   <TableHead className="py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest h-auto align-bottom pb-4">
                     Attendance
                   </TableHead>
@@ -250,27 +308,29 @@ export default function FeedbackAdminPage() {
                           {pData?.designation || pData?.className || "-"}
                         </span>
                       </TableCell>
-                      <TableCell className="py-5">
-                        <div className="flex items-center gap-3 max-w-[200px]">
-                          <button
-                            onClick={() => togglePlay(f.id, f.audioUrl)}
-                            className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center transition-all ${playingId === f.id ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
-                          >
-                            {playingId === f.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
-                          </button>
-                          <div className="flex-grow h-1 bg-slate-100 rounded-full overflow-hidden flex items-center">
-                            {playingId === f.id ? (
-                              <div className="flex items-center h-full w-full gap-[2px]">
-                                {[...Array(12)].map((_, i) => (
-                                  <div key={i} className="flex-1 bg-indigo-400 rounded-full" style={{ height: `${Math.max(20, Math.random() * 100)}%`, animation: `pulse-wave ${0.3 + Math.random() * 0.5}s ease-in-out infinite alternate` }} />
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="h-full w-0 bg-slate-300" />
-                            )}
+                      {activeTab === 'voice' && (
+                        <TableCell className="py-5">
+                          <div className="flex items-center gap-3 max-w-[200px]">
+                            <button
+                              onClick={() => togglePlay(f.id, f.audioUrl!)}
+                              className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center transition-all ${playingId === f.id ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                            >
+                              {playingId === f.id ? <Pause size={14} fill="currentColor" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
+                            </button>
+                            <div className="flex-grow h-1 bg-slate-100 rounded-full overflow-hidden flex items-center">
+                              {playingId === f.id ? (
+                                <div className="flex items-center h-full w-full gap-[2px]">
+                                  {[...Array(12)].map((_, i) => (
+                                    <div key={i} className="flex-1 bg-indigo-400 rounded-full" style={{ height: `${Math.max(20, Math.random() * 100)}%`, animation: `pulse-wave ${0.3 + Math.random() * 0.5}s ease-in-out infinite alternate` }} />
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="h-full w-0 bg-slate-300" />
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
+                        </TableCell>
+                      )}
                       <TableCell className="py-5">
                         {isAttended ? (
                           <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100/50">
@@ -293,7 +353,15 @@ export default function FeedbackAdminPage() {
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="py-5 text-center">
+                      <TableCell className="py-5 text-center flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/admin/dashboard/student/${f.participantId}`)}
+                          className="h-8 px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 text-[10px] font-bold uppercase"
+                        >
+                          View Profile
+                        </Button>
                         <button onClick={() => handleDelete(f.id)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors inline-flex">
                           <Trash2 size={16} />
                         </button>

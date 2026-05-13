@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { db, storage } from "@/lib/firebase";
 import { collection, doc, getDoc, getDocs, query, orderBy, addDoc, serverTimestamp, where, limit, documentId } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -8,8 +8,9 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import Footer from "@/components/Footer";
 import MathCanvas from "@/components/MathCanvas";
-import { Search, Mic, Square, Play, Trash2, CheckCircle2, User, Loader2, Scan, MessageSquare, Volume2, Waves } from "lucide-react";
+import { Search, Mic, Square, Play, Pause, Trash2, CheckCircle2, User, Loader2, Scan, MessageSquare, Volume2, Waves } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { locations } from "@/data/locations";
 
 interface Participant {
   id: string;
@@ -20,7 +21,13 @@ interface Participant {
 }
 
 export default function FeedbackPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [schoolSearch, setSchoolSearch] = useState("");
+  const [nameSearch, setNameSearch] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
+  const [availableParticipants, setAvailableParticipants] = useState<Participant[]>([]);
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+  const [isFetchingNames, setIsFetchingNames] = useState(false);
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -63,16 +70,7 @@ export default function FeedbackPage() {
   };
 
   const collections = [
-    { name: "registrations", label: "Student", field: "studentName" },
-    { name: "guest_registrations", label: "Guest", field: "name" },
-    { name: "yesian_registrations", label: "Yesian", field: "name" },
-    { name: "local_staff_registrations", label: "Local Staff", field: "name" },
-    { name: "alumni_registrations", label: "Alumni", field: "name" },
-    { name: "volunteer_registrations", label: "Volunteer", field: "volunteerName" },
     { name: "awardee_registrations", label: "Awardee", field: "name" },
-    { name: "driver_staff_registrations", label: "Driver Staff", field: "name" },
-    { name: "qiraath_registrations", label: "Qiraath", field: "name" },
-    { name: "scout_team_registrations", label: "Scout Team", field: "name" },
   ];
 
   useGSAP(() => {
@@ -121,45 +119,128 @@ export default function FeedbackPage() {
     };
   }, [isRecording]);
 
+  const allSchools = React.useMemo(() => {
+    return locations.flatMap(z => z.schools.map(s => s.name));
+  }, []);
+
+  const filteredSchools = React.useMemo(() => {
+    if (!schoolSearch || selectedSchool === schoolSearch) return [];
+    return allSchools.filter(s => s.toLowerCase().includes(schoolSearch.toLowerCase())).slice(0, 5);
+  }, [schoolSearch, allSchools, selectedSchool]);
+
+  const filteredNames = React.useMemo(() => {
+    if (!nameSearch || !selectedSchool) return [];
+    return availableParticipants.filter(p => 
+      p.name.toLowerCase().includes(nameSearch.toLowerCase())
+    ).slice(0, 5);
+  }, [nameSearch, availableParticipants, selectedSchool]);
+
   useEffect(() => {
-    const term = searchTerm.trim();
-    if (!term || term.length < 8) return;
-
-    const timer = setTimeout(() => {
-      lookupParticipant(term);
-    }, 100); // Faster response once 8 digits are reached
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const lookupParticipant = async (id: string) => {
-    const searchId = id.trim();
-    if (!searchId) return;
-    
-    // Validate input to prevent Firestore query injection/errors
-    if (searchId.includes('/') || searchId.includes('\\') || searchId.length < 3) {
-      return;
+    if (filteredSchools.length > 0) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
     }
+  }, [filteredSchools]);
+
+  useEffect(() => {
+    if (filteredNames.length > 0 && !participant) {
+      setShowNameSuggestions(true);
+    } else {
+      setShowNameSuggestions(false);
+    }
+  }, [filteredNames, participant]);
+
+  useEffect(() => {
+    if (selectedSchool) {
+      fetchParticipantsForSchool(selectedSchool);
+    } else {
+      setAvailableParticipants([]);
+    }
+  }, [selectedSchool]);
+
+  const fetchParticipantsForSchool = async (schoolName: string) => {
+    setIsFetchingNames(true);
+    setAvailableParticipants([]);
+    const results: Participant[] = [];
+    
+    // Find the school ID for this name
+    const schoolObj = locations.flatMap(z => z.schools).find(s => s.name === schoolName);
+    const schoolId = schoolObj?.id;
+
+    try {
+      // Awardees Only for Voice feedback
+      const coll = { name: "awardee_registrations", label: "Awardee", field: "name" };
+      const queries = [];
+      
+      // Search by Name
+      queries.push(query(collection(db, coll.name), where("school", "==", schoolName)));
+      queries.push(query(collection(db, coll.name), where("schoolName", "==", schoolName)));
+      
+      // Search by ID (if available)
+      if (schoolId) {
+        queries.push(query(collection(db, coll.name), where("school", "==", schoolId)));
+        queries.push(query(collection(db, coll.name), where("schoolName", "==", schoolId)));
+      }
+      
+      const snapshots = await Promise.all(queries.map(q => getDocs(q)));
+      
+      snapshots.forEach(snap => {
+        snap.docs.forEach(docMatch => {
+          const data = docMatch.data();
+          if (!results.find(r => r.id === docMatch.id)) {
+            results.push({
+              id: docMatch.id,
+              name: data[coll.field] || data.name || "Unknown",
+              type: coll.label,
+              collection: coll.name,
+              photoUrl: data.photoUrl,
+            });
+          }
+        });
+      });
+      setAvailableParticipants(results);
+    } catch (error) {
+      console.error("Error fetching names:", error);
+    } finally {
+      setIsFetchingNames(false);
+    }
+  };
+
+  const lookupParticipant = async () => {
+    const sSchool = schoolSearch.trim().toLowerCase();
+    const sName = nameSearch.trim().toLowerCase();
+    
+    if (!sSchool || !sName) return;
 
     setLoading(true);
     setParticipant(null);
     try {
-      for (const coll of collections) {
-        // 1. Try prefix search on document ID (Matches barcode behavior)
-        const idQuery = query(
-          collection(db, coll.name),
-          where(documentId(), ">=", searchId),
-          where(documentId(), "<=", searchId + "\uf8ff"),
-          limit(1)
-        );
-        
-        const idSnap = await getDocs(idQuery);
-        
-        if (!idSnap.empty) {
-          const match = idSnap.docs[0];
-          const data = match.data();
+      // We already have availableParticipants, check if one matches exactly or find in DB
+      const match = availableParticipants.find(p => p.name.toLowerCase() === sName);
+      if (match) {
+        setParticipant(match);
+        setLoading(false);
+        return;
+      }
+      
+      // Fallback direct query (Awardees only)
+      const coll = { name: "awardee_registrations", label: "Awardee", field: "name" };
+      const nameQuery = query(
+        collection(db, coll.name),
+        where(coll.field, ">=", nameSearch.trim()),
+        where(coll.field, "<=", nameSearch.trim() + "\uf8ff"),
+        limit(20)
+      );
+      
+      const snap = await getDocs(nameQuery);
+      for (const docMatch of snap.docs) {
+        const data = docMatch.data();
+        const pSchool = (data.school || data.schoolName || "").toString().toLowerCase();
+        if (pSchool.includes(sSchool) || sSchool === "any") {
           setParticipant({
-            id: match.id,
-            name: data[coll.field] || data.name || data.studentName || "Unknown",
+            id: docMatch.id,
+            name: data[coll.field] || data.name || "Unknown",
             type: coll.label,
             collection: coll.name,
             photoUrl: data.photoUrl,
@@ -167,38 +248,11 @@ export default function FeedbackPage() {
           setLoading(false);
           return;
         }
-
-        // 2. Optimized name search (using index prefix)
-        // Only do this if it's not a direct ID match
-        if (searchId.length >= 3) { // Only search by name if at least 3 chars
-          const nameQuery = query(
-            collection(db, coll.name),
-            where(coll.field, ">=", searchId),
-            where(coll.field, "<=", searchId + "\uf8ff"),
-            limit(1)
-          );
-          const nameSnap = await getDocs(nameQuery);
-          if (!nameSnap.empty) {
-            const match = nameSnap.docs[0];
-            const data = match.data();
-            setParticipant({
-              id: match.id,
-              name: data[coll.field] || data.name || data.studentName || "Unknown",
-              type: coll.label,
-              collection: coll.name,
-              photoUrl: data.photoUrl,
-            });
-            setLoading(false);
-            return;
-          }
-        }
       }
-      if (searchId.length >= 8) {
-        alert("No participant found for ID: " + searchId);
-      }
+      alert("No awardee found for this name and school.");
     } catch (error) {
       console.error("Lookup error:", error);
-      alert("Connection error. Please try again.");
+      alert("Search failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -225,6 +279,42 @@ export default function FeedbackPage() {
     }
   }, [participant]);
 
+  const performUpload = async (blob: Blob) => {
+    if (!participant) return;
+    setIsUploading(true);
+    try {
+      const storageRef = ref(storage, `feedback/${participant.id}_${Date.now()}.webm`);
+      await uploadBytes(storageRef, blob);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      await addDoc(collection(db, "feedback"), {
+        participantId: participant.id,
+        participantName: participant.name,
+        participantType: participant.type,
+        audioUrl: downloadUrl,
+        createdAt: serverTimestamp(),
+        status: 'new'
+      });
+
+      setIsSubmitted(true);
+      setAudioBlob(null);
+      setAudioUrl(null);
+      setParticipant(null);
+      setSchoolSearch("");
+      setNameSearch("");
+
+      setTimeout(() => {
+        setIsSubmitted(false);
+      }, 5000);
+
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Failed to submit feedback. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -240,6 +330,7 @@ export default function FeedbackPage() {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
+        performUpload(blob);
       };
 
       mediaRecorder.start();
@@ -271,41 +362,6 @@ export default function FeedbackPage() {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const submitFeedback = async () => {
-    if (!audioBlob || !participant) return;
-    setIsUploading(true);
-    try {
-      const storageRef = ref(storage, `feedback/${participant.id}_${Date.now()}.webm`);
-      await uploadBytes(storageRef, audioBlob);
-      const downloadUrl = await getDownloadURL(storageRef);
-
-      await addDoc(collection(db, "feedback"), {
-        participantId: participant.id,
-        participantName: participant.name,
-        participantType: participant.type,
-        audioUrl: downloadUrl,
-        createdAt: serverTimestamp(),
-        status: 'new'
-      });
-
-      setIsSubmitted(true);
-      setAudioBlob(null);
-      setAudioUrl(null);
-      setParticipant(null);
-      setSearchTerm("");
-
-      setTimeout(() => {
-        setIsSubmitted(false);
-      }, 5000);
-
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Failed to submit feedback. Please try again.");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   return (
     <main ref={containerRef} className="min-h-screen bg-white relative overflow-hidden font-sans text-slate-800 selection:bg-indigo-100 selection:text-indigo-900">
       {/* Dynamic Math Background */}
@@ -334,7 +390,7 @@ export default function FeedbackPage() {
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-slate-900 animate-pulse" />
             <h1 className="text-[9px] md:text-[10px] font-black tracking-[0.3em] md:tracking-[0.4em] text-slate-400 uppercase">
-              Participant Feedback
+              Voice Feedback
             </h1>
           </div>
         </div>
@@ -343,30 +399,111 @@ export default function FeedbackPage() {
       <div className="relative z-10 container mx-auto min-h-screen flex flex-col justify-center items-center pt-28 pb-6 px-4 sm:px-6 max-w-3xl">
         <div className="text-center mb-8">
           <p className="text-slate-500 text-sm md:text-base font-medium">
-            Share your experience with us.
+            Share your experience with us (Exclusively for Awardees).
           </p>
         </div>
 
         {!participant && !isSubmitted && (
-          <div className="search-container w-full max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <form onSubmit={(e) => { e.preventDefault(); if (searchTerm.trim()) lookupParticipant(searchTerm.trim()); }} className="relative">
-              <div className="relative bg-white rounded-full flex items-center px-6 py-2 shadow-sm border border-slate-100 focus-within:border-slate-200 transition-all duration-200">
-                <div className="text-slate-400 shrink-0">
-                  <Search size={22} strokeWidth={2} />
+          <div className="search-container w-full max-w-2xl mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-20">
+            <div className="space-y-4">
+              <div className="relative z-30">
+                <div className="relative bg-white rounded-2xl flex items-center px-5 py-1 shadow-sm border border-slate-100 focus-within:border-indigo-200 transition-all duration-200">
+                  <input
+                    type="text"
+                    placeholder="Search School Name"
+                    value={schoolSearch}
+                    onChange={(e) => {
+                      setSchoolSearch(e.target.value);
+                      setSelectedSchool(null);
+                    }}
+                    onFocus={() => setShowSuggestions(filteredSchools.length > 0)}
+                    className="w-full h-12 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-medium px-2 text-slate-700 placeholder:text-slate-400"
+                  />
+                  <Search size={18} className="text-slate-300 mr-2" />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Enter ID to continue"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full h-12 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 text-base sm:text-lg font-normal px-4 text-slate-700 placeholder:text-slate-400"
-                  autoFocus
-                />
-                <button type="submit" className="shrink-0 p-2 text-slate-400 hover:text-slate-900 rounded-full transition-colors hidden sm:block">
-                  <CheckCircle2 size={24} strokeWidth={1.5} />
-                </button>
+                
+                {showSuggestions && (
+                  <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {filteredSchools.map((school, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setSchoolSearch(school);
+                          setSelectedSchool(school);
+                          setShowSuggestions(false);
+                        }}
+                        className="w-full px-6 py-3 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center gap-3 transition-colors"
+                      >
+                        <div className="h-2 w-2 rounded-full bg-indigo-400" />
+                        {school}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </form>
+
+              {(selectedSchool || schoolSearch.length > 3) && (
+                <div className="relative z-20">
+                  <div className="relative bg-white rounded-2xl flex items-center px-5 py-1 shadow-sm border border-slate-100 focus-within:border-indigo-200 transition-all duration-200 animate-in slide-in-from-top-4 duration-500">
+                    <input
+                      type="text"
+                      placeholder={isFetchingNames ? "Loading awardee records..." : "Type your name..."}
+                      value={nameSearch}
+                      onChange={(e) => {
+                        setNameSearch(e.target.value);
+                      }}
+                      onFocus={() => setShowNameSuggestions(filteredNames.length > 0)}
+                      disabled={isFetchingNames}
+                      className="w-full h-12 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-medium px-2 text-slate-700 placeholder:text-slate-400 disabled:opacity-50"
+                      autoFocus
+                    />
+                    {isFetchingNames ? <Loader2 size={18} className="text-indigo-400 animate-spin mr-2" /> : <User size={18} className="text-slate-300 mr-2" />}
+                  </div>
+
+                  {isFetchingNames && (
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2 ml-4 animate-pulse">
+                      Synchronizing with database...
+                    </p>
+                  )}
+
+                  {showNameSuggestions && (
+                    <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {filteredNames.map((p, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setParticipant(p);
+                            setNameSearch(p.name);
+                            setShowNameSuggestions(false);
+                          }}
+                          className="w-full px-6 py-4 text-left hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center justify-between transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                              {p.photoUrl ? <img src={p.photoUrl} className="h-full w-full rounded-full object-cover" /> : <User size={14} />}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-slate-700 uppercase">{p.name}</span>
+                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{p.type}</span>
+                            </div>
+                          </div>
+                          <CheckCircle2 size={14} className="text-emerald-500" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <Button
+              onClick={lookupParticipant}
+              disabled={loading || !schoolSearch || !nameSearch}
+              className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-indigo-100 transition-all hover:-translate-y-0.5 active:translate-y-0"
+            >
+              {loading ? <Loader2 className="animate-spin mr-3" size={18} /> : <CheckCircle2 className="mr-3" size={18} />}
+              {loading ? "Searching..." : "Verify Identity"}
+            </Button>
           </div>
         )}
 
@@ -410,7 +547,9 @@ export default function FeedbackPage() {
                 <Button
                   onClick={() => {
                     setParticipant(null);
-                    setSearchTerm("");
+                    setParticipant(null);
+                    setSchoolSearch("");
+                    setNameSearch("");
                   }}
                   variant="outline"
                   className="h-11 px-8 rounded-full border-slate-200 text-slate-600 font-medium hover:bg-slate-50"
@@ -421,12 +560,10 @@ export default function FeedbackPage() {
             ) : (
               <div className="space-y-8">
                 <div className="flex flex-col items-center gap-8 relative">
-
                   {!audioUrl ? (
                     <div className="flex flex-col items-center gap-6 relative z-10 w-full mt-2">
                       {isRecording ? (
                         <div className="w-full bg-slate-50 border border-slate-200 rounded-full h-16 px-4 flex items-center justify-between shadow-sm animate-in zoom-in-95 duration-300">
-                          {/* Recording Timer & Indicator */}
                           <div className="flex items-center gap-2 w-20 shrink-0">
                             <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
                             <span className="text-sm font-medium text-slate-700 tabular-nums">
@@ -434,7 +571,6 @@ export default function FeedbackPage() {
                             </span>
                           </div>
 
-                          {/* Central Waveform Visualizer - Reduced count for mobile */}
                           <div className="flex-grow flex items-center justify-center gap-0.5 sm:gap-1 mx-2 sm:mx-4 h-full overflow-hidden">
                             {[...Array(16)].map((_, i) => (
                               <div
@@ -449,13 +585,12 @@ export default function FeedbackPage() {
                             ))}
                           </div>
 
-                          {/* Stop Button */}
                           <button
                             onClick={stopRecording}
                             className="h-10 w-10 shrink-0 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors border border-red-100"
-                            title="Stop Recording"
+                            title="Pause Recording"
                           >
-                            <Square size={16} fill="currentColor" />
+                            <Pause size={16} fill="currentColor" />
                           </button>
                         </div>
                       ) : (
@@ -468,7 +603,7 @@ export default function FeedbackPage() {
                               <div className="space-y-1">
                                 <p className="text-sm font-semibold text-slate-800">Microphone Blocked</p>
                                 <p className="text-xs text-slate-500 max-w-[220px] leading-relaxed">
-                                  Please allow microphone access in your browser settings, then tap below.
+                                  Please allow microphone access in your browser settings.
                                 </p>
                               </div>
                               <button
@@ -491,11 +626,8 @@ export default function FeedbackPage() {
                     </div>
                   ) : (
                     <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500 relative z-10">
-                      {/* Premium Voice Memo Card */}
                       <div className="relative w-full rounded-[28px] overflow-hidden bg-white border border-slate-100 shadow-xl shadow-slate-200/20 p-6 mb-6 group transition-all duration-500">
-                        {/* Decorative subtle background gradient */}
                         <div className="absolute inset-0 bg-gradient-to-br from-slate-500/5 to-slate-500/5 opacity-50" />
-
                         <div className="relative flex items-center gap-4 mb-6">
                           <div className="h-14 w-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-lg shadow-slate-200 group-hover:scale-105 transition-transform duration-500">
                             <Volume2 size={24} />
@@ -507,54 +639,28 @@ export default function FeedbackPage() {
                               <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">{formatTime(recordingTime)} length</p>
                             </div>
                           </div>
-                          <button
-                            onClick={resetRecording}
-                            className="h-10 w-10 rounded-full bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-all duration-300"
-                            title="Delete and Re-record"
-                          >
-                            <Trash2 size={18} strokeWidth={2} />
-                          </button>
                         </div>
-
-                        {/* Animated Waveform Visualization */}
                         <div className="relative h-16 w-full flex items-center justify-center gap-1.5 px-2 mb-2">
-                          {[...Array(40)].map((_, i) => {
-                            const heights = [30, 50, 40, 70, 90, 60, 45, 80, 55, 40, 70, 85, 50, 60, 40, 75, 95, 60, 50, 80, 70, 90, 55, 65, 40, 85, 75, 50, 60, 45, 80, 65, 55, 40, 70, 85, 60, 45, 55, 30];
-                            return (
-                              <div
-                                key={i}
-                                className="w-1 bg-slate-200 rounded-full transition-all duration-700 group-hover:bg-slate-400"
-                                style={{
-                                  height: `${heights[i]}%`,
-                                  opacity: 0.3 + (heights[i] / 150)
-                                }}
-                              />
-                            );
-                          })}
+                          {[...Array(40)].map((_, i) => (
+                            <div key={i} className="w-1 bg-slate-200 rounded-full" style={{ height: `${[30, 50, 40, 70, 90, 60, 45, 80, 55, 40, 70, 85, 50, 60, 40, 75, 95, 60, 50, 80, 70, 90, 55, 65, 40, 85, 75, 50, 60, 45, 80, 65, 55, 40, 70, 85, 60, 45, 55, 30][i]}%`, opacity: 0.5 }} />
+                          ))}
                         </div>
                       </div>
-
-                      {/* Mobile-Optimized Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <Button
-                          onClick={resetRecording}
-                          variant="outline"
-                          className="flex-1 h-14 rounded-2xl border-slate-100 text-slate-500 font-bold uppercase text-[11px] tracking-widest hover:bg-slate-50 hover:text-slate-800 transition-all active:scale-[0.98]"
-                        >
-                          Discard & Redo
-                        </Button>
-                        <Button
-                          onClick={submitFeedback}
-                          disabled={isUploading}
-                          className="flex-[1.5] h-14 rounded-2xl bg-slate-900 hover:bg-black text-white font-bold uppercase text-[11px] tracking-widest shadow-xl shadow-slate-200 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
-                        >
-                          {isUploading ? (
-                            <Loader2 className="animate-spin mr-3" size={18} />
-                          ) : (
-                            <CheckCircle2 className="mr-3" size={18} />
-                          )}
-                          {isUploading ? "Uploading..." : "Confirm & Submit"}
-                        </Button>
+                      <div className="flex flex-col items-center justify-center py-4">
+                        {isUploading ? (
+                          <div className="flex flex-col items-center gap-3 animate-in fade-in zoom-in duration-300">
+                             <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
+                             <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.2em]">Uploading Feedback...</p>
+                          </div>
+                        ) : !isSubmitted && audioBlob && (
+                          <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-300">
+                            <p className="text-xs text-rose-500 font-medium">Upload failed or interrupted</p>
+                            <div className="flex gap-3">
+                              <Button onClick={() => performUpload(audioBlob)} className="h-10 px-6 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest">Retry Upload</Button>
+                              <Button onClick={resetRecording} variant="outline" className="h-10 px-6 rounded-xl border-slate-200 text-slate-400 text-[10px] font-bold uppercase tracking-widest">Discard</Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

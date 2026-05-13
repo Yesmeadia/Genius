@@ -874,12 +874,12 @@ export default function StudentProfilePage() {
                       ))}
                     </div>
                   ) : (
-                    <div className="py-8 flex flex-col items-center justify-center text-center">
-                      <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 mb-4">
-                        <User size={32} />
+                    <div className="py-4 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-slate-300 mb-2 shadow-sm">
+                        <User size={20} />
                       </div>
-                      <h3 className="text-slate-900 font-normal mb-1">Individual Participation</h3>
-                      <p className="text-slate-400 text-sm max-w-xs">This student is registered as an individual and will not be accompanied.</p>
+                      <h3 className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">Individual Participation</h3>
+                      <p className="text-slate-400 text-[9px] uppercase tracking-tighter mt-0.5">No accompaniment registered</p>
                     </div>
                   )
                 )}

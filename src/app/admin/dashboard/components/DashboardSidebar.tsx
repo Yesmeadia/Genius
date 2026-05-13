@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Users, Download, LogOut, ShieldCheck,
   CreditCard, User, Users2, BarChart3, GraduationCap,
   Truck, Trash2, Plus, Award, ScrollText, ChevronDown, ChevronRight,
-  ClipboardList, Settings, Briefcase, Box, CheckCircle, Scan, MessageSquare, MapPin, Camera, Bed
+  ClipboardList, Settings, Briefcase, Box, CheckCircle, Scan, MessageSquare, MapPin, Camera, Bed, UserCheck
 } from "lucide-react";
 
 interface DashboardSidebarProps {
@@ -102,7 +102,8 @@ export function DashboardSidebar({ sidebarOpen, setSidebarOpen, onSignOut }: Das
         { id: "certificates", label: "Certificates", icon: <ScrollText size={18} />, href: "/admin/dashboard/certificates" },
         { id: "reports", label: "Reports", icon: <BarChart3 size={18} />, href: "/admin/dashboard/reports" },
         { id: "print-data", label: "Print Data", icon: <ScrollText size={18} />, href: "/admin/dashboard/print-data" },
-        { id: "attendance", label: "Attendance Log", icon: <CheckCircle size={18} />, href: "/admin/dashboard/attendance-track" },
+        { id: "mark-attendance", label: "Mark Attendance", icon: <UserCheck size={18} />, href: "/admin/dashboard/attendance" },
+        { id: "attendance", label: "Attendance Track", icon: <CheckCircle size={18} />, href: "/admin/dashboard/attendance-track" },
         { id: "feedback", label: "Feedback", icon: <MessageSquare size={18} />, href: "/admin/dashboard/feedback" },
         { id: "export", label: "Export Center", icon: <Download size={18} />, href: "/admin/dashboard/master-export" },
         { id: "add-registration", label: "New Entry", icon: <Plus size={18} />, href: "/admin/dashboard/registration", prominent: true },

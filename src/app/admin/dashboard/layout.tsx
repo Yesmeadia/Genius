@@ -44,41 +44,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Determine active tab/page title based on pathname
   const getPageTitle = () => {
     if (pathname === "/admin/dashboard") return "Dashboard Overview";
-    
+
     // Students
     if (pathname.startsWith("/admin/dashboard/students-data")) return "Student Management";
     if (pathname.startsWith("/admin/dashboard/student/")) return "Student Profile";
-    
+
     // Guardians
     if (pathname.includes("/guardian-data")) return "Guardian Database";
-    
+
     // Guests
     if (pathname.startsWith("/admin/dashboard/guest-registry")) return "Guest Registry";
     if (pathname.startsWith("/admin/dashboard/guest/")) return "Guest Profile";
     if (pathname.startsWith("/admin/dashboard/gsuit")) return "GSuit Management";
-    
+
     // Yesians
     if (pathname.startsWith("/admin/dashboard/yesian-network")) return "Yesian Network";
     if (pathname.startsWith("/admin/dashboard/yesian/")) return "Yesian Profile";
-    
+
     // Local Staff
     if (pathname.startsWith("/admin/dashboard/local-staff")) {
       const parts = pathname.split("/").filter(Boolean);
       return parts.length > 3 ? "Local Staff Profile" : "Local Staff Database";
     }
-    
+
     // Alumni
     if (pathname.startsWith("/admin/dashboard/alumni-achievers")) {
       const parts = pathname.split("/").filter(Boolean);
       return parts.length > 3 ? "Alumni Profile" : "Alumni Achievers Data";
     }
-    
+
     // Volunteers
     if (pathname.startsWith("/admin/dashboard/volunteers")) {
       const parts = pathname.split("/").filter(Boolean);
       return parts.length > 3 ? "Volunteer Profile" : "Volunteers Registration";
     }
-    
+
     // Awardees
     if (pathname.startsWith("/admin/dashboard/awardee")) {
       const parts = pathname.split("/").filter(Boolean);
@@ -96,7 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const parts = pathname.split("/").filter(Boolean);
       return parts.length > 3 ? "Scout Team Member Profile" : "Scout Team Registry";
     }
-    
+
     if (pathname.includes("/driver-staff")) return "Drivers & Staff Registry";
     if (pathname.startsWith("/admin/dashboard/media")) {
       const parts = pathname.split("/").filter(Boolean);
@@ -108,9 +108,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.includes("/master-export")) return "Master Export Center";
     if (pathname.includes("/recycle-bin")) return "Recycle Bin";
     if (pathname.includes("/attendance-track")) return "Attendance Tracker";
+    if (pathname.includes("/attendance")) return "Mark Attendance";
     if (pathname.includes("/registration")) return "Direct Registration";
     if (pathname.includes("/settings")) return "Portal Configuration";
+    if (pathname.includes("/feedback")) return "Feedback Portal";
     if (pathname.includes("/profile")) return "My Profile";
+    if (pathname.includes("/print-data")) return "Print Data";
     return "Admin Dashboard";
   };
 
