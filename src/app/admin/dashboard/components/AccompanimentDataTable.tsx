@@ -108,7 +108,19 @@ export function AccompanimentDataTable({
               }}
               className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
             >
-              <Download size={14} className="mr-2" /> Export PDF
+              <Download size={14} className="mr-2 text-red-500" /> Export PDF
+            </Button>
+
+            <Button 
+              onClick={() => {
+                const filename = isFiltered ? "guardian_data_filtered" : "all_guardian_data_master";
+                import("@/lib/exportUtils").then(m => {
+                  m.generateGuardianExcel(filteredData, filename);
+                });
+              }}
+              className="h-9 px-3 text-[10px] uppercase tracking-widest font-bold bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 transition-all rounded-xl shadow-sm"
+            >
+              <Download size={14} className="mr-2 text-emerald-500" /> Export Excel
             </Button>
           </div>
         </div>

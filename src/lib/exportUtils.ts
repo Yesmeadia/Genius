@@ -724,6 +724,62 @@ export async function generateGuardianExportPDF(
 }
 
 /**
+ * Guardian / Accompaniment Database Excel Export
+ */
+export function generateGuardianExcel(data: Registration[], filename: string) {
+  if (data.length === 0) return alert("No records found.");
+
+  const excelData: any[] = [];
+  let rowCount = 1;
+
+  data.forEach((reg) => {
+    if (reg.accompaniments && reg.accompaniments.length > 0) {
+      reg.accompaniments.forEach((acc) => {
+        excelData.push({
+          "SL No": rowCount++,
+          "Guardian Name": acc.name,
+          "Relation": acc.relation,
+          "Student Name": reg.studentName,
+          "Class": reg.className,
+          "School Name": getSchoolName(reg.school),
+          "Zone": reg.zone,
+          "Contact": reg.mobileNumber || (reg as any).whatsappNumber || "-"
+        });
+      });
+    } else {
+      excelData.push({
+        "SL No": rowCount++,
+        "Guardian Name": reg.parentName || "Unknown",
+        "Relation": reg.relation || "Parent",
+        "Student Name": reg.studentName,
+        "Class": reg.className,
+        "School Name": getSchoolName(reg.school),
+        "Zone": reg.zone,
+        "Contact": reg.mobileNumber || (reg as any).whatsappNumber || "-"
+      });
+    }
+  });
+
+  const ws = XLSX.utils.json_to_sheet(excelData);
+  ws["!cols"] = [
+    { wch: 8 },  // SL No
+    { wch: 25 }, // Guardian Name
+    { wch: 15 }, // Relation
+    { wch: 25 }, // Student Name
+    { wch: 10 }, // Class
+    { wch: 35 }, // School Name
+    { wch: 20 }, // Zone
+    { wch: 18 }  // Contact
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Guardians");
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  saveAs(blob, `${filename}.xlsx`);
+}
+
+/**
  * Guest Registration PDF
  */
 export async function generateGuestExportPDF(data: GuestRegistration[], title: string, filename: string) {
