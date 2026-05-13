@@ -727,15 +727,17 @@ export default function StudentProfilePage() {
             </Card>
 
             {/* Guardian Accompaniment */}
-            <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
-              <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
+            <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden transition-all">
+              <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30 transition-all">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
-                      <ShieldCheck className="text-emerald-600" size={22} />
-                      Accompaniment
+                      <ShieldCheck className="text-indigo-600" size={22} />
+                      Guardian Accompaniment
                     </CardTitle>
-                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Details for event access card generation</CardDescription>
+                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">
+                      {!registration.withParent && !editMode ? 'No accompaniment registered' : 'Accompanying person details'}
+                    </CardDescription>
                   </div>
                   {editMode && (
                     <div className="flex items-center gap-3">
@@ -832,54 +834,53 @@ export default function StudentProfilePage() {
                   )
                 ) : (
                   registration.withParent ? (
-                    <div className="space-y-8">
-                      {(registration.accompaniments && registration.accompaniments.length > 0 ? registration.accompaniments : (registration.parentName ? [{
-                        name: registration.parentName,
-                        relation: registration.relation || "Relative",
-                        gender: registration.parentGender || "Unspecified"
-                      }] : [])).map((acc, idx) => (
-                        <div key={idx} className={`grid grid-cols-1 md:grid-cols-2 gap-10 ${idx > 0 ? 'pt-8 border-t border-slate-50' : ''}`}>
-                          <div className="space-y-6">
-                            <div className="flex items-start gap-4">
-                              <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-                                <User size={24} />
-                              </div>
-                              <div>
-                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Name</div>
-                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{acc.name}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-start gap-4">
-                              <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-                                <ShieldCheck size={24} />
-                              </div>
-                              <div>
-                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Relation</div>
-                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{acc.relation}</div>
-                              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {(registration.accompaniments && registration.accompaniments.length > 0 ? registration.accompaniments : [{
+                        name: registration.parentName || "UNSPECIFIED",
+                        relation: registration.relation || "RELATIVE",
+                        gender: registration.parentGender || "UNSPECIFIED"
+                      }]).map((acc, idx) => (
+                        <div key={idx} className="p-6 rounded-[24px] bg-slate-50/50 border border-slate-100/50 hover:border-indigo-100 transition-all group">
+                          <div className="flex items-center gap-4 mb-6 pb-5 border-b border-slate-100/50">
+                            <Avatar className="h-12 w-12 rounded-2xl border-0 bg-white shadow-sm ring-4 ring-slate-100/30">
+                              <AvatarFallback className="bg-indigo-50 text-indigo-600">
+                                <User size={20} />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-grow min-w-0">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Person {idx + 1}</div>
+                              <div className="text-base font-bold text-slate-900 uppercase tracking-tight truncate">{acc.name}</div>
                             </div>
                           </div>
-                          <div className="space-y-6">
-                            <div className="flex items-start gap-4">
-                              <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 shrink-0">
-                                <User size={24} />
+                          
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                <ShieldCheck size={12} className="text-blue-500" />
+                                Relation
                               </div>
-                              <div>
-                                <div className="text-[11px] font-normal text-slate-300 uppercase tracking-[0.2em] mb-1">Gender</div>
-                                <div className="text-base font-normal text-slate-800 leading-snug uppercase">{acc.gender}</div>
+                              <div className="text-sm font-semibold text-slate-700 uppercase">{acc.relation}</div>
+                            </div>
+                            <div className="space-y-1 text-right">
+                              <div className="flex items-center justify-end gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                <User size={12} className="text-slate-400" />
+                                Gender
                               </div>
+                              <div className="text-sm font-semibold text-slate-700 uppercase">{acc.gender}</div>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="py-4 flex flex-col items-center justify-center text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-slate-300 mb-2 shadow-sm">
+                    <div className="py-3 px-4 flex items-center gap-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200/60">
+                      <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-slate-300 shadow-sm shrink-0">
                         <User size={20} />
                       </div>
-                      <h3 className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">Individual Participation</h3>
-                      <p className="text-slate-400 text-[9px] uppercase tracking-tighter mt-0.5">No accompaniment registered</p>
+                      <div>
+                        <h3 className="text-slate-600 text-[11px] font-bold uppercase tracking-widest">Individual Participation</h3>
+                        <p className="text-slate-400 text-[10px] uppercase tracking-tight mt-0.5">Participant is attending without any accompaniment</p>
+                      </div>
                     </div>
                   )
                 )}

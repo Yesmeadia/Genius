@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { generateBatchAccessPasses } from "@/lib/exportUtils";
 import { moveToRecycleBin } from "@/lib/deleteUtils";
 import { Button } from "@/components/ui/button";
@@ -682,15 +683,17 @@ export default function QiraathProfilePage() {
             </Card>
 
             {/* Accompaniment Section */}
-            <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden">
-              <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30">
+            <Card className="profile-card border-none shadow-xl shadow-slate-200/50 rounded-3xl bg-white overflow-hidden transition-all">
+              <CardHeader className="p-8 border-b border-slate-50 bg-slate-50/30 transition-all">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-lg font-normal text-slate-900 flex items-center gap-3">
                       <ShieldCheck className="text-emerald-600" size={22} />
                       Accompaniment
                     </CardTitle>
-                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">Details for event access card generation</CardDescription>
+                    <CardDescription className="text-slate-400 text-xs uppercase tracking-widest font-normal pt-1">
+                      {!registration.withParent && !editMode ? 'No accompaniment registered' : 'Details for event access card generation'}
+                    </CardDescription>
                   </div>
                   {editMode && (
                     <div className="flex items-center gap-3">
@@ -792,35 +795,50 @@ export default function QiraathProfilePage() {
                     </div>
                   )
                 ) : (
-                  registration.withParent && registration.accompaniments && registration.accompaniments.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  (registration.withParent && registration.accompaniments && registration.accompaniments.length > 0) ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {registration.accompaniments.map((acc, idx) => (
-                        <div key={idx} className="p-5 bg-slate-50/50 rounded-2xl border border-slate-100 space-y-3 relative overflow-hidden group hover:bg-white transition-all duration-300">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400">
-                              <User size={20} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest mb-0.5">Guest {idx + 1}</div>
-                              <div className="text-sm font-normal text-slate-800 uppercase line-clamp-1">{acc.name}</div>
+                        <div key={idx} className="p-6 rounded-[24px] bg-slate-50/50 border border-slate-100/50 hover:border-emerald-100 transition-all group">
+                          <div className="flex items-center gap-4 mb-6 pb-5 border-b border-slate-100/50">
+                            <Avatar className="h-12 w-12 rounded-2xl border-0 bg-white shadow-sm ring-4 ring-slate-100/30">
+                              <AvatarFallback className="bg-emerald-50 text-emerald-600">
+                                <User size={20} />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-grow min-w-0">
+                              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1.5">Person {idx + 1}</div>
+                              <div className="text-base font-bold text-slate-900 uppercase tracking-tight truncate">{acc.name}</div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                            <div className="text-[10px] font-normal text-slate-400 uppercase tracking-widest">{acc.relation}</div>
-                            <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-wider bg-white border-slate-100 text-slate-500">
-                              {acc.gender}
-                            </Badge>
+                          
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                <ShieldCheck size={12} className="text-emerald-500" />
+                                Relation
+                              </div>
+                              <div className="text-sm font-semibold text-slate-700 uppercase">{acc.relation}</div>
+                            </div>
+                            <div className="space-y-1 text-right">
+                              <div className="flex items-center justify-end gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                <User size={12} className="text-slate-400" />
+                                Gender
+                              </div>
+                              <div className="text-sm font-semibold text-slate-700 uppercase">{acc.gender}</div>
+                            </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="py-10 flex flex-col items-center justify-center text-center">
-                      <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 mb-4">
-                        <User size={32} strokeWidth={1.5} />
+                    <div className="py-3 px-4 flex items-center gap-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200/60">
+                      <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-slate-300 shadow-sm shrink-0">
+                        <User size={20} />
                       </div>
-                      <h4 className="text-sm font-normal text-slate-900 uppercase tracking-widest mb-1">No Accompaniment</h4>
-                      <p className="text-xs text-slate-400">This participant is attending the event individually.</p>
+                      <div>
+                        <h3 className="text-slate-600 text-[11px] font-bold uppercase tracking-widest">Individual Participation</h3>
+                        <p className="text-slate-400 text-[10px] uppercase tracking-tight mt-0.5">This participant is attending individually</p>
+                      </div>
                     </div>
                   )
                 )}

@@ -378,11 +378,26 @@ export default function AttendancePage() {
                         </Button>
                       </TableCell>
                       <TableCell className="py-5 text-right pr-8">
-                        <Link href={`/admin/dashboard/student/${p.id}`}>
-                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
-                            <ExternalLink size={18} />
-                          </Button>
-                        </Link>
+                        {(() => {
+                          let route = 'student';
+                          if (p.coll === 'guest_registrations') route = 'guest';
+                          else if (p.coll === 'yesmeadian_registrations' || p.coll === 'yesian_registrations') route = 'yesian';
+                          else if (p.coll === 'local_staff_registrations') route = 'local-staff';
+                          else if (p.coll === 'alumni_registrations') route = 'alumni-achievers';
+                          else if (p.coll === 'volunteer_registrations') route = 'volunteers';
+                          else if (p.coll === 'awardee_registrations') route = 'awardee';
+                          else if (p.coll === 'qiraath_registrations') route = 'qiraath';
+                          else if (p.coll === 'driver_staff_registrations') route = 'driver-staff';
+                          else if (p.coll === 'scout_team_registrations') route = 'scout-team';
+                          
+                          return (
+                            <Link href={`/admin/dashboard/${route}/${p.id}`}>
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
+                                <ExternalLink size={18} />
+                              </Button>
+                            </Link>
+                          );
+                        })()}
                       </TableCell>
                     </TableRow>
                   ))

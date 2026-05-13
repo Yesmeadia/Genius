@@ -357,7 +357,22 @@ export default function FeedbackAdminPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => router.push(`/admin/dashboard/student/${f.participantId}`)}
+                          onClick={() => {
+                            const type = f.participantType.toLowerCase();
+                            let route = 'student';
+                            if (type.includes('guest')) route = 'guest';
+                            else if (type.includes('yesian')) route = 'yesian';
+                            else if (type.includes('local staff')) route = 'local-staff';
+                            else if (type.includes('alumni')) route = 'alumni-achievers';
+                            else if (type.includes('volunteer')) route = 'volunteers';
+                            else if (type.includes('awardee')) route = 'awardee';
+                            else if (type.includes('qiraath')) route = 'qiraath';
+                            else if (type.includes('driver')) route = 'driver-staff';
+                            else if (type.includes('scout')) route = 'scout-team';
+                            else if (type.includes('media')) route = 'media';
+                            
+                            router.push(`/admin/dashboard/${route}/${f.participantId}`);
+                          }}
                           className="h-8 px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 text-[10px] font-bold uppercase"
                         >
                           View Profile

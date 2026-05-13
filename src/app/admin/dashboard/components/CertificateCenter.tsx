@@ -132,8 +132,8 @@ export default function CertificateCenter({
         switch (type) {
             case 'student': return `/admin/dashboard/student/${id}`;
             case 'awardee': return `/admin/dashboard/awardee/${id}`;
-            case 'scout-team': return `/admin/dashboard/scout/${id}`;
-            case 'volunteer': return `/admin/dashboard/volunteer/${id}`;
+            case 'scout-team': return `/admin/dashboard/scout-team/${id}`;
+            case 'volunteer': return `/admin/dashboard/volunteers/${id}`;
             case 'qiraath': return `/admin/dashboard/qiraath/${id}`;
             default: return `/admin/dashboard`;
         }
