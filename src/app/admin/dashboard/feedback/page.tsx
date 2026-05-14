@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, deleteDoc, doc, updateDoc, where } from "firebase/firestore";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import {
@@ -40,6 +40,7 @@ export default function FeedbackAdminPage() {
   const [activeTab, setActiveTab] = useState<'voice' | 'text'>('voice');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [guardianRegistrations, setGuardianRegistrations] = useState<any[]>([]);
 
   const {
     registrations,
@@ -66,12 +67,13 @@ export default function FeedbackAdminPage() {
       ...qiraathRegistrations,
       ...driverStaffRegistrations,
       ...scoutTeamRegistrations,
+      ...guardianRegistrations,
     ];
     return new Map(all.map(r => [r.id, r]));
   }, [
     registrations, guestRegistrations, yesianRegistrations, localStaffRegistrations,
     alumniRegistrations, volunteerRegistrations, awardeeRegistrations, qiraathRegistrations,
-    driverStaffRegistrations, scoutTeamRegistrations
+    driverStaffRegistrations, scoutTeamRegistrations, guardianRegistrations
   ]);
 
   const getSchoolName = (schoolId: string) => {
@@ -85,7 +87,17 @@ export default function FeedbackAdminPage() {
 
   useEffect(() => {
     fetchFeedback();
+    fetchGuardians();
   }, []);
+
+  const fetchGuardians = async () => {
+    try {
+      const snap = await getDocs(collection(db, "guardian_data"));
+      setGuardianRegistrations(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) {
+      console.error("Guardian fetch error:", e);
+    }
+  };
 
   const fetchFeedback = async () => {
     setLoading(true);
@@ -370,6 +382,10 @@ export default function FeedbackAdminPage() {
                             else if (type.includes('driver')) route = 'driver-staff';
                             else if (type.includes('scout')) route = 'scout-team';
                             else if (type.includes('media')) route = 'media';
+                            else if (type.includes('guardian')) {
+                              router.push(`/admin/dashboard/guardian-data`);
+                              return;
+                            }
                             
                             router.push(`/admin/dashboard/${route}/${f.participantId}`);
                           }}

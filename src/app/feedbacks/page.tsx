@@ -18,6 +18,7 @@ interface Participant {
   type: string;
   collection: string;
   photoUrl?: string;
+  studentName?: string;
 }
 
 export default function FeedbackPage() {
@@ -25,6 +26,7 @@ export default function FeedbackPage() {
   const [nameSearch, setNameSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
+  const [selectedZone, setSelectedZone] = useState<string | null>(null); // zone id when searching by zone
   const [availableParticipants, setAvailableParticipants] = useState<Participant[]>([]);
   const [showNameSuggestions, setShowNameSuggestions] = useState(false);
   const [isFetchingNames, setIsFetchingNames] = useState(false);
@@ -81,6 +83,8 @@ export default function FeedbackPage() {
     { name: "media_registrations", label: "Media", field: "name" },
   ];
 
+
+
   useGSAP(() => {
     const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
 
@@ -120,17 +124,29 @@ export default function FeedbackPage() {
     return locations.flatMap(z => z.schools.map(s => s.name));
   }, []);
 
+  // Zone names for Yesian search
+  const allZones = React.useMemo(() => {
+    return locations.map(z => ({ id: z.id, name: z.name }));
+  }, []);
+
   const filteredSchools = React.useMemo(() => {
     if (!schoolSearch || selectedSchool === schoolSearch) return [];
-    return allSchools.filter(s => s.toLowerCase().includes(schoolSearch.toLowerCase())).slice(0, 5);
-  }, [schoolSearch, allSchools, selectedSchool]);
+    const term = schoolSearch.toLowerCase();
+    const matchedSchools = allSchools
+      .filter(s => s.toLowerCase().includes(term))
+      .map(s => ({ label: s, isZone: false, zoneId: null as string | null }));
+    const matchedZones = allZones
+      .filter(z => z.name.toLowerCase().includes(term))
+      .map(z => ({ label: `${z.name} (Zone - for yesians)`, isZone: true, zoneId: z.id }));
+    return [...matchedSchools, ...matchedZones].slice(0, 8);
+  }, [schoolSearch, allSchools, allZones, selectedSchool]);
 
   const filteredNames = React.useMemo(() => {
-    if (!nameSearch || !selectedSchool) return [];
-    return availableParticipants.filter(p => 
+    if (!nameSearch || (!selectedSchool && !selectedZone)) return [];
+    return availableParticipants.filter(p =>
       p.name.toLowerCase().includes(nameSearch.toLowerCase())
     ).slice(0, 5);
-  }, [nameSearch, availableParticipants, selectedSchool]);
+  }, [nameSearch, availableParticipants, selectedSchool, selectedZone]);
 
   useEffect(() => {
     if (filteredSchools.length > 0) {
@@ -151,16 +167,18 @@ export default function FeedbackPage() {
   useEffect(() => {
     if (selectedSchool) {
       fetchParticipantsForSchool(selectedSchool);
+    } else if (selectedZone) {
+      fetchParticipantsForZone(selectedZone);
     } else {
       setAvailableParticipants([]);
     }
-  }, [selectedSchool]);
+  }, [selectedSchool, selectedZone]);
 
   const fetchParticipantsForSchool = async (schoolName: string) => {
     setIsFetchingNames(true);
     setAvailableParticipants([]);
     const results: Participant[] = [];
-    
+
     // Find the school ID for this name
     const schoolObj = locations.flatMap(z => z.schools).find(s => s.name === schoolName);
     const schoolId = schoolObj?.id;
@@ -168,35 +186,68 @@ export default function FeedbackPage() {
     try {
       for (const coll of collections) {
         const queries = [];
-        
-        // Search by Name
+
+        // Search by school name and ID variants
         queries.push(query(collection(db, coll.name), where("school", "==", schoolName)));
         queries.push(query(collection(db, coll.name), where("schoolName", "==", schoolName)));
         queries.push(query(collection(db, coll.name), where("institution", "==", schoolName)));
-        
-        // Search by ID (if available)
         if (schoolId) {
           queries.push(query(collection(db, coll.name), where("school", "==", schoolId)));
           queries.push(query(collection(db, coll.name), where("schoolName", "==", schoolId)));
         }
-        
+
         const snapshots = await Promise.all(queries.map(q => getDocs(q)));
-        
+
         snapshots.forEach(snap => {
           snap.docs.forEach(docMatch => {
             const data = docMatch.data();
+
+            // Regular participant entry
             if (!results.find(r => r.id === docMatch.id)) {
               results.push({
                 id: docMatch.id,
-                name: data[coll.field] || data.name || data.studentName || "Unknown",
+                name: data[coll.field] || data.name || "Unknown",
                 type: coll.label,
                 collection: coll.name,
                 photoUrl: data.photoUrl,
               });
             }
+
+            // Extract guardian(s) inline — no extra query needed.
+            // Guardians are embedded in docs where withParent === true.
+            if (data.withParent === true) {
+              if (data.accompaniments && data.accompaniments.length > 0) {
+                data.accompaniments.forEach((acc: any, i: number) => {
+                  const guardianId = `${docMatch.id}_acc_${i}`;
+                  if (acc.name && !results.find(r => r.id === guardianId)) {
+                    results.push({
+                      id: guardianId,
+                      name: acc.name,
+                      type: "Guardian",
+                      collection: coll.name,
+                      photoUrl: data.photoUrl,
+                      studentName: data[coll.field] || data.name || data.studentName || "Student",
+                    });
+                  }
+                });
+              } else if (data.parentName) {
+                const guardianId = `${docMatch.id}_guardian`;
+                if (!results.find(r => r.id === guardianId)) {
+                  results.push({
+                    id: guardianId,
+                    name: data.parentName,
+                    type: "Guardian",
+                    collection: coll.name,
+                    photoUrl: data.photoUrl,
+                    studentName: data[coll.field] || data.name || data.studentName || "Student",
+                  });
+                }
+              }
+            }
           });
         });
       }
+
       setAvailableParticipants(results);
       if (results.length === 0) {
         console.warn("No participants found for school:", schoolName, "(ID:", schoolId, ")");
@@ -208,10 +259,43 @@ export default function FeedbackPage() {
     }
   };
 
+  // Fetch Yesians by zone (zone id stored in their 'zone' field)
+  const fetchParticipantsForZone = async (zoneId: string) => {
+    setIsFetchingNames(true);
+    setAvailableParticipants([]);
+    const results: Participant[] = [];
+    try {
+      // Yesians store zone as zone id (e.g. "Srinagar", "Poonch")
+      const yesianQuery = query(
+        collection(db, "yesian_registrations"),
+        where("zone", "==", zoneId)
+      );
+      const snap = await getDocs(yesianQuery);
+      snap.docs.forEach(docMatch => {
+        const data = docMatch.data();
+        results.push({
+          id: docMatch.id,
+          name: data.name || "Unknown",
+          type: "Yesian",
+          collection: "yesian_registrations",
+          photoUrl: data.photoUrl,
+        });
+      });
+      setAvailableParticipants(results);
+      if (results.length === 0) {
+        console.warn("No Yesians found for zone:", zoneId);
+      }
+    } catch (error) {
+      console.error("Error fetching Yesians by zone:", error);
+    } finally {
+      setIsFetchingNames(false);
+    }
+  };
+
   const lookupParticipant = async () => {
     const sSchool = schoolSearch.trim().toLowerCase();
     const sName = nameSearch.trim().toLowerCase();
-    
+
     if (!sSchool || !sName) {
       alert("Please enter both School and Name to search.");
       return;
@@ -228,14 +312,14 @@ export default function FeedbackPage() {
           where(coll.field, "<=", nameSearch.trim() + "\uf8ff"),
           limit(50) // Fetch more to find the right school
         );
-        
+
         const snap = await getDocs(nameQuery);
-        
+
         for (const docMatch of snap.docs) {
           const data = docMatch.data();
           const pName = (data[coll.field] || data.name || data.studentName || "").toString().toLowerCase();
           const pSchool = (data.school || data.schoolName || data.institution || "").toString().toLowerCase();
-          
+
           // Check if both match (simple inclusion/equality)
           if (pName.includes(sName) && (pSchool.includes(sSchool) || sSchool === "any")) {
             setParticipant({
@@ -299,6 +383,7 @@ export default function FeedbackPage() {
       setParticipant(null);
       setSchoolSearch("");
       setNameSearch("");
+      setSelectedZone(null);
 
       setTimeout(() => {
         setIsSubmitted(false);
@@ -366,39 +451,46 @@ export default function FeedbackPage() {
                 <div className="relative bg-white rounded-2xl flex items-center px-5 py-1 shadow-sm border border-slate-100 focus-within:border-indigo-200 transition-all duration-200">
                   <input
                     type="text"
-                    placeholder="Search School Name"
+                    placeholder="Search School or Zone Name"
                     value={schoolSearch}
                     onChange={(e) => {
                       setSchoolSearch(e.target.value);
                       setSelectedSchool(null);
+                      setSelectedZone(null);
                     }}
                     onFocus={() => setShowSuggestions(filteredSchools.length > 0)}
                     className="w-full h-12 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 text-sm font-medium px-2 text-slate-700 placeholder:text-slate-400"
                   />
                   <Search size={18} className="text-slate-300 mr-2" />
                 </div>
-                
+
                 {showSuggestions && (
                   <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                    {filteredSchools.map((school, i) => (
+                    {filteredSchools.map((item, i) => (
                       <button
                         key={i}
                         onClick={() => {
-                          setSchoolSearch(school);
-                          setSelectedSchool(school);
+                          setSchoolSearch(item.label);
+                          if (item.isZone && item.zoneId) {
+                            setSelectedZone(item.zoneId);
+                            setSelectedSchool(null);
+                          } else {
+                            setSelectedSchool(item.label);
+                            setSelectedZone(null);
+                          }
                           setShowSuggestions(false);
                         }}
                         className="w-full px-6 py-3 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50 border-b border-slate-50 last:border-0 flex items-center gap-3 transition-colors"
                       >
-                        <div className="h-2 w-2 rounded-full bg-indigo-400" />
-                        {school}
+                        <div className={`h-2 w-2 rounded-full ${item.isZone ? 'bg-amber-400' : 'bg-indigo-400'}`} />
+                        {item.label}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {(selectedSchool || schoolSearch.length > 3) && (
+              {(selectedSchool || selectedZone || schoolSearch.length > 3) && (
                 <div className="relative z-20">
                   <div className="relative bg-white rounded-2xl flex items-center px-5 py-1 shadow-sm border border-slate-100 focus-within:border-indigo-200 transition-all duration-200 animate-in slide-in-from-top-4 duration-500">
                     <input
@@ -436,11 +528,11 @@ export default function FeedbackPage() {
                         >
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                              {p.photoUrl ? <img src={p.photoUrl} className="h-full w-full rounded-full object-cover" /> : <User size={14} />}
+                              {p.photoUrl && p.type !== "Guardian" ? <img src={p.photoUrl} className="h-full w-full rounded-full object-cover" /> : <User size={14} />}
                             </div>
                             <div className="flex flex-col">
                               <span className="text-xs font-bold text-slate-700 uppercase">{p.name}</span>
-                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{p.type}</span>
+                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{p.type}{p.type === "Guardian" && p.studentName ? ` - Parent of ${p.studentName}` : ""}</span>
                             </div>
                           </div>
                           <CheckCircle2 size={14} className="text-emerald-500" />
@@ -474,7 +566,7 @@ export default function FeedbackPage() {
           <div className="participant-card w-full max-w-xl bg-white/80 backdrop-blur-xl rounded-[32px] border border-white/40 p-6 md:p-10 shadow-2xl shadow-slate-200/40 animate-in fade-in slide-in-from-bottom-8 duration-500 space-y-8">
             <div className="flex flex-col items-center text-center gap-4">
               <div className="h-24 w-24 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-sm flex items-center justify-center">
-                {participant?.photoUrl ? (
+                {participant?.photoUrl && participant?.type !== "Guardian" ? (
                   <img src={participant.photoUrl} alt={participant?.name} className="h-full w-full object-cover" />
                 ) : (
                   <User size={32} className="text-slate-300" strokeWidth={1.5} />
@@ -483,7 +575,7 @@ export default function FeedbackPage() {
 
               <div className="space-y-1">
                 <h3 className="text-2xl font-normal text-slate-900">{participant?.name}</h3>
-                <p className="text-sm text-slate-500 font-medium">{participant?.type}</p>
+                <p className="text-sm text-slate-500 font-medium">{participant?.type}{participant?.type === "Guardian" && participant?.studentName ? ` - Parent of ${participant.studentName}` : ""}</p>
               </div>
             </div>
 
